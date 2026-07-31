@@ -1,0 +1,8 @@
+{{page-title 'Daily Check-In'}}
+
+<LenovoCheckinForm
+  @stores={{@model.stores}}
+  @onSave={{this.saveCheckin}}
+  @isSaving={{this.isSaving}}
+  @errorMessage={{this.errorMessage}}
+/>

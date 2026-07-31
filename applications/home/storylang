@@ -1,0 +1,733 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * storylang — single-file edition
+ *
+ * Usage: node tribe storylang
+ *
+ * Scans the current Ember project and writes/updates config/storylang.json
+ * from the actual files that exist in the app/ directory.
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function toCamelCase(str) {
+  return str.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+function toKebabCase(str) {
+  return str
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .replace(/([a-z\d])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+}
+
+function walkDir(dir, filterFn = () => true) {
+  if (!fs.existsSync(dir)) return [];
+  const results = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...walkDir(fullPath, filterFn));
+    } else if (filterFn(entry.name, fullPath)) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+function nameFromPath(filePath, appDir, category) {
+  const rel = path.relative(path.join(appDir, category), filePath);
+  return rel
+    .replace(/\.(js|ts|hbs|scss|css)$/, '')
+    .split(path.sep)
+    .join('/');
+}
+
+// ---------------------------------------------------------------------------
+// Comment strippers
+// ---------------------------------------------------------------------------
+
+/**
+ * Removes all HBS comment blocks from a Handlebars/Glimmer template so that
+ * commented-out markup is never picked up by any of the parsers.
+ *
+ * Strips:
+ *   {{!-- anything, including newlines --}}   (block comment)
+ *   {{! anything on one line }}               (inline comment)
+ *   <!-- HTML comment -->                     (HTML comment inside HBS)
+ */
+function stripHbsComments(src) {
+  // Block comments: {{!-- ... --}}  (may span multiple lines)
+  src = src.replace(/\{\{!--[\s\S]*?--\}\}/g, '');
+  // Inline comments: {{! ... }}
+  src = src.replace(/\{\{![\s\S]*?\}\}/g, '');
+  // HTML comments: <!-- ... -->  (may span multiple lines)
+  src = src.replace(/<!--[\s\S]*?-->/g, '');
+  return src;
+}
+
+/**
+ * Removes all JavaScript/TypeScript comments from source so that
+ * commented-out code is never picked up by any of the parsers.
+ *
+ * Strips:
+ *   // single-line comments
+ *   /* block comments (may span multiple lines) *\/
+ *
+ * Preserves string literals so URLs / regex patterns inside strings are safe.
+ */
+function stripJsComments(src) {
+  // Use a single-pass regex that correctly handles strings, template literals,
+  // and both comment styles in source order.
+  return src.replace(
+    /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`))/g,
+    (match, _full, strLiteral) => {
+      // If it matched a string literal, keep it unchanged
+      if (strLiteral !== undefined) return strLiteral;
+      // Otherwise it's a comment — replace with whitespace to preserve line numbers
+      return match.replace(/[^\n]/g, ' ');
+    }
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Parsers
+// ---------------------------------------------------------------------------
+
+/**
+ * Extracts the source body of a function starting right after its opening `{`.
+ * Handles nested braces so the full function body is captured regardless of
+ * how many levels deep the code goes.
+ */
+function extractFunctionBody(src, openBraceIndex) {
+  let depth = 1;
+  let i = openBraceIndex + 1;
+  while (i < src.length && depth > 0) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') depth--;
+    i++;
+  }
+  return src.slice(openBraceIndex + 1, i - 1);
+}
+
+/**
+ * Builds a map of class-level property names → PHP paths for patterns like:
+ *   backendUrl = `${ENV.TribeENV.API_URL}/custom/apollo/get-apollo-data.php`;
+ *   companyUrl = `${ENV.TribeENV.API_URL}/custom/apollo/get-apollo-company.php`;
+ *
+ * This lets parseActions resolve `this.backendUrl` references inside method
+ * bodies even when the PHP path string is not repeated inline.
+ */
+function extractPhpPropertyMap(src) {
+  const map = new Map(); // propertyName → [phpPaths]
+  // Match:  identifier = `...` ;   or   identifier = '...' ;  at class body level
+  const propRe = /^\s{0,4}(\w+)\s*=\s*(`[^`]*`|'[^']*'|"[^"]*")\s*;/gm;
+  let match;
+  while ((match = propRe.exec(src)) !== null) {
+    const propName = match[1];
+    const value = match[2];
+    const phpPaths = extractCustomPhpCalls(value);
+    if (phpPaths.length > 0) {
+      map.set(propName, phpPaths);
+    }
+  }
+  return map;
+}
+
+/**
+ * Given a method body and the file-level PHP property map, returns all PHP
+ * paths reachable from that body — both inline strings and via `this.prop`
+ * references that resolve to a known PHP property.
+ */
+function resolvePhpCallsInBody(body, phpPropMap) {
+  const found = new Set(extractCustomPhpCalls(body));
+
+  // Resolve  this.someUrl  references
+  for (const [, propName] of body.matchAll(/this\.(\w+)/g)) {
+    if (phpPropMap.has(propName)) {
+      for (const path of phpPropMap.get(propName)) {
+        found.add(path);
+      }
+    }
+  }
+
+  return [...found];
+}
+
+/**
+ * Parses every @action AND every public async method in a JS/TS file and
+ * returns a mixed actions array:
+ *   - plain string               when the method makes no /custom/*.php calls
+ *   - { methodName: [phpPaths] } when it does
+ *
+ * Handles two method styles:
+ *   @action (async) methodName(...) { ... }   ← Ember action decorator
+ *   async methodName(...) { ... }             ← plain async service method
+ *
+ * PHP paths that live in class-level string properties (e.g. backendUrl) are
+ * resolved via `this.propName` references inside each method body.
+ */
+function parseActions(src) {
+  src = stripJsComments(src);
+  const phpPropMap = extractPhpPropertyMap(src);
+  const actions = [];
+  const seen = new Set();
+
+  // Helper: process one matched method
+  function processMethod(name, openBraceIndex) {
+    const kebab = toKebabCase(name);
+    if (seen.has(kebab)) return; // @action match already captured this method
+    seen.add(kebab);
+    const body = extractFunctionBody(src, openBraceIndex);
+    const phpCalls = resolvePhpCallsInBody(body, phpPropMap);
+
+    // Detect store/model type usages within this method body
+    const bodyTypeSet = new Set();
+    for (const [, typeName] of body.matchAll(/this\.store\.\w+\(\s*['"`]([\w-]+)['"`]/g)) {
+      bodyTypeSet.add(typeName);
+    }
+    for (const [, typeName] of body.matchAll(/this\.model\.([\w-]+)/g)) {
+      bodyTypeSet.add(toKebabCase(typeName));
+    }
+    const bodyTypes = [...bodyTypeSet];
+
+    const extras = [...phpCalls, ...bodyTypes];
+    if (extras.length === 0) {
+      actions.push(kebab);
+    } else {
+      actions.push({ [kebab]: extras });
+    }
+  }
+
+  // Pass 1: @action-decorated methods (existing behaviour)
+  const actionRe = /@action\s*\n?\s*(?:async\s+)?(\w+)\s*\([^)]*\)\s*\{/g;
+  let match;
+  while ((match = actionRe.exec(src)) !== null) {
+    const name = match[1];
+    const bodyStart = match.index + match[0].length - 1;
+    processMethod(name, bodyStart);
+  }
+
+  // Pass 2: non-decorated async methods (e.g. service methods like enrichByEmail)
+  // Only match class-body-level methods (indented 2 spaces) to avoid false positives
+  const asyncMethodRe = /^\s{2}async\s+(\w+)\s*\([^)]*\)\s*\{/gm;
+  while ((match = asyncMethodRe.exec(src)) !== null) {
+    const name = match[1];
+    const bodyStart = match.index + match[0].length - 1;
+    processMethod(name, bodyStart);
+  }
+
+  // Pass 3: plain (non-async, non-decorated) class-body-level methods
+  // Matches:  methodName(...) { ... }  indented exactly 2 spaces
+  // Excludes getter accessors (get propName()) which are captured separately.
+  const plainMethodRe = /^\s{2}(?!get\s+\w+\s*\(\s*\))(\w+)\s*\([^)]*\)\s*\{/gm;
+  while ((match = plainMethodRe.exec(src)) !== null) {
+    const name = match[1];
+    const bodyStart = match.index + match[0].length - 1;
+    processMethod(name, bodyStart);
+  }
+
+  // Pass 4: module-level named functions (files that are not class-based,
+  // e.g. utility modules, initializers, instance-initializers).
+  // Only runs when no class body was detected to avoid double-counting.
+  const hasClass = /^\s*(?:export\s+default\s+)?class\s+/m.test(src);
+  if (!hasClass) {
+    const moduleFnRe = /^(?:export\s+(?:default\s+)?)?function\s+(\w+)\s*\([^)]*\)\s*\{/gm;
+    while ((match = moduleFnRe.exec(src)) !== null) {
+      const name = match[1];
+      const bodyStart = match.index + match[0].length - 1;
+      processMethod(name, bodyStart);
+    }
+    // Arrow / const functions:  export const foo = (...) => { ... }
+    const arrowFnRe = /^(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{/gm;
+    while ((match = arrowFnRe.exec(src)) !== null) {
+      const name = match[1];
+      const bodyStart = match.index + match[0].length - 1;
+      processMethod(name, bodyStart);
+    }
+  }
+
+  return actions;
+}
+
+function parseJsFile(filePath) {
+  const raw = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
+  const src = stripJsComments(raw);
+
+  const trackedVars = [...src.matchAll(/@tracked\s+(\w+)\s*(?:=\s*([^;]+))?/g)].map(
+    ([, name, val]) => ({ [toKebabCase(name)]: inferType(val) })
+  );
+
+  // Capture native JS getters:  get someProperty() { ... }
+  const getters = [...src.matchAll(/^\s{2}get\s+(\w+)\s*\(\s*\)\s*\{/gm)].map(([, name]) => toKebabCase(name));
+
+  const allParsed = parseActions(src);
+
+  // Separate @action / async class methods from plain functions (Pass 3 / Pass 4)
+  const actionNames = new Set();
+  for (const [, n] of src.matchAll(/@action\s*\n?\s*(?:async\s+)?(\w+)\s*\(/g)) actionNames.add(toKebabCase(n));
+  for (const [, n] of src.matchAll(/^\s{2}async\s+(\w+)\s*\(/gm))              actionNames.add(toKebabCase(n));
+
+  const actions   = allParsed.filter((e) => actionNames.has(typeof e === 'string' ? e : Object.keys(e)[0]));
+  const functions = allParsed.filter((e) => !actionNames.has(typeof e === 'string' ? e : Object.keys(e)[0]));
+
+  const services = [...src.matchAll(/@service\s+(\w+)/g)].map(([, name]) => toKebabCase(name));
+
+  const getVars = [...src.matchAll(/queryParams\s*=\s*\{([^}]+)\}/gs)].flatMap(([, block]) =>
+    [...block.matchAll(/(\w+)\s*:/g)].map(([, k]) => ({ [toKebabCase(k)]: 'string' }))
+  );
+
+  return { trackedVars, getters, actions, functions, services, getVars };
+}
+
+function inferType(val = '') {
+  val = (val || '').trim();
+  if (val === 'false' || val === 'true') return 'bool';
+  if (val.startsWith('[')) return 'array';
+  if (val.startsWith('{') || val.startsWith('new Map') || val.startsWith('new Set')) return 'object';
+  if (/^\d+$/.test(val)) return 'int';
+  if (val.startsWith("'") || val.startsWith('"') || val.startsWith('`')) return 'string';
+  return 'string';
+}
+
+function parseHbsFile(filePath, knownHelperNames = null, knownModifierNames = null) {
+  if (!fs.existsSync(filePath)) return { inheritedArgs: [], helpers: [], modifiers: [], components: [] };
+
+  const src = stripHbsComments(fs.readFileSync(filePath, 'utf8'));
+
+  const inheritedArgsSet = new Set(
+    [...src.matchAll(/@(\w[\w.]*)/g)]
+      .map(([, name]) => name.split('.')[0])
+      .filter((n) => !['ember', 'glimmer'].includes(n))
+  );
+  const inheritedArgs = [...inheritedArgsSet].map((name) => ({ [toKebabCase(name)]: 'var' }));
+
+  const builtinHelpers = new Set([
+    'if', 'unless', 'each', 'else', 'let', 'with', 'yield', 'outlet', 'component',
+    'on', 'get', 'concat', 'array', 'hash', 'log', 'action', 'mut',
+    'page-title', 'link-to', 'BasicDropdownWormhole',
+  ]);
+
+  // Modifiers: {{word ...}} or {{word}} that appear DIRECTLY inside an HTML opening tag
+  // but NOT as the value side of an attribute (i.e. not preceded by = or =").
+  // Pattern: inside < ... >, a mustache that is NOT preceded by `=` or `="` or `='`
+  //
+  // Strategy: find all opening HTML tags, then within each tag scan for mustaches
+  // that are NOT attribute values (i.e. not preceded by = sign).
+  const modifiersSet = new Set();
+  const helpersSet = new Set();
+
+  // Extract all opening HTML tags (including multi-line), capturing their full content.
+  // We match from `<tagname` up to the closing `>`, handling nested mustaches.
+  const openTagRe = /<[a-zA-Z][\w:./-]*(\s[\s\S]*?)?\/?>/g;
+  let tagMatch;
+  while ((tagMatch = openTagRe.exec(src)) !== null) {
+    const tagContent = tagMatch[0];
+
+    // Find all mustache expressions within this tag
+    const mustacheRe = /\{\{([\w-]+)/g;
+    let mustacheMatch;
+    while ((mustacheMatch = mustacheRe.exec(tagContent)) !== null) {
+      const name = mustacheMatch[1];
+      if (builtinHelpers.has(name) || !name.includes('-')) continue;
+
+      // Look at what comes immediately before this `{{` in the tag.
+      // A helper is used as a value when the mustache appears:
+      //   - directly after `=`, `="`, or `='`  (e.g. value={{h}}, value="{{h}}")
+      //   - inside an already-open quoted attribute string (e.g. style="color: {{h}}")
+      //     detected by finding an unmatched opening quote after the last `=`
+      const before = tagContent.slice(0, mustacheMatch.index);
+      const lastEqIdx = before.lastIndexOf('=');
+      let isValue = false;
+      if (lastEqIdx !== -1) {
+        const afterEq = before.slice(lastEqIdx + 1).trimStart();
+        if (afterEq === '' || afterEq === '"' || afterEq === "'") {
+          // directly after `=` or `="` or `='` with nothing else yet
+          isValue = true;
+        } else if (afterEq.startsWith('"') || afterEq.startsWith("'")) {
+          // inside an open quoted string — check the quote hasn't been closed yet
+          const quoteChar = afterEq[0];
+          const inner = afterEq.slice(1);
+          isValue = !inner.includes(quoteChar);
+        }
+      }
+
+      if (isValue) {
+        helpersSet.add(name);
+      } else {
+        modifiersSet.add(name);
+      }
+    }
+  }
+
+  // Also capture helpers used in standalone mustaches OUTSIDE of HTML tags.
+  // Helpers ALWAYS start with {{ — never match bare CSS values, text, or JS expressions.
+  // Scans the full mustache body so subexpressions like {{#if (some-helper x)}} are caught.
+  const withoutTags = src.replace(/<[a-zA-Z][\w:./-]*(\s[\s\S]*?)?\/?>/g, '');
+  for (const [, body] of withoutTags.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
+    for (const [, name] of body.matchAll(/([\w][-\w]*)/g)) {
+      if (name.includes('-') && !builtinHelpers.has(name) && !modifiersSet.has(name)) {
+        helpersSet.add(name);
+      }
+    }
+  }
+
+  // If caller supplied a whitelist, restrict to only known helpers / modifiers.
+  // This prevents false positives from CSS class names, JS identifiers, etc.
+  const allHelpers = [...helpersSet];
+  const allModifiers = [...modifiersSet].filter((n) => !helpersSet.has(n));
+
+  const helpers = knownHelperNames
+    ? allHelpers.filter((n) => knownHelperNames.has(n))
+    : allHelpers;
+
+  const modifiers = knownModifierNames
+    ? allModifiers.filter((n) => knownModifierNames.has(n))
+    : allModifiers;
+
+  const componentsSet = new Set(
+    [...src.matchAll(/<([A-Z][\w::/]*)/g)].map(([, name]) => toKebabCase(name).replace(/::/g, '/'))
+  );
+  const components = [...componentsSet];
+
+  return { inheritedArgs, helpers, modifiers, components };
+}
+
+// ---------------------------------------------------------------------------
+// Custom PHP scanner
+// ---------------------------------------------------------------------------
+
+/**
+ * Extracts all `/custom/*.php` paths called from a source file.
+ *
+ * Matches patterns like:
+ *   `${ENV.TribeENV.API_URL}/custom/apollo/get-apollo-data.php`
+ *   ENV.TribeENV.API_URL + '/custom/jobs/list.php'
+ *   fetch('/custom/reports/export.php')     ← direct relative calls
+ *   '/custom/utils/helper.php'              ← any string containing /custom/*.php
+ */
+function extractCustomPhpCalls(src) {
+  const found = new Set();
+
+  // Pattern 1: template-literal  `${...}/custom/path/file.php`
+  for (const [, phpPath] of src.matchAll(/\$\{[^}]+\}\/?(custom\/[^`'" \t\n)]+\.php)/g)) {
+    found.add(phpPath);
+  }
+
+  // Pattern 2: string concatenation  something + '/custom/path/file.php'
+  for (const [, phpPath] of src.matchAll(/['"`]\s*\+?\s*['"`]?\s*(custom\/[^'"`\s)]+\.php)/g)) {
+    found.add(phpPath);
+  }
+
+  // Pattern 3: bare string literal  '/custom/path/file.php'  or  "/custom/..."
+  for (const [, phpPath] of src.matchAll(/['"`](custom\/[^'"`\s)]+\.php)['"`]/g)) {
+    found.add(phpPath);
+  }
+
+  // Pattern 4: anything containing /custom/*.php that wasn't caught above
+  for (const [, phpPath] of src.matchAll(/[/](custom\/[\w/-]+\.php)/g)) {
+    found.add(phpPath);
+  }
+
+  return [...found];
+}
+
+/**
+ * Walks the entire app/ directory, extracts every /custom/*.php call, and
+ * returns a map:  phpPath → { called_from: { routes, components, services } }
+ */
+function buildCustomPhp(appDir) {
+  const phpMap = new Map(); // phpPath → { routes: Set, components: Set, services: Set }
+
+  const categories = [
+    { dir: path.join(appDir, 'routes'),     label: 'routes' },
+    { dir: path.join(appDir, 'controllers'),label: 'routes' },   // controllers are part of their route
+    { dir: path.join(appDir, 'components'), label: 'components' },
+    { dir: path.join(appDir, 'services'),   label: 'services' },
+    { dir: path.join(appDir, 'templates'),  label: 'routes' },   // template JS or HBS
+  ];
+
+  for (const { dir, label } of categories) {
+    const files = walkDir(dir, (n) => /\.(js|ts|hbs)$/.test(n));
+    for (const filePath of files) {
+      const src = fs.readFileSync(filePath, 'utf8');
+      const phpPaths = extractCustomPhpCalls(src);
+      if (phpPaths.length === 0) continue;
+
+      // Derive a human-readable caller name from the file path
+      let callerName;
+      if (filePath.includes('/routes/') || filePath.includes('/controllers/') || filePath.includes('/templates/')) {
+        callerName = nameFromPath(filePath.replace('/controllers/', '/routes/').replace('/templates/', '/routes/'), appDir, 'routes');
+      } else if (filePath.includes('/components/')) {
+        callerName = nameFromPath(filePath, appDir, 'components');
+      } else if (filePath.includes('/services/')) {
+        callerName = nameFromPath(filePath, appDir, 'services');
+      } else {
+        callerName = path.relative(appDir, filePath);
+      }
+
+      for (const phpPath of phpPaths) {
+        if (!phpMap.has(phpPath)) {
+          phpMap.set(phpPath, { routes: new Set(), components: new Set(), services: new Set() });
+        }
+        phpMap.get(phpPath)[label].add(callerName);
+      }
+    }
+  }
+
+  // Convert Sets to sorted arrays and produce final structure
+  return [...phpMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([phpPath, callers]) => {
+      const entry = { path: phpPath };
+      const called_from = {};
+      if (callers.routes.size)     called_from.routes     = [...callers.routes].sort();
+      if (callers.components.size) called_from.components = [...callers.components].sort();
+      if (callers.services.size)   called_from.services   = [...callers.services].sort();
+      if (Object.keys(called_from).length) entry.called_from = called_from;
+      return entry;
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Section builders
+// ---------------------------------------------------------------------------
+
+function buildComponents(appDir, knownHelperNames, knownModifierNames) {
+  const componentDir = path.join(appDir, 'components');
+  const jsFiles = walkDir(componentDir, (n) => /\.(js|ts)$/.test(n));
+  const hbsFiles = walkDir(componentDir, (n) => /\.hbs$/.test(n));
+
+  const componentMap = new Map();
+  for (const jsFile of jsFiles) {
+    const slug = nameFromPath(jsFile, appDir, 'components');
+    componentMap.set(slug, { ...componentMap.get(slug), jsFile });
+  }
+  for (const hbsFile of hbsFiles) {
+    const slug = nameFromPath(hbsFile, appDir, 'components');
+    componentMap.set(slug, { ...componentMap.get(slug), hbsFile });
+  }
+
+  return [...componentMap.entries()].map(([slug, { jsFile, hbsFile }]) => {
+    const { trackedVars, getters, actions, functions, services } = parseJsFile(jsFile);
+    const { inheritedArgs, helpers, modifiers } = parseHbsFile(hbsFile, knownHelperNames, knownModifierNames);
+    return { slug, tracked_vars: trackedVars, inherited_args: inheritedArgs, getters, actions, functions, helpers, modifiers, services };
+  });
+}
+
+function buildRoutes(appDir, knownHelperNames, knownModifierNames) {
+  return walkDir(path.join(appDir, 'routes'), (n) => /\.(js|ts)$/.test(n)).map((jsFile) => {
+    const slug = nameFromPath(jsFile, appDir, 'routes');
+    const hbsFile = path.join(appDir, 'templates', slug.replace(/\/$/, '') + '.hbs');
+    const { trackedVars, getters, actions, functions, services, getVars } = parseJsFile(jsFile);
+    const { helpers, components } = parseHbsFile(hbsFile, knownHelperNames, knownModifierNames);
+    return { slug, tracked_vars: trackedVars, get_vars: getVars, getters, actions, functions, helpers, services, components };
+  });
+}
+
+function buildServices(appDir) {
+  return walkDir(path.join(appDir, 'services'), (n) => /\.(js|ts)$/.test(n)).map((jsFile) => {
+    const slug = nameFromPath(jsFile, appDir, 'services');
+    const { trackedVars, getters, actions, functions, services } = parseJsFile(jsFile);
+    return { slug, tracked_vars: trackedVars, getters, actions, functions, services };
+  });
+}
+
+function buildHelpers(appDir) {
+  return walkDir(path.join(appDir, 'helpers'), (n) => /\.(js|ts)$/.test(n)).map((jsFile) => {
+    const slug = nameFromPath(jsFile, appDir, 'helpers');
+    const src = fs.readFileSync(jsFile, 'utf8');
+    const sig = src.match(/function\s+\w*\s*\(\[([^\]]*)\](?:,\s*\{([^}]*)\})?\)/);
+    const posArgs = sig ? sig[1].split(',').map((s) => s.trim()).filter(Boolean).map((a) => ({ [toKebabCase(a)]: 'string' })) : [];
+    const namedArgs = sig && sig[2]
+      ? sig[2].split(',').map((s) => s.trim().split(/\s*=\s*/)[0]).filter(Boolean).map((a) => ({ [toKebabCase(a)]: 'string' }))
+      : [];
+    return { slug, args: [...posArgs, ...namedArgs], return: 'string' };
+  });
+}
+
+function buildModifiers(appDir) {
+  return walkDir(path.join(appDir, 'modifiers'), (n) => /\.(js|ts)$/.test(n)).map((jsFile) => {
+    const slug = nameFromPath(jsFile, appDir, 'modifiers');
+    const { services } = parseJsFile(jsFile);
+    return { slug, args: [], services };
+  });
+}
+
+
+// ---------------------------------------------------------------------------
+// Master types list
+// ---------------------------------------------------------------------------
+
+/**
+ * Collects every model-type slug used anywhere in store calls across
+ * routes, components, and services.
+ *
+ * Matches patterns like:
+ *   this.store.findRecord('post', id)
+ *   this.store.query('blog-post', { ... })
+ *   this.store.findAll('comment')
+ *   this.store.peekRecord('tag', id)
+ *   store.createRecord('attachment', { ... })
+ */
+function buildTypes(appDir) {
+  const typeSet = new Set();
+
+  const dirs = [
+    path.join(appDir, 'routes'),
+    path.join(appDir, 'controllers'),
+    path.join(appDir, 'components'),
+    path.join(appDir, 'services'),
+  ];
+
+  const storeCallRe = /(?:this\.)?store\.(?:findRecord|findAll|query|queryRecord|peekRecord|peekAll|createRecord|pushPayload|normalize)\(\s*['"`]([\w-]+)['"`]/g;
+
+  for (const dir of dirs) {
+    const files = walkDir(dir, (n) => /\.(js|ts)$/.test(n));
+    for (const filePath of files) {
+      const src = stripJsComments(fs.readFileSync(filePath, 'utf8'));
+      for (const [, typeName] of src.matchAll(storeCallRe)) {
+        typeSet.add(typeName);
+      }
+    }
+  }
+
+  return [...typeSet].sort().map((slug) => ({ slug }));
+}
+
+function compactJSON(value, indent = 2) {
+  function isLeafArray(arr) {
+    if (!Array.isArray(arr) || arr.length === 0) return false;
+    return arr.every((item) => {
+      if (typeof item === 'string') return true;
+      if (item && typeof item === 'object' && !Array.isArray(item)) {
+        const keys = Object.keys(item);
+        if (keys.length !== 1) return false;
+        const val = item[keys[0]];
+        // plain string value  OR  array-of-strings value (mixed actions entries)
+        if (typeof val === 'string') return true;
+        if (Array.isArray(val) && val.every((v) => typeof v === 'string')) return true;
+      }
+      return false;
+    });
+  }
+
+  function serialize(val, depth) {
+    const pad = ' '.repeat(indent * depth);
+    const childPad = ' '.repeat(indent * (depth + 1));
+
+    if (val === null) return 'null';
+    if (typeof val !== 'object') return JSON.stringify(val);
+
+    if (Array.isArray(val)) {
+      if (val.length === 0) return '[]';
+      if (isLeafArray(val)) {
+        const items = val.map((item) => {
+          if (typeof item === 'string') return JSON.stringify(item);
+          const k = Object.keys(item)[0];
+          const v = item[k];
+          if (Array.isArray(v)) {
+            return `{ ${JSON.stringify(k)}: [${v.map((s) => JSON.stringify(s)).join(', ')}] }`;
+          }
+          return `{ ${JSON.stringify(k)}: ${JSON.stringify(v)} }`;
+        });
+        return '[' + items.join(', ') + ']';
+      }
+      const items = val.map((item) => childPad + serialize(item, depth + 1));
+      return '[\n' + items.join(',\n') + '\n' + pad + ']';
+    }
+
+    const keys = Object.keys(val);
+    if (keys.length === 0) return '{}';
+    const entries = keys.map((k) => childPad + JSON.stringify(k) + ': ' + serialize(val[k], depth + 1));
+    return '{\n' + entries.join(',\n') + '\n' + pad + '}';
+  }
+
+  return serialize(value, 0);
+}
+
+function stripEmpty(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(stripEmpty);
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (Array.isArray(v) && v.length === 0) continue;
+      if (v !== null && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) continue;
+      out[k] = stripEmpty(v);
+    }
+    return out;
+  }
+  return obj;
+}
+
+function mergeByKey(existing, scanned, key) {
+  // Support migrating from old 'name'-keyed entries to new 'slug'-keyed entries.
+  // If an existing entry has no 'slug' but has a 'name', treat 'name' as the key.
+  const existingMap = new Map(existing.map((e) => [e[key] ?? e['name'], e]));
+  const scannedMap = new Map(scanned.map((s) => [s[key], s]));
+  const allKeys = new Set([...existingMap.keys(), ...scannedMap.keys()]);
+  return [...allKeys].map((k) => ({ ...(scannedMap.get(k) || {}) }));
+}
+
+
+
+(async () => {
+  const cwd = process.cwd();
+  const appDir = path.join(cwd, 'app');
+  const configDir = path.join(cwd, 'public');
+  const outputFile = path.join(configDir, 'storylang.json');
+
+  if (!fs.existsSync(appDir)) {
+    console.error(`Could not find app/ directory at ${appDir}. Make sure you are running from the folder of your Ember project.`);
+    process.exit(1);
+  }
+
+  console.log('Storylang — scanning project files…\n');
+
+  const helpers = buildHelpers(appDir);
+  const modifiers = buildModifiers(appDir);
+
+  // Build lookup sets so parseHbsFile can filter to only real helpers / modifiers
+  const knownHelperNames   = new Set(helpers.map((h) => h.slug));
+  const knownModifierNames = new Set(modifiers.map((m) => m.slug));
+
+  const components = buildComponents(appDir, knownHelperNames, knownModifierNames);
+  const routes     = buildRoutes(appDir, knownHelperNames, knownModifierNames);
+  const services   = buildServices(appDir);
+  const customPhp = buildCustomPhp(appDir);
+  const types      = buildTypes(appDir);
+
+  let existing = {};
+  if (fs.existsSync(outputFile)) {
+    try { existing = JSON.parse(fs.readFileSync(outputFile, 'utf8')); } catch (_) {}
+  }
+
+  const merged = {
+    routes:     mergeByKey(existing.routes     || [], routes,     'slug'),
+    services:   mergeByKey(existing.services   || [], services,   'slug'),
+    types:      mergeByKey(existing.types      || [], types,      'slug'),
+    helpers:    mergeByKey(existing.helpers    || [], helpers,    'slug'),
+    modifiers:  mergeByKey(existing.modifiers  || [], modifiers,  'slug'),
+    components: mergeByKey(existing.components || [], components, 'slug'),
+  };
+
+  if (!fs.existsSync(configDir)) fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(outputFile, compactJSON(stripEmpty(merged)) + '\n', 'utf8');
+
+  console.log(`✅  public/storylang.json updated`);
+  console.log(`    routes:      ${routes.length}`);
+  console.log(`    services:    ${services.length}`);
+  console.log(`    types:       ${types.length}`);
+  console.log(`    helpers:     ${helpers.length}`);
+  console.log(`    modifiers:   ${modifiers.length}`);
+  console.log(`    components:  ${components.length}`);
+})();

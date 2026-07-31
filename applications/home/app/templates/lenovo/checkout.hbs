@@ -1,0 +1,144 @@
+{{page-title "Mark End of Day"}}
+
+<div class="container-fluid px-3 pt-4 pb-5">
+
+  {{! ── Header ────────────────────────────────────────────────────────────── }}
+  <div class="d-flex align-items-center mb-3">
+    <button
+      type="button"
+      class="btn btn-link text-muted ps-0 me-2"
+      {{on "click" this.goBack}}
+    >
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <h2 class="fw-bold mb-0">End Of Day</h2>
+  </div>
+
+  {{! ── Already checked-out banner ───────────────────────────────────────── }}
+  {{#if this.hasCheckedOut}}
+    <div class="alert alert-success" role="alert">
+      <i class="fa-solid fa-circle-check me-2"></i>
+      You've already checked out for today.
+    </div>
+    <div class="d-grid">
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        {{on "click" this.goBack}}
+      >
+        Back to home
+      </button>
+    </div>
+  {{else}}
+
+    {{! ── Error ─────────────────────────────────────────────────────────── }}
+    {{#if this.errorMessage}}
+      <div
+        class="alert alert-danger py-2 small"
+        role="alert"
+      >{{this.errorMessage}}</div>
+    {{/if}}
+
+    {{! ── Sales summary ───────────────────────────────────────────────── }}
+    <div class="card mb-3">
+      <div class="card-body px-0">
+        <h6 class="fw-bold text-muted text-uppercase small mb-3">Today's sales
+          summary</h6>
+
+        {{#if this.aggregatedByLineItem.length}}
+          <div class="list-group list-group-flush mb-3">
+            {{#each this.aggregatedByLineItem as |entry|}}
+              <div
+                class="list-group-item d-flex justify-content-between align-items-center px-0 py-2"
+              >
+                <span class="small">{{entry.sku_title}}</span>
+                <span
+                  class="badge bg-primary rounded-pill"
+                >{{entry.quantity}}</span>
+              </div>
+            {{/each}}
+          </div>
+
+          <div class="row text-center g-2 mb-2">
+            <div class="col-6">
+              <div class="border rounded-2 py-2">
+                <div class="small text-muted">Unique SKUs</div>
+                <div
+                  class="fs-4 fw-bold text-primary"
+                >{{this.aggregatedByLineItem.length}}</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="border rounded-2 py-2">
+                <div class="small text-muted">Total units</div>
+                <div class="fs-4 fw-bold text-primary">{{this.totalUnits}}</div>
+              </div>
+            </div>
+          </div>
+        {{else}}
+          <p class="text-muted small mb-0">You haven't recorded any sales today.</p>
+        {{/if}}
+      </div>
+    </div>
+
+    {{! ── Warning ────────────────────────────────────────────────────────── }}
+    <div class="alert alert-warning" role="alert">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i>
+      <strong>Heads up:</strong>
+      Once you mark end-of-day, you cannot change today's SKUs or quantities. Please
+      review the list above carefully.
+    </div>
+
+    {{! ── Add / edit gateway ─────────────────────────────────────────────── }}
+    <div class="d-grid mb-3">
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        {{on "click" this.goToSales}}
+      >
+        <i class="fa-solid fa-pen me-2"></i>Edit sales before end-of-day
+      </button>
+    </div>
+
+    {{! ── Confirmation ──────────────────────────────────────────────────── }}
+    <div class="form-check mb-3">
+      <input
+        type="checkbox"
+        class="form-check-input"
+        id="lenovoCheckoutConfirm"
+        checked={{this.confirmed}}
+        {{on "change" this.toggleConfirmed}}
+      />
+      <label class="form-check-label" for="lenovoCheckoutConfirm">
+        I understand that today's sales will be locked and cannot be edited
+        after I mark end-of-day.
+      </label>
+    </div>
+
+    {{! ── Submit ─────────────────────────────────────────────────────────── }}
+    <div class="d-grid">
+      <button
+        type="button"
+        class="btn btn-danger btn-lg fw-bold"
+        disabled={{or (not this.confirmed) this.isSaving this.isLocating}}
+        {{on "click" this.checkout}}
+      >
+        {{#if this.isLocating}}
+          <span class="spinner-border spinner-border-sm me-2"></span>Getting
+          location…
+        {{else if this.isSaving}}
+          <span class="spinner-border spinner-border-sm me-2"></span>Checking
+          out…
+        {{else}}
+          <i class="fa-solid fa-flag-checkered me-2"></i>Confirm End Of Day
+        {{/if}}
+      </button>
+    </div>
+
+    <div class="form-text text-muted text-center mt-2 small">
+      <i class="fa-solid fa-circle-info me-1"></i>
+      Your end-of-day location will be captured automatically.
+    </div>
+  {{/if}}
+
+</div>

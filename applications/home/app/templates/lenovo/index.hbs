@@ -1,0 +1,134 @@
+{{page-title "Lenovo Home"}}
+
+<div class="container-fluid px-3 pt-4">
+
+  {{! ── Greeting + logout ─────────────────────────────────────────────────── }}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <p class="text-muted mb-0 small">Welcome back,</p>
+      <h2 class="fw-bold mb-0">{{@model.ba.modules.title}}</h2>
+    </div>
+    <button
+      type="button"
+      class="btn btn-outline-secondary btn-sm"
+      {{on "click" this.lenovoSessionAuth.logout}}
+    >
+      Logout
+      <i class="fa-solid fa-right-from-bracket ms-1"></i>
+    </button>
+  </div>
+
+  {{! ── Today's status card ───────────────────────────────────────────────── }}
+  <div class="card mb-4">
+    <div class="px-0 card-body">
+      <h6 class="fw-bold text-muted text-uppercase small mb-3">Today</h6>
+
+      {{#if this.hasCheckedOut}}
+        <div class="alert alert-success py-2 small mb-3">
+          <i class="fa-solid fa-circle-check me-1"></i>
+          You've marked end-of-day. Sales are now locked.
+        </div>
+      {{else if this.hasCheckedIn}}
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="fa-solid fa-clock me-1"></i>
+          Checked in. Record your sales as you make them.
+        </div>
+      {{else}}
+        <div class="alert alert-warning py-2 small mb-3">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>
+          You haven't checked in yet today.
+        </div>
+      {{/if}}
+
+      {{! ── Sales summary (visible after check-in) ─────────────────────── }}
+      {{#if this.hasCheckedIn}}
+        <div class="row text-center g-2 mb-3">
+          <div class="col-6">
+            <div class="border rounded-2 py-2">
+              <div class="small text-muted">Line items</div>
+              <div
+                class="fs-4 fw-bold text-primary"
+              >{{this.totalLineItemsToday}}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="border rounded-2 py-2">
+              <div class="small text-muted">Units sold</div>
+              <div
+                class="fs-4 fw-bold text-primary"
+              >{{this.totalUnitsSoldToday}}</div>
+            </div>
+          </div>
+        </div>
+      {{/if}}
+
+      {{! ── Action buttons ────────────────────────────────────────────── }}
+      <div class="d-grid gap-2">
+        {{#unless this.hasCheckedIn}}
+          <button
+            type="button"
+            class="btn btn-primary btn-lg fw-bold"
+            {{on "click" this.goToCheckin}}
+          >
+            <i class="fa-solid fa-location-crosshairs me-2"></i>Daily Check-In
+          </button>
+        {{/unless}}
+
+        {{#if (and this.hasCheckedIn (not this.hasCheckedOut))}}
+          <button
+            type="button"
+            class="btn btn-primary btn-lg fw-bold"
+            {{on "click" this.goToSales}}
+          >
+            <i class="fa-solid fa-calculator me-2"></i>Record a Sale
+          </button>
+        {{/if}}
+
+        {{#if this.hasCheckedOut}}
+          <button type="button" class="btn btn-outline-secondary" disabled>
+            <i class="fa-solid fa-lock me-2"></i>Day complete
+          </button>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+
+  {{! ── Today's sales list (read-only on the dashboard) ───────────────────── }}
+  {{#if this.hasCheckedIn}}
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h6 class="fw-bold text-muted text-uppercase small mb-0">Today's Sales</h6>
+      <span
+        class="badge bg-secondary rounded-pill small"
+      >{{this.totalLineItemsToday}}</span>
+    </div>
+
+    {{#if this.todaysSales.length}}
+      <div class="list-group mb-4">
+        {{#each this.todaysSales as |s|}}
+          <div
+            class="list-group-item d-flex justify-content-between align-items-center py-3"
+          >
+            <div class="me-2">
+              <p class="fw-medium mb-0 small">{{s.sku_title}}</p>
+            </div>
+            <span class="badge bg-primary rounded-pill">{{s.quantity}}</span>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <p class="text-muted small">No sales recorded yet.</p>
+    {{/if}}
+  {{/if}}
+  <div class="d-grid gap-2">
+    {{#if (and this.hasCheckedIn (not this.hasCheckedOut))}}
+      <button
+        type="button"
+        class="btn btn-danger btn-lg fw-bold my-4"
+        {{on "click" this.goToCheckout}}
+      >
+        <i class="fa-solid fa-flag-checkered me-2"></i>Mark End Of Day
+      </button>
+    {{/if}}
+  </div>
+
+</div>

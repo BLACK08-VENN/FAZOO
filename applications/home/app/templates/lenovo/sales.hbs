@@ -1,0 +1,157 @@
+{{page-title "Record a Sale"}}
+
+<div class="container-fluid px-3 pt-4 pb-5">
+
+  {{! ── Header ────────────────────────────────────────────────────────────── }}
+  <div class="d-flex align-items-center mb-3">
+    <button
+      type="button"
+      class="btn btn-link text-muted ps-0 me-2"
+      {{on "click" this.goHome}}
+    >
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+    <h2 class="fw-bold mb-0">Record a Sale</h2>
+  </div>
+
+  {{! ── Read-only banner (after checkout) ────────────────────────────────── }}
+  {{#if this.isReadOnly}}
+    <div class="alert alert-warning" role="alert">
+      <i class="fa-solid fa-lock me-2"></i>
+      Today's sales are locked because you've already checked out.
+    </div>
+  {{/if}}
+
+  {{! ── Error ─────────────────────────────────────────────────────────────── }}
+  {{#if this.errorMessage}}
+    <div
+      class="alert alert-danger py-2 small"
+      role="alert"
+    >{{this.errorMessage}}</div>
+  {{/if}}
+
+  {{! ── Add / edit form ───────────────────────────────────────────────────── }}
+  {{#unless this.isReadOnly}}
+    <div class="card mb-4">
+      <div class="px-0 card-body">
+        <h6 class="fw-bold text-muted text-uppercase small mb-3">
+          {{if this.isEditing "Edit sale line" "Add a sale"}}
+        </h6>
+
+        <div class="mb-3">
+          <label class="form-label fw-medium">SKU
+            <span class="text-danger">*</span></label>
+          <div class="form-control p-0 border-0">
+            <PowerSelect
+              @options={{@model.skus}}
+              @selected={{this.selectedSku}}
+              @onChange={{this.onSkuChange}}
+              @searchEnabled={{true}}
+              @searchField="modules.title"
+              @searchPlaceholder="Type to search SKUs…"
+              @placeholder="Pick a SKU…"
+              @noMatchesMessage="No SKUs found"
+              as |sku|
+            >
+              <span class="d-block fw-medium lh-sm">{{sku.modules.title}}</span>
+            </PowerSelect>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-medium">Quantity
+            <span class="text-danger">*</span></label>
+          <input
+            type="number"
+            class="form-control"
+            min="1"
+            placeholder="e.g. 2"
+            value={{this.quantity}}
+            {{on "input" this.onQuantityChange}}
+          />
+        </div>
+
+        <div class="d-flex gap-2">
+          {{#if this.isEditing}}
+            <button
+              type="button"
+              class="btn btn-outline-secondary flex-fill"
+              disabled={{this.isSaving}}
+              {{on "click" this.cancelEdit}}
+            >
+              Cancel
+            </button>
+          {{/if}}
+          <button
+            type="button"
+            class="btn btn-primary flex-fill fw-bold"
+            disabled={{this.isSaving}}
+            {{on "click" this.submitSale}}
+          >
+            {{#if this.isSaving}}
+              <span class="spinner-border spinner-border-sm me-2"></span>Saving…
+            {{else if this.isEditing}}
+              <i class="fa-solid fa-check me-2"></i>Update Sale
+            {{else}}
+              <i class="fa-solid fa-plus me-2"></i>Add Sale
+            {{/if}}
+          </button>
+        </div>
+      </div>
+    </div>
+  {{/unless}}
+
+  {{! ── Today's sales list ────────────────────────────────────────────────── }}
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h6 class="fw-bold text-muted text-uppercase small mb-0">Today's Sales</h6>
+    <span
+      class="badge bg-secondary rounded-pill small"
+    >{{this.sales.length}}</span>
+  </div>
+
+  {{#if this.sales.length}}
+    <div class="list-group mb-4">
+      {{#each this.sales as |entry index|}}
+        <div
+          class="list-group-item d-flex justify-content-between align-items-center py-3"
+        >
+          <div class="me-2 flex-grow-1">
+            <p class="fw-medium mb-0 small">{{entry.sku_title}}</p>
+            <small class="text-muted">Qty:
+              <span class="fw-bold">{{entry.quantity}}</span></small>
+          </div>
+          {{#unless this.isReadOnly}}
+            <div class="d-flex gap-1 flex-shrink-0">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                disabled={{this.isSaving}}
+                {{on "click" (fn this.startEdit entry index)}}
+              >
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                disabled={{this.isSaving}}
+                {{on "click" (fn this.removeSale index)}}
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          {{/unless}}
+        </div>
+      {{/each}}
+
+      <div
+        class="list-group-item d-flex justify-content-between align-items-center bg-light"
+      >
+        <span class="fw-bold">Total units</span>
+        <span class="fw-bold text-primary">{{this.totalUnits}}</span>
+      </div>
+    </div>
+  {{else}}
+    <p class="text-muted small">No sales recorded yet today.</p>
+  {{/if}}
+
+</div>

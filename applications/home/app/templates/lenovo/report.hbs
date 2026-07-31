@@ -1,0 +1,622 @@
+{{! app/templates/lenovo/report.hbs }}
+{{page-title 'Reports — Lenovo Admin'}}
+
+{{! ═══════════════════════════════════════════════ Log detail modal }}
+<div
+  class='modal fade'
+  id='logModal'
+  tabindex='-1'
+  aria-labelledby='logModalLabel'
+  aria-hidden='true'
+>
+  <div class='modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable'>
+    <div class='modal-content border-0 shadow-lg' style='border-radius:1rem;overflow:hidden'>
+
+      {{#if this.selectedLog}}
+
+        {{! ── Photo slideshow ──────────────────────────────────────────────── }}
+        <div class='ba-slideshow position-relative' style='min-height:280px'>
+
+          {{#if this.currentSlide}}
+            <div class='ba-slide active'>
+              {{#if this.isImage}}
+                <img
+                  src={{this.currentSlide}}
+                  alt='Check-in photo'
+                  class='ba-slide-media'
+                />
+              {{else}}
+                <video
+                  src={{this.currentSlide}}
+                  class='ba-slide-media'
+                  controls
+                  preload='metadata'
+                ></video>
+              {{/if}}
+
+              {{! Label overlay (Stock on shelf / Uniform) }}
+              {{#if this.selectedLogMediaLabelled.length}}
+                {{#each this.selectedLogMediaLabelled as |item i|}}
+                  {{#if (eq i this.slideIndex)}}
+                    <div
+                      class='badge bg-dark position-absolute'
+                      style='bottom:36px;left:12px;font-size:0.75rem;opacity:0.85'
+                    >
+                      {{item.label}}
+                    </div>
+                  {{/if}}
+                {{/each}}
+              {{/if}}
+            </div>
+
+            {{#if (gt this.modalSlides.length 1)}}
+              <button
+                type='button'
+                class='ba-carousel-btn ba-carousel-prev'
+                disabled={{eq this.slideIndex 0}}
+                {{on 'click' this.prevSlide}}
+              >
+                <i class='fa-solid fa-chevron-left'></i>
+              </button>
+              <button
+                type='button'
+                class='ba-carousel-btn ba-carousel-next'
+                disabled={{eq this.slideIndex (sub this.modalSlides.length 1)}}
+                {{on 'click' this.nextSlide}}
+              >
+                <i class='fa-solid fa-chevron-right'></i>
+              </button>
+              <div class='ba-carousel-indicators'>
+                {{#each this.modalSlides as |_ i|}}
+                  <button
+                    type='button'
+                    class='ba-carousel-dot {{if (eq this.slideIndex i) "active"}}'
+                    {{on 'click' (fn this.goToSlide i)}}
+                  ></button>
+                {{/each}}
+              </div>
+            {{/if}}
+
+            <span
+              class='badge bg-dark position-absolute'
+              style='top:10px;right:44px;opacity:0.75;font-size:0.7rem'
+            >
+              {{add this.slideIndex 1}} / {{this.modalSlides.length}}
+            </span>
+
+          {{else}}
+            <div class='d-flex flex-column align-items-center justify-content-center h-100 text-white-50 py-5'>
+              <i class='fa-solid fa-images fa-3x mb-3'></i>
+              <span class='small'>No check-in photos recorded</span>
+            </div>
+          {{/if}}
+
+          <button
+            type='button'
+            class='btn-close btn-close-white position-absolute'
+            style='top:10px;right:10px;z-index:20'
+            aria-label='Close'
+            {{on 'click' this.closeModal}}
+          ></button>
+        </div>
+
+        {{! ── Log detail body ─────────────────────────────────────────────── }}
+        <div class='modal-body px-4 py-3'>
+
+          <div class='d-flex align-items-start justify-content-between gap-2 mb-3'>
+            <div>
+              <h5 class='fw-bold mb-0' id='logModalLabel'>
+                {{this.selectedLogBaTitle}}
+              </h5>
+              <p class='text-muted small mb-0'>
+                {{this.selectedLog.modules.title}}
+              </p>
+            </div>
+            {{#if this.selectedLog.modules.checkout_datetime}}
+              <span class='badge bg-success flex-shrink-0' style='font-size:0.8rem'>
+                Checked Out
+              </span>
+            {{else}}
+              <span class='badge bg-warning text-dark flex-shrink-0' style='font-size:0.8rem'>
+                Open Day
+              </span>
+            {{/if}}
+          </div>
+
+          <div class='row g-3 small'>
+
+            <div class='col-6 col-md-3'>
+              <p class='text-muted text-uppercase fw-bold mb-1' style='font-size:0.65rem'>Check-in</p>
+              <p class='mb-0 fw-medium'>{{this.selectedLogCheckinTime}}</p>
+            </div>
+
+            <div class='col-6 col-md-3'>
+              <p class='text-muted text-uppercase fw-bold mb-1' style='font-size:0.65rem'>Check-out</p>
+              <p class='mb-0 fw-medium'>{{this.selectedLogCheckoutTime}}</p>
+            </div>
+
+            <div class='col-6 col-md-3'>
+              <p class='text-muted text-uppercase fw-bold mb-1' style='font-size:0.65rem'>Total Units</p>
+              <p class='mb-0 fw-bold text-success fs-5'>{{this.selectedLogTotalUnits}}</p>
+            </div>
+
+            <div class='col-6 col-md-3'>
+              <p class='text-muted text-uppercase fw-bold mb-1' style='font-size:0.65rem'>SKU Lines</p>
+              <p class='mb-0 fw-medium'>{{this.selectedLogSales.length}}</p>
+            </div>
+
+            {{#if this.selectedLog.modules.checkin_latitude}}
+              <div class='col-12'>
+                <p class='text-muted text-uppercase fw-bold mb-1' style='font-size:0.65rem'>GPS Check-in</p>
+                <a
+                  href='https://www.google.com/maps?q={{this.selectedLog.modules.checkin_latitude}},{{this.selectedLog.modules.checkin_longitude}}'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  class='font-monospace small'
+                  style='font-size:0.78rem'
+                >
+                  {{this.selectedLog.modules.checkin_latitude}},
+                  {{this.selectedLog.modules.checkin_longitude}}
+                  <i class='fa-solid fa-arrow-up-right-from-square ms-1' style='font-size:0.65rem'></i>
+                </a>
+              </div>
+            {{/if}}
+
+            {{#if this.selectedLog.modules.notes}}
+              <div class='col-12'>
+                <p class='text-muted text-uppercase fw-bold mb-1' style='font-size:0.65rem'>Notes</p>
+                <p class='mb-0'>{{this.selectedLog.modules.notes}}</p>
+              </div>
+            {{/if}}
+
+          </div>
+
+          {{! ── Sales breakdown inside modal ─────────────────────────── }}
+          {{#if this.selectedLogSales.length}}
+            <hr class='my-3'>
+            <p class='text-muted text-uppercase fw-bold mb-2' style='font-size:0.65rem'>Sales Line Items</p>
+            <table class='table table-sm table-bordered mb-0 small'>
+              <thead class='table-light'>
+                <tr>
+                  <th>SKU</th>
+                  <th class='text-center' style='width:80px'>Units</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each this.selectedLogSales as |s|}}
+                  <tr>
+                    <td>{{s.sku_title}}</td>
+                    <td class='text-center fw-bold'>{{s.quantity}}</td>
+                  </tr>
+                {{/each}}
+              </tbody>
+              <tfoot class='table-light'>
+                <tr>
+                  <td class='fw-bold text-end'>Total</td>
+                  <td class='text-center fw-bold text-success'>{{this.selectedLogTotalUnits}}</td>
+                </tr>
+              </tfoot>
+            </table>
+          {{else}}
+            <p class='text-muted small mt-3 mb-0'>No sales recorded for this day.</p>
+          {{/if}}
+
+        </div>
+
+        <div class='modal-footer border-0 pt-0'>
+          <button type='button' class='btn btn-outline-secondary btn-sm' {{on 'click' this.closeModal}}>
+            Close
+          </button>
+        </div>
+
+      {{/if}}
+    </div>
+  </div>
+</div>
+
+{{! ═══════════════════════════════════════════════════ Photo offcanvas }}
+<div
+  class='offcanvas offcanvas-end'
+  tabindex='-1'
+  id='photoOffcanvas'
+  aria-labelledby='photoOffcanvasLabel'
+  style='width:380px'
+>
+  <div class='offcanvas-header border-bottom'>
+    <div>
+      <h6 class='offcanvas-title fw-bold mb-0' id='photoOffcanvasLabel'>
+        {{#if this.selectedRowForPhotos}}
+          {{this.selectedRowForPhotos.baTitle}}
+        {{else}}
+          Photos
+        {{/if}}
+      </h6>
+      {{#if this.selectedRowForPhotos}}
+        <p class='text-muted mb-0' style='font-size:0.75rem'>
+          {{this.selectedRowForPhotos.checkinDate}}
+          &middot;
+          {{this.selectedRowForPhotos.mediaLinks.length}}
+          {{if (eq this.selectedRowForPhotos.mediaLinks.length 1) 'photo' 'photos'}}
+        </p>
+      {{/if}}
+    </div>
+    <button
+      type='button'
+      class='btn-close'
+      aria-label='Close'
+      {{on 'click' this.closePhotos}}
+    ></button>
+  </div>
+
+  <div class='offcanvas-body p-3'>
+    {{#if this.selectedRowForPhotos}}
+      <div class='d-flex flex-column gap-3'>
+        {{#each this.selectedRowForPhotos.mediaLinks as |url i|}}
+          <div>
+            <p class='text-muted text-uppercase fw-bold mb-1' style='font-size:0.65rem'>
+              {{if (eq i 0) 'Stock on shelf' (if (eq i 1) 'Uniform' (concat 'Photo ' (add i 1)))}}
+            </p>
+            <img
+              src={{url}}
+              alt={{if (eq i 0) 'Stock on shelf' (if (eq i 1) 'Uniform' (concat 'Photo ' (add i 1)))}}
+              class='img-fluid rounded shadow-sm w-100'
+              style='object-fit:cover;max-height:260px;cursor:pointer'
+              {{on 'click' (fn this.openLog this.selectedRowForPhotos.raw)}}
+            />
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+  </div>
+</div>
+
+{{! ═══════════════════════════════════════════════════════ Main page }}
+<div class='min-vh-100' style='background:#F0F4FF'>
+
+  {{! ── Navbar ──────────────────────────────────────────────────────────── }}
+  <nav class='navbar px-4 py-3 shadow-sm' style='background:#E3001B'>
+    <a class='navbar-brand fw-bold fs-5 text-white' href='/lenovo/report'>
+      <i class='fa-solid fa-chart-bar me-2'></i>Lenovo — Admin
+    </a>
+    <div class='d-flex align-items-center gap-3'>
+      <span class='text-white small opacity-75'>{{this.adminAuth.currentAdmin.modules.title}}</span>
+      <button
+        type='button'
+        class='btn btn-outline-light btn-sm'
+      >
+        <i class='fa-solid fa-right-from-bracket me-1'></i>Sign Out
+      </button>
+    </div>
+  </nav>
+
+  <div class='container-xl py-4 px-4'>
+
+    {{! ── Page header ─────────────────────────────────────────────────── }}
+    <div class='d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4'>
+      <div>
+        <h4 class='fw-bold mb-0'>BA Activity Reports</h4>
+        <p class='text-muted small mb-0'>Lenovo daily logs — sales, check-ins & photos</p>
+      </div>
+      <button
+        type='button'
+        class='btn btn-success btn-sm fw-bold'
+        {{on 'click' this.exportCsv}}
+      >
+        <i class='fa-solid fa-file-csv me-1'></i>Export CSV
+      </button>
+    </div>
+
+    {{! ── Filters ─────────────────────────────────────────────────────── }}
+    <div class='card mb-4'>
+      <div class='card-body py-3'>
+        <div class='d-flex flex-wrap align-items-center gap-3'>
+
+          {{! Quick-range buttons }}
+          <div class='d-flex gap-2 flex-wrap'>
+            <span class='text-muted small align-self-center fw-medium'>Quick:</span>
+            <button type='button' class='btn btn-outline-secondary btn-sm' {{on 'click' (fn this.setQuickRange 7)}}>
+              Last 7 days
+            </button>
+            <button type='button' class='btn btn-outline-secondary btn-sm' {{on 'click' (fn this.setQuickRange 30)}}>
+              Last 30 days
+            </button>
+            <button type='button' class='btn btn-outline-secondary btn-sm' {{on 'click' (fn this.setQuickRange 90)}}>
+              Last 90 days
+            </button>
+          </div>
+
+          <div class='vr d-none d-md-block'></div>
+
+          {{! Custom date range }}
+          <div class='d-flex align-items-center gap-2 flex-wrap'>
+            <label class='text-muted small fw-medium mb-0'>From</label>
+            <input
+              type='date'
+              class='form-control form-control-sm'
+              style='width:160px'
+              value={{this.dateFrom}}
+              {{on 'change' this.setDateFrom}}
+            />
+            <label class='text-muted small fw-medium mb-0'>To</label>
+            <input
+              type='date'
+              class='form-control form-control-sm'
+              style='width:160px'
+              value={{this.dateTo}}
+              {{on 'change' this.setDateTo}}
+            />
+          </div>
+
+          <div class='vr d-none d-md-block'></div>
+
+          {{! BA filter }}
+          <div class='d-flex align-items-center gap-2'>
+            <label class='text-muted small fw-medium mb-0'>BA</label>
+            <select
+              class='form-select form-select-sm'
+              style='width:180px'
+              value={{this.selectedBaId}}
+              {{on 'change' this.setBaFilter}}
+            >
+              <option value=''>All BAs</option>
+              {{#each @model.bas as |ba|}}
+                <option value={{ba.id}}>{{ba.modules.title}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <span class='badge bg-primary rounded-pill ms-auto'>
+            {{this.filteredLogs.length}} logs
+          </span>
+
+        </div>
+      </div>
+    </div>
+
+    {{! ── KPI cards ───────────────────────────────────────────────────── }}
+    <div class='row g-3 mb-4'>
+
+      <div class='col-6 col-lg-3'>
+        <div class='card h-100'>
+          <div class='card-body'>
+            <p class='text-muted small mb-1 text-uppercase fw-bold' style='font-size:0.7rem'>BA-Days in Range</p>
+            <h2 class='fw-bold mb-0' style='color:#E3001B'>{{this.totalLogDays}}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class='col-6 col-lg-3'>
+        <div class='card h-100'>
+          <div class='card-body'>
+            <p class='text-muted small mb-1 text-uppercase fw-bold' style='font-size:0.7rem'>Units Sold</p>
+            <h2 class='fw-bold text-success mb-0'>{{this.totalUnitsSold}}</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class='col-6 col-lg-3'>
+        <div class='card h-100'>
+          <div class='card-body'>
+            <p class='text-muted small mb-1 text-uppercase fw-bold' style='font-size:0.7rem'>Completed Days</p>
+            <h2 class='fw-bold text-info mb-0'>{{this.totalCheckouts}}</h2>
+            <p class='text-muted mb-0' style='font-size:0.72rem'>out of {{this.totalLogDays}}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class='col-6 col-lg-3'>
+        <div class='card h-100'>
+          <div class='card-body'>
+            <p class='text-muted small mb-1 text-uppercase fw-bold' style='font-size:0.7rem'>Active BAs</p>
+            <h2 class='fw-bold text-warning mb-0'>{{this.activeBaCount}}</h2>
+            <p class='text-muted mb-0' style='font-size:0.72rem'>of {{@model.bas.length}} registered</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    {{! ── Top row: daily log table + SKU leaderboard ──────────────────── }}
+    <div class='row g-4 mb-4'>
+
+      {{! ── Daily log table }}
+      <div class='col-lg-7'>
+        <div class='card h-100'>
+          <div class='card-header bg-white fw-bold border-bottom py-3'>
+            <i class='fa-solid fa-calendar-days me-2 text-primary'></i>Daily Logs in Range
+          </div>
+          <div class='card-body p-0' style='overflow-y:auto;max-height:480px'>
+            {{#if this.filteredLogsDecorated.length}}
+              <table class='table table-hover mb-0 align-middle small'>
+                <thead class='table-light sticky-top'>
+                  <tr>
+                    <th>Date</th>
+                    <th>BA</th>
+                    <th class='text-center'>In</th>
+                    <th class='text-center'>Out</th>
+                    <th class='text-center'>Units</th>
+                    <th class='text-center'>Photos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{#each this.filteredLogsDecorated as |row|}}
+                    <tr style='cursor:pointer' {{on 'click' (fn this.openLog row.raw)}}>
+                      {{! FIX: use pre-computed row.checkinDate instead of {{slice … 0 10}}
+                      <td class='text-nowrap fw-medium'>{{row.checkinDate}}</td>
+                      <td>{{row.baTitle}}</td>
+                      <td class='text-center text-nowrap'>
+                        <span class='badge bg-success-subtle text-success'>{{row.checkinTime}}</span>
+                      </td>
+                      <td class='text-center text-nowrap'>
+                        {{#if row.hasCheckedOut}}
+                          <span class='badge bg-secondary-subtle text-secondary'>{{row.checkoutTime}}</span>
+                        {{else}}
+                          <span class='badge bg-warning-subtle text-warning'>Open</span>
+                        {{/if}}
+                      </td>
+                      <td class='text-center fw-bold {{if row.totalUnits "text-success" "text-muted"}}'>
+                        {{row.totalUnits}}
+                      </td>
+                      <td class='text-center'>
+                        {{#if row.mediaLinks.length}}
+                          <div
+                            class='media-links d-inline-flex align-items-center gap-1 px-2 py-1 rounded'
+                            style='cursor:pointer;background:rgba(13,110,253,0.08)'
+                            role='button'
+                            aria-label='View photos'
+                            {{on 'click' (fn this.openPhotos row)}}
+                          >
+                            <i class='fa-solid fa-images text-primary'></i>
+                            <span class='text-primary fw-medium' style='font-size:0.72rem'>{{row.mediaLinks.length}}</span>
+                          </div>
+                        {{else}}
+                          <i class='fa-regular fa-image text-muted'></i>
+                        {{/if}}
+                      </td>
+                    </tr>
+                  {{/each}}
+                </tbody>
+                <tfoot class='table-light'>
+                  <tr>
+                    <td colspan='4' class='fw-bold text-end'>Total Units</td>
+                    <td class='text-center fw-bold text-success'>{{this.totalUnitsSold}}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            {{else}}
+              <div class='text-center py-5 text-muted'>
+                <i class='fa-solid fa-calendar-xmark fa-2x mb-2 d-block'></i>
+                No logs for this date range.
+              </div>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+
+      {{! ── SKU leaderboard }}
+      <div class='col-lg-5'>
+        <div class='card h-100'>
+          <div class='card-header bg-white fw-bold border-bottom py-3 d-flex align-items-center justify-content-between'>
+            <span><i class='fa-solid fa-ranking-star me-2 text-warning'></i>Units by SKU</span>
+            <span class='badge bg-secondary rounded-pill'>{{this.skuLeaderboard.length}} SKUs</span>
+          </div>
+          <div class='card-body p-0' style='overflow-y:auto;max-height:480px'>
+            {{#if this.skuLeaderboard.length}}
+              <table class='table table-hover mb-0 small'>
+                <thead class='table-light sticky-top'>
+                  <tr>
+                    <th>#</th>
+                    <th>SKU</th>
+                    <th class='text-center'>Units</th>
+                    <th class='text-center'>Logs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{#each this.skuLeaderboard as |entry i|}}
+                    <tr>
+                      <td class='text-muted fw-medium'>{{add i 1}}</td>
+                      <td class='fw-medium'>{{entry.sku_title}}</td>
+                      <td class='text-center'>
+                        <span class='badge rounded-pill' style='background:#E3001B'>{{entry.quantity}}</span>
+                      </td>
+                      <td class='text-center text-muted'>{{entry.logCount}}</td>
+                    </tr>
+                  {{/each}}
+                </tbody>
+                <tfoot class='table-light'>
+                  <tr>
+                    <td colspan='2' class='fw-bold text-end'>Total</td>
+                    <td class='text-center fw-bold text-success'>{{this.totalUnitsSold}}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            {{else}}
+              <p class='text-muted text-center py-4 mb-0'>No sales in this period.</p>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    {{! ── BA performance summary ───────────────────────────────────────── }}
+    <div class='card mb-4'>
+      <div class='card-header bg-white fw-bold border-bottom py-3'>
+        <i class='fa-solid fa-user-group me-2 text-primary'></i>BA Performance — in Range
+      </div>
+      <div class='card-body p-0'>
+        {{#if this.baSummary.length}}
+          <table class='table table-hover mb-0 small'>
+            <thead class='table-light'>
+              <tr>
+                <th>#</th>
+                <th>BA ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th class='text-center'>Days Logged</th>
+                <th class='text-center'>Days Complete</th>
+                <th class='text-center'>Units Sold</th>
+                <th class='text-center'>Completion Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each this.baSummary as |entry|}}
+                <tr>
+                  <td>
+                    {{#if entry.ba.modules.cover_url}}
+                      <img
+                        src={{entry.ba.modules.cover_url}}
+                        alt={{entry.ba.modules.title}}
+                        class='rounded-circle'
+                        style='width:36px;height:36px;object-fit:cover'
+                      />
+                    {{else}}
+                      <div
+                        class='rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white'
+                        style='width:36px;height:36px;font-size:0.8rem'
+                      >
+                        <i class='fa-solid fa-user'></i>
+                      </div>
+                    {{/if}}
+                  </td>
+                  <td class='fw-medium align-middle'>{{entry.ba.id}}</td>
+                  <td class='fw-medium align-middle'>{{entry.ba.modules.title}}</td>
+                  <td class='text-muted align-middle'>{{entry.ba.modules.phone}}</td>
+                  <td class='text-center align-middle'>{{entry.logCount}}</td>
+                  <td class='text-center align-middle'>
+                    <span class='{{if entry.isComplete "text-success fw-bold" "text-muted"}}'>
+                      {{entry.checkoutCount}}
+                    </span>
+                  </td>
+                  <td class='text-center align-middle fw-bold {{if entry.totalUnits "text-success" "text-muted"}}'>
+                    {{entry.totalUnits}}
+                  </td>
+                  <td class='text-center align-middle'>
+                    {{#if entry.logCount}}
+                      <div class='progress' style='height:6px;width:80px;margin:auto'>
+                        <div
+                          class='progress-bar {{if entry.isComplete "bg-success" "bg-warning"}}'
+                          style='width:{{entry.completionPct}}%'
+                        ></div>
+                      </div>
+                      <span class='text-muted' style='font-size:0.72rem'>
+                        {{entry.completionPct}}%
+                      </span>
+                    {{else}}
+                      —
+                    {{/if}}
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        {{else}}
+          <p class='text-muted text-center py-4 mb-0'>No BA activity in this period.</p>
+        {{/if}}
+      </div>
+    </div>
+
+  </div>
+</div>

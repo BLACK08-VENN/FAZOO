@@ -1,0 +1,50 @@
+{{page-title 'Fazoo Admin — Login'}}
+
+<div class='min-vh-100 d-flex align-items-center justify-content-center' style='background: linear-gradient(160deg, #1C0D2E 0%, #5A1E82 100%)'>
+  <div class='card shadow-lg' style='width: 100%; max-width: 420px'>
+    <div class='card-body p-5'>
+      <div class='text-center mb-4'>
+        <h1 class='display-6 fw-bold text-primary mb-1'>Fazoo</h1>
+        <p class='text-muted small'>Admin Portal — VEDA Activation</p>
+      </div>
+
+      {{#if this.errorMessage}}
+        <div class='alert alert-danger py-2 small'>{{this.errorMessage}}</div>
+      {{/if}}
+
+      <div class='mb-3'>
+        <label class='form-label fw-medium'>Mobile Number</label>
+        <Input
+          class='form-control form-control-lg'
+          @type='tel'
+          @value={{this.phone}}
+          placeholder='e.g. +254712345678'
+        />
+      </div>
+
+      <div class='mb-4'>
+        <label class='form-label fw-medium'>Password</label>
+        <Input
+          class='form-control form-control-lg'
+          @type='password'
+          @value={{this.password}}
+          placeholder='Your password'
+        />
+      </div>
+
+      <button
+        type='button'
+        class='btn btn-primary btn-lg w-100 fw-bold'
+        {{on 'click' this.login}}
+      >
+        <i class='fa-solid fa-right-to-bracket me-2'></i>Sign In
+      </button>
+
+      <div class='text-center mt-4'>
+        <small class='text-muted'>BA?
+          <a href='/login' class='text-primary fw-medium'>BA Login →</a>
+        </small>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,19 @@
+{{#if this.sessionAuth.isAuthenticated}}
+  <nav class='navbar fixed-bottom border-top bg-white shadow-sm py-0' style='z-index:1030'>
+    <div class='container-fluid px-0'>
+      <div class='d-flex w-100 justify-content-around'>
+
+        <LinkTo @route="veda.index" class='d-flex align-items-center justify-content-center flex-column nav-link text-center py-2 px-3 {{if (this.isActive "veda.index") "text-primary fw-bold" "text-muted"}}'>
+          <i class='fa-solid fa-home-alt d-block mb-1'></i>
+          <small class='d-block' style='font-size:0.65rem'>Sessions</small>
+        </LinkTo>
+
+        <LinkTo @route="veda.chatbot" class='d-flex align-items-center justify-content-center flex-column nav-link text-center py-2 px-3 {{if (this.isActive "veda.chatbot") "text-primary fw-bold" "text-muted"}}'>
+          <i class='fa-solid fa-comments d-block mb-1'></i>
+          <small class='d-block' style='font-size:0.65rem'>Chatbot</small>
+        </LinkTo>
+        
+      </div>
+    </div>
+  </nav>
+ {{/if}}

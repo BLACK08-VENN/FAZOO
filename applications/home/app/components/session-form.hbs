@@ -1,0 +1,365 @@
+
+<div class="container-fluid px-3 pt-4 pb-5">
+
+  <div class="d-flex align-items-center mb-4">
+    <LinkTo @route="veda.index" class="btn btn-link text-muted ps-0 me-2">
+      <i class="fa-solid fa-arrow-left"></i>
+    </LinkTo>
+    <h2 class="fw-bold mb-0">
+      {{if @isEditMode "Edit Session" "Log Session"}}
+    </h2>
+  </div>
+
+  {{#if @isEditMode}}
+    {{#unless @isEditable}}
+      <div class="alert alert-warning" role="alert">
+        <i class="fa-solid fa-lock me-2"></i>
+        This session can no longer be edited — the 4-hour edit window has
+        passed.
+      </div>
+    {{/unless}}
+  {{/if}}
+
+  {{#if @errorMessage}}
+    <div
+      class="alert alert-danger py-2 small"
+      role="alert"
+    >{{@errorMessage}}</div>
+  {{/if}}
+
+  <fieldset disabled={{and @isEditMode (not @isEditable)}}>
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">Kissflow Art Teacher Form</label>
+      <div class="mb-2">
+        <a
+          href="https://ramcogroup.kissflow.com/public/Process/Pfacbb291a-ff40-460e-a98c-8b3fe50bd07e"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-outline-primary btn-sm"
+        >
+          <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Open
+          Kissflow Form
+        </a>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="kissflowConfirmed-{{if @isEditMode 'edit' 'new'}}"
+          checked={{this.kissflowConfirmed}}
+          {{on "change" this.toggleKissflowConfirmed}}
+        />
+        <label
+          class="form-check-label small fw-medium"
+          for="kissflowConfirmed-{{if @isEditMode 'edit' 'new'}}"
+        >
+          I confirm that I have filled the Kissflow Form
+          <span class="text-danger">*</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        School
+        <span class="text-danger">*</span>
+      </label>
+
+      {{#if this.schoolSearchError}}
+        <div class="alert alert-warning py-1 small mb-1">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>
+          {{this.schoolSearchError}}
+        </div>
+      {{/if}}
+
+      <PowerSelect
+        @options={{this.schoolResults}}
+        @selected={{this.selectedSchool}}
+        @onChange={{this.onSchoolChange}}
+        @search={{this.searchSchools}}
+        @searchEnabled={{true}}
+        @searchPlaceholder="Type school name or region…"
+        @placeholder="Search for school…"
+        @loadingMessage="Searching…"
+        @noMatchesMessage="No schools found — try a different term"
+        as |school|
+      >
+        <span class="d-block fw-medium lh-sm">{{school.modules.title}}</span>
+        {{#if school.modules.region}}
+          <span
+            class="d-block small text-muted lh-sm"
+          >{{school.modules.region}}</span>
+        {{/if}}
+      </PowerSelect>
+
+      {{#if this.selectedSchool.modules.region}}
+        <div class="form-text">
+          <i class="fa-solid fa-location-dot me-1"></i>
+          Region:
+          {{this.selectedSchool.modules.region}}
+        </div>
+      {{/if}}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Session Date
+        <span class="text-danger">*</span>
+      </label>
+      <input
+        type="date"
+        class="form-control"
+        value={{this.sessionDate}}
+        {{on "change" this.onSessionDateChange}}
+      />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Activity Type
+        <span class="text-danger">*</span>
+      </label>
+      <PowerSelectMultiple
+        @options={{this.activityTypes}}
+        @selected={{this.selectedActivityTypes}}
+        @onChange={{this.onActivityTypeChange}}
+        @searchEnabled={{false}}
+        @placeholder="Select one or more activities…"
+        as |type|
+      >
+        {{type.title}}
+      </PowerSelectMultiple>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Session Status
+        <span class="text-danger">*</span>
+      </label>
+      <PowerSelect
+        @options={{this.statusOptions}}
+        @selected={{this.status}}
+        @onChange={{this.onStatusChange}}
+        @searchEnabled={{false}}
+        @placeholder="Select status…"
+        as |s|
+      >
+        {{s.title}}
+      </PowerSelect>
+    </div>
+
+    {{#if this.isCancelled}}
+      <div class="mb-3">
+        <label class="form-label fw-medium">
+          Cancellation Reason
+          <span class="text-danger">*</span>
+        </label>
+        <textarea
+          class="form-control"
+          rows="3"
+          placeholder="Why was this session cancelled?"
+          value={{this.cancellationReason}}
+          {{on "input" this.onCancellationReasonChange}}
+        ></textarea>
+      </div>
+    {{/if}}
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Learner Count
+        <span class="text-danger">*</span>
+      </label>
+
+      {{#if this.legacyCountNeedsResplit}}
+        <div class="alert alert-info py-2 small mb-2" role="alert">
+          <i class="fa-solid fa-circle-info me-1"></i>
+          This older session recorded a single combined learner count across
+          multiple activities. Please enter the count for each activity below.
+        </div>
+      {{/if}}
+
+      {{#if this.selectedActivityTypes.length}}
+        {{#each this.learnerCountEntries as |entry|}}
+          <div class="input-group mb-2">
+            <span class="input-group-text small" style="min-width:11rem">
+              {{entry.title}}
+            </span>
+            <input
+              type="number"
+              class="form-control"
+              value={{entry.value}}
+              min="0"
+              placeholder="Number of learners"
+              {{on "change" (fn this.onLearnerCountChange entry.slug)}}
+            />
+          </div>
+        {{/each}}
+
+        <div class="form-text">
+          <i class="fa-solid fa-users me-1"></i>
+          Total: <span class="fw-bold">{{this.totalLearnerCount}}</span>
+        </div>
+
+        {{#if this.hasHighLearnerCount}}
+          <div class="form-text text-warning">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+            Over 300 learners total — consider booking an additional session
+            if needed.
+          </div>
+        {{/if}}
+      {{else}}
+        <div class="form-text text-muted">
+          <i class="fa-solid fa-arrow-up me-1"></i>
+          Select one or more activities above to enter learner counts.
+        </div>
+      {{/if}}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Check-in Location
+        <span class="text-danger">*</span>
+      </label>
+      {{#if this.checkinLatitude}}
+        <div
+          {{checkin-map this.checkinLatitude this.checkinLongitude}}
+          style="height: 200px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;"
+          aria-label="Map showing captured check-in location"
+          role="img"
+        ></div>
+        <div class="form-text mt-1">
+          <i class="fa-solid fa-location-dot me-1 text-primary"></i>
+          Location captured:
+          {{this.checkinLatitude}},
+          {{this.checkinLongitude}}
+        </div>
+      {{else}}
+        <button
+          type="button"
+          class="btn btn-outline-primary w-100"
+          {{on "click" this.captureGeolocation}}
+        >
+          <i class="fa-solid fa-location-crosshairs me-2"></i>Capture My
+          Location
+        </button>
+        <div class="form-text text-danger mt-1">
+          <i class="fa-solid fa-triangle-exclamation me-1"></i>
+          Location is required. Please allow location access and tap the button above.
+        </div>
+      {{/if}}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-medium">
+        Photos / Videos
+        <span class="text-danger">*</span>
+      </label>
+      <div class="mb-2">
+        <label
+          class="btn btn-outline-secondary btn-sm
+            {{if this.isUploading 'disabled'}}"
+        >
+          <i class="fa-solid fa-upload me-1"></i>
+          {{if @isEditMode "Upload More Files" "Upload Files"}}
+          <input
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            class="d-none"
+            disabled={{this.isUploading}}
+            {{on "change" this.onFilesChange}}
+          />
+        </label>
+        <span class="ms-2 small text-muted">{{this.mediaItems.length}}
+          file(s)</span>
+        {{#if this.isUploading}}
+          <span class="ms-2 small text-muted">
+            <span
+              class="spinner-border spinner-border-sm me-1"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            Uploading…
+          </span>
+        {{/if}}
+      </div>
+      <div class="form-text mb-2">
+        <i class="fa-solid fa-lock me-1"></i>Shared with VEDA only — not public.
+      </div>
+
+      {{#if this.mediaItems}}
+        <div class="card shadow-sm">
+          <div class="card-body p-0 overflow-hidden rounded">
+            <div class="ba-slideshow position-relative">
+
+              {{#each this.mediaItems as |slide|}}
+                <div class="ba-slide mb-1">
+                  {{#if slide.isVideo}}
+                    <video
+                      src={{slide.url}}
+                      class="ba-slide-media"
+                      controls
+                    ></video>
+                  {{else}}
+                    <img
+                      src={{slide.url}}
+                      alt={{slide.name}}
+                      class="ba-slide-media"
+                    />
+                  {{/if}}
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-danger ba-slide-remove"
+                    title="Remove"
+                    {{on "click" (fn this.removeSlide slide)}}
+                  >
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                  <div
+                    class="ba-slide-caption small text-muted px-2 pb-1"
+                  >{{slide.name}}</div>
+                </div>
+              {{/each}}
+
+            </div>
+          </div>
+        </div>
+      {{/if}}
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label fw-medium">Notes</label>
+      <textarea
+        class="form-control"
+        rows="3"
+        placeholder="Any observations or notes about this session…"
+        value={{this.notes}}
+        {{on "input" this.onNotesChange}}
+      ></textarea>
+    </div>
+    
+    {{#if (not (and @isEditMode (not @isEditable)))}}
+      <button
+        type="button"
+        class="btn btn-primary btn-lg w-100 fw-bold"
+        disabled={{or @isSaving this.isUploading}}
+        {{on "click" this.handleSubmit}}
+      >
+        {{#if (or @isSaving this.isUploading)}}
+          <span
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          {{if this.isUploading "Uploading…" "Saving…"}}
+        {{else}}
+          <i class="fa-solid fa-floppy-disk me-2"></i>
+          {{if @isEditMode "Update Session" "Save Session"}}
+        {{/if}}
+      </button>
+    {{/if}}
+
+  </fieldset>
+
+</div>

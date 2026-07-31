@@ -1,0 +1,459 @@
+{
+  "types": [
+    {
+      "slug": "agency",
+      "used_in": {
+        "routes": ["agencies", "agencies.agency"],
+        "components": [],
+        "services": [],
+        "helpers": [],
+        "modifiers": []
+      }
+    },
+    {
+      "slug": "brand",
+      "used_in": {
+        "routes": ["brands", "brands.brand"],
+        "components": [],
+        "services": [],
+        "helpers": [],
+        "modifiers": []
+      }
+    },
+    {
+      "slug": "reseller",
+      "used_in": {
+        "routes": ["resellers", "resellers.reseller"],
+        "components": [],
+        "services": [],
+        "helpers": [],
+        "modifiers": []
+      }
+    },
+    {
+      "slug": "campaign",
+      "used_in": {
+        "routes": ["campaigns", "campaigns.campaign"],
+        "components": ["campaign-status-badge"],
+        "services": [],
+        "helpers": ["format-date"],
+        "modifiers": []
+      }
+    },
+    {
+      "slug": "promoter",
+      "used_in": {
+        "routes": ["promoters", "promoters.promoter"],
+        "components": ["promoter-status-badge"],
+        "services": [],
+        "helpers": [],
+        "modifiers": []
+      }
+    },
+    {
+      "slug": "customer",
+      "used_in": {
+        "routes": ["customers", "customers.customer"],
+        "components": [],
+        "services": [],
+        "helpers": ["format-date"],
+        "modifiers": []
+      }
+    },
+    {
+      "slug": "checkin",
+      "used_in": {
+        "routes": ["checkins", "checkins.checkin", "dashboard", "map"],
+        "components": ["checkin-card", "checkin-map"],
+        "services": ["checkin-service"],
+        "helpers": ["format-date", "format-rating"],
+        "modifiers": ["leaflet-map"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "name": "dashboard",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": ["format-date", "format-rating"],
+      "services": [],
+      "components": ["stat-card"],
+      "types": ["checkin", "campaign", "promoter"]
+    },
+    {
+      "name": "agencies",
+      "tracked_vars": [{ "page": "int" }, { "search": "string" }],
+      "get_vars": [{ "page": "int" }, { "search": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["agency"]
+    },
+    {
+      "name": "agencies.agency",
+      "tracked_vars": [],
+      "get_vars": [{ "agency_id": "string" }],
+      "getters": [],
+      "actions": ["saveAgency", "deleteAgency"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["agency"]
+    },
+    {
+      "name": "agencies.new",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": ["createAgency"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["agency"]
+    },
+    {
+      "name": "brands",
+      "tracked_vars": [{ "page": "int" }, { "search": "string" }],
+      "get_vars": [{ "page": "int" }, { "search": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["brand"]
+    },
+    {
+      "name": "brands.brand",
+      "tracked_vars": [],
+      "get_vars": [{ "brand_id": "string" }],
+      "getters": [],
+      "actions": ["saveBrand", "deleteBrand"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["brand"]
+    },
+    {
+      "name": "brands.new",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": ["createBrand"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["brand"]
+    },
+    {
+      "name": "resellers",
+      "tracked_vars": [{ "page": "int" }, { "search": "string" }],
+      "get_vars": [{ "page": "int" }, { "search": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["reseller"]
+    },
+    {
+      "name": "resellers.reseller",
+      "tracked_vars": [],
+      "get_vars": [{ "reseller_id": "string" }],
+      "getters": [],
+      "actions": ["saveReseller", "deleteReseller"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["reseller"]
+    },
+    {
+      "name": "resellers.new",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": ["createReseller"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["reseller"]
+    },
+    {
+      "name": "campaigns",
+      "tracked_vars": [{ "page": "int" }, { "search": "string" }, { "statusFilter": "string" }],
+      "get_vars": [{ "page": "int" }, { "search": "string" }, { "status": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": ["format-date"],
+      "services": [],
+      "components": ["campaign-status-badge"],
+      "types": ["campaign"]
+    },
+    {
+      "name": "campaigns.campaign",
+      "tracked_vars": [],
+      "get_vars": [{ "campaign_id": "string" }],
+      "getters": [],
+      "actions": ["saveCampaign", "deleteCampaign"],
+      "functions": [],
+      "helpers": ["format-date"],
+      "services": [],
+      "components": ["campaign-status-badge"],
+      "types": ["campaign"]
+    },
+    {
+      "name": "campaigns.new",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": ["createCampaign"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["campaign"]
+    },
+    {
+      "name": "promoters",
+      "tracked_vars": [{ "page": "int" }, { "search": "string" }],
+      "get_vars": [{ "page": "int" }, { "search": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": ["promoter-status-badge"],
+      "types": ["promoter"]
+    },
+    {
+      "name": "promoters.promoter",
+      "tracked_vars": [],
+      "get_vars": [{ "promoter_id": "string" }],
+      "getters": [],
+      "actions": ["savePromoter", "deletePromoter"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": ["promoter-status-badge"],
+      "types": ["promoter"]
+    },
+    {
+      "name": "promoters.new",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": ["createPromoter"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["promoter"]
+    },
+    {
+      "name": "customers",
+      "tracked_vars": [{ "page": "int" }, { "search": "string" }],
+      "get_vars": [{ "page": "int" }, { "search": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": ["format-date"],
+      "services": [],
+      "components": [],
+      "types": ["customer"]
+    },
+    {
+      "name": "customers.customer",
+      "tracked_vars": [],
+      "get_vars": [{ "customer_id": "string" }],
+      "getters": [],
+      "actions": ["saveCustomer", "deleteCustomer"],
+      "functions": [],
+      "helpers": ["format-date"],
+      "services": [],
+      "components": [],
+      "types": ["customer"]
+    },
+    {
+      "name": "customers.new",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": ["createCustomer"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["customer"]
+    },
+    {
+      "name": "checkins",
+      "tracked_vars": [{ "page": "int" }, { "search": "string" }, { "typeFilter": "string" }],
+      "get_vars": [{ "page": "int" }, { "search": "string" }, { "checkin_type": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": ["format-date", "format-rating"],
+      "services": [],
+      "components": ["checkin-card"],
+      "types": ["checkin"]
+    },
+    {
+      "name": "checkins.checkin",
+      "tracked_vars": [],
+      "get_vars": [{ "checkin_id": "string" }],
+      "getters": [],
+      "actions": ["saveCheckin", "deleteCheckin"],
+      "functions": [],
+      "helpers": ["format-date", "format-rating"],
+      "services": [],
+      "components": [],
+      "types": ["checkin"]
+    },
+    {
+      "name": "checkins.new",
+      "tracked_vars": [],
+      "get_vars": [],
+      "getters": [],
+      "actions": ["createCheckin"],
+      "functions": [],
+      "helpers": [],
+      "services": [],
+      "components": [],
+      "types": ["checkin"]
+    },
+    {
+      "name": "map",
+      "tracked_vars": [{ "selectedDate": "string" }, { "selectedCampaign": "string" }],
+      "get_vars": [{ "date": "string" }, { "campaign": "string" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": ["format-date"],
+      "services": [],
+      "components": ["checkin-map"],
+      "types": ["checkin"]
+    },
+    {
+      "name": "reports",
+      "tracked_vars": [{ "reportType": "string" }, { "dateFrom": "string" }, { "dateTo": "string" }, { "selectedCampaign": "string" }],
+      "get_vars": [{ "type": "string" }, { "from": "string" }, { "to": "string" }, { "campaign": "string" }],
+      "getters": [],
+      "actions": [{ "exportCsv": ["custom/reports/export-csv.php"] }],
+      "functions": [],
+      "helpers": ["format-date"],
+      "services": [],
+      "components": [],
+      "types": ["checkin", "campaign", "promoter"]
+    }
+  ],
+  "helpers": [
+    {
+      "name": "format-date",
+      "description": "Formats a Unix timestamp or ISO date string into a human-readable date",
+      "input_args": [{ "timestamp": "string" }, { "format": "string" }],
+      "return": "string"
+    },
+    {
+      "name": "format-rating",
+      "description": "Converts a numeric rating (1-5) into star characters for display",
+      "input_args": [{ "rating": "int" }],
+      "return": "string"
+    }
+  ],
+  "modifiers": [
+    {
+      "name": "leaflet-map",
+      "description": "Initialises a Leaflet map on the target element with given markers and configuration",
+      "input_args": [{ "markers": "array" }, { "center": "array" }, { "zoom": "int" }],
+      "services": []
+    }
+  ],
+  "services": [
+    {
+      "name": "checkin-service",
+      "tracked_vars": [],
+      "getters": [],
+      "actions": [{ "exportCsv": ["custom/reports/export-csv.php"] }],
+      "functions": ["buildMarkers"],
+      "helpers": [],
+      "services": ["store"]
+    }
+  ],
+  "components": [
+    {
+      "name": "stat-card",
+      "type": "card",
+      "tracked_vars": [],
+      "inherited_args": [{ "label": "var" }, { "value": "var" }, { "icon": "var" }, { "color": "var" }],
+      "getters": [],
+      "actions": [],
+      "functions": [],
+      "helpers": [],
+      "modifiers": [],
+      "services": []
+    },
+    {
+      "name": "campaign-status-badge",
+      "type": "badge",
+      "tracked_vars": [],
+      "inherited_args": [{ "status": "var" }],
+      "getters": ["badgeClass"],
+      "actions": [],
+      "functions": [],
+      "helpers": [],
+      "modifiers": [],
+      "services": []
+    },
+    {
+      "name": "promoter-status-badge",
+      "type": "badge",
+      "tracked_vars": [],
+      "inherited_args": [{ "status": "var" }],
+      "getters": ["badgeClass"],
+      "actions": [],
+      "functions": [],
+      "helpers": [],
+      "modifiers": [],
+      "services": []
+    },
+    {
+      "name": "checkin-card",
+      "type": "card",
+      "tracked_vars": [],
+      "inherited_args": [{ "checkin": "var" }],
+      "getters": ["typeLabel", "complianceClass"],
+      "actions": [],
+      "functions": [],
+      "helpers": ["format-date", "format-rating"],
+      "modifiers": [],
+      "services": []
+    },
+    {
+      "name": "checkin-map",
+      "type": "figure",
+      "tracked_vars": [{ "map": "object" }],
+      "inherited_args": [{ "checkins": "var" }, { "center": "var" }, { "zoom": "var" }],
+      "getters": [],
+      "actions": [],
+      "functions": ["initMap", "updateMarkers"],
+      "helpers": [],
+      "modifiers": ["leaflet-map"],
+      "services": []
+    }
+  ]
+}

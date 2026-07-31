@@ -1,0 +1,173 @@
+{
+  "routes": [
+    {
+      "slug": "admin/login",
+      "actions": ["before-model"],
+      "services": ["admin-auth", "router"],
+      "components": ["input"]
+    },
+    {
+      "slug": "admin/reports",
+      "actions": [{ "model": ["session", "ba", "school"] }],
+      "functions": ["before-model"],
+      "helpers": ["format-date", "filter-by-ba"],
+      "services": ["admin-auth", "store"]
+    },
+    {
+      "slug": "application",
+      "actions": ["did-transition", "will-transition", "before-model"],
+      "services": ["types"],
+      "components": ["basic-dropdown-wormhole"]
+    },
+    {
+      "slug": "ba/index",
+      "actions": [{ "model": ["session"] }],
+      "helpers": ["format-date"],
+      "services": ["session-auth", "store"],
+      "components": ["link-to"]
+    },
+    {
+      "slug": "ba/kit-receipts/edit",
+      "actions": [{ "model": ["kit_receipt", "kit"] }],
+      "services": ["store"],
+      "components": ["power-select", "input", "textarea"]
+    },
+    {
+      "slug": "ba/kit-receipts/index",
+      "actions": [{ "model": ["kit_receipt"] }],
+      "helpers": ["format-date"],
+      "services": ["session-auth", "store"]
+    },
+    {
+      "slug": "ba/kit-receipts/new",
+      "actions": [{ "model": ["kit"] }],
+      "services": ["store"],
+      "components": ["power-select", "input", "textarea"]
+    },
+    {
+      "slug": "ba/sessions/edit",
+      "actions": [{ "model": ["session", "school"] }],
+      "services": ["store"],
+      "components": ["session-form"]
+    },
+    {
+      "slug": "ba/sessions/index",
+      "helpers": ["format-date"]
+    },
+    {
+      "slug": "ba/sessions/new",
+      "functions": ["model"],
+      "components": ["session-form"]
+    },
+    {
+      "slug": "ba/sessions",
+      "actions": [{ "model": ["session"] }],
+      "services": ["session-auth", "store"]
+    },
+    {
+      "slug": "ba",
+      "functions": ["before-model"],
+      "services": ["session-auth"],
+      "components": ["footer"]
+    },
+    {
+      "slug": "index",
+      "actions": ["before-model", { "model": ["session"] }],
+      "helpers": ["format-date"],
+      "services": ["session-auth", "store", "router"],
+      "components": ["footer"]
+    },
+    {
+      "slug": "login",
+      "actions": ["before-model"],
+      "services": ["session-auth", "router"],
+      "components": ["input"]
+    }
+  ],
+  "services": [
+    {
+      "slug": "admin-auth",
+      "tracked_vars": [{ "current-admin": "string" }, { "is-authenticated": "bool" }],
+      "actions": [{ "login": ["ba"] }, "logout", { "restore": ["ba"] }],
+      "functions": ["require-auth"],
+      "services": ["store", "router", "cookies"]
+    },
+    {
+      "slug": "cookies",
+      "tracked_vars": [{ "days": "int" }],
+      "actions": ["set-cookie", "get-cookie", "erase-cookie"]
+    },
+    {
+      "slug": "session-auth",
+      "tracked_vars": [{ "current-ba": "string" }, { "is-authenticated": "bool" }],
+      "getters": ["ba-id"],
+      "actions": [{ "login": ["ba"] }, { "register": ["ba"] }, "logout", { "restore": ["ba"] }],
+      "functions": ["require-auth"],
+      "services": ["store", "router", "cookies"]
+    },
+    {
+      "slug": "types",
+      "tracked_vars": [{ "json": "string" }],
+      "actions": [{ "fetch-again": ["webapp"] }],
+      "services": ["store"]
+    }
+  ],
+  "types": [{ "slug": "ba" }, { "slug": "kit" }, { "slug": "kit_receipt" }, { "slug": "school" }, { "slug": "session" }, { "slug": "webapp" }],
+  "helpers": [
+    {
+      "slug": "filter-by-ba",
+      "args": [{ "sessions": "string" }, { "ba-id": "string" }],
+      "return": "string"
+    },
+    {
+      "slug": "format-date",
+      "args": [{ "iso-string": "string" }],
+      "return": "string"
+    },
+    {
+      "slug": "within-edit-window",
+      "args": [{ "created-at": "string" }],
+      "return": "string"
+    }
+  ],
+  "modifiers": [{ "slug": "did-insert" }, { "slug": "mapbox-map" }, { "slug": "checkin-map" }, { "slug": "mapbox-sessions" }],
+  "components": [
+    {
+      "slug": "footer",
+      "inherited_args": [{ "route": "var" }],
+      "services": ["router", "session-auth"]
+    },
+    {
+      "slug": "storylang/arc-diagram",
+      "tracked_vars": [{ "rotation-deg": "int" }, { "zoom-scale": "int" }],
+      "getters": ["nodes", "edges", "selected-slug", "view-box", "ring-transform", "zoom-transform", "angle-step", "node-angles", "type-groups", "type-group-arcs", "node-display-list", "arc-display-list", "cx", "cy"],
+      "actions": ["zoom-in", "zoom-out", "zoom-reset", "register-svg", "handle-pointer-down", "handle-pointer-move", "handle-pointer-up"],
+      "functions": ["_apply-zoom", "_cancel-inertia", "_start-inertia"],
+      "modifiers": ["did-insert"]
+    },
+    {
+      "slug": "storylang/index",
+      "tracked_vars": [{ "selected-node": "string" }, { "model": "string" }, { "is-loading": "bool" }, { "is-empty": "bool" }],
+      "inherited_args": [{ "nodes": "var" }, { "edges": "var" }, { "selected-node": "var" }, { "on-select-node": "var" }, { "node": "var" }, { "on-close": "var" }, { "on-navigate": "var" }, { "all-nodes": "var" }],
+      "getters": ["legend-items", "all-nodes", "filtered-nodes", "all-edges", "selected-node-edges"],
+      "actions": ["load-model", "select-node", "clear-selection"],
+      "modifiers": ["did-insert"]
+    },
+    {
+      "slug": "storylang/node-detail",
+      "inherited_args": [{ "node": "var" }],
+      "getters": ["type-color", "outgoing-edges", "incoming-edges", "has-connections", "sections"],
+      "actions": ["navigate-to", "close"]
+    },
+    {
+      "slug": "session-form",
+      "tracked_vars": [{ "school-results": "array" }, { "is-searching-schools": "bool" }, { "school-search-error": "string" }, { "selected-school": "string" }, { "session-date": "string" }, { "selected-activity-types": "array" }, { "learner-count-by-activity": "object" }, { "legacy-count-needs-resplit": "bool" }, { "media-items": "array" }, { "uploading-count": "int" }, { "kissflow-confirmed": "bool" }, { "notes": "string" }, { "checkin-latitude": "string" }, { "checkin-longitude": "string" }, { "slideshow-index": "int" }, { "status": "string" }, { "cancellation-reason": "string" }, { "field": "string" }],
+      "inherited_args": [{ "is-edit-mode": "var" }, { "is-editable": "var" }, { "error-message": "var" }, { "options": "var" }, { "selected": "var" }, { "on-change": "var" }, { "search": "var" }, { "search-enabled": "var" }, { "search-placeholder": "var" }, { "placeholder": "var" }, { "loading-message": "var" }, { "no-matches-message": "var" }, { "is-saving": "var" }],
+      "getters": ["learner-count-entries", "total-learner-count", "has-high-learner-count", "is-cancelled", "is-uploading"],
+      "actions": [{ "search-schools": ["school"] }, "on-school-change", "on-activity-type-change", "on-status-change", "on-cancellation-reason-change", "on-learner-count-change", "on-notes-change", "on-session-date-change", "capture-geolocation", "on-files-change", "remove-slide", "go-to-slide", "prev-slide", "next-slide", "toggle-kissflow-confirmed", "handle-submit"],
+      "functions": ["constructor", "_populate-from-session", "will-destroy"],
+      "modifiers": ["checkin-map"],
+      "services": ["store"]
+    }
+  ]
+}

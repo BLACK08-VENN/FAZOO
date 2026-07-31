@@ -1,0 +1,242 @@
+{{! app/components/storylang/arc-diagram.hbs }}
+
+<style>
+  /* ── ArcDiagram wrapper ── */
+  .sl-arc-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Zoom controls ── */
+  .sl-zoom-controls {
+    position: fixed;
+    top: 100px;
+    left: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+  }
+
+  .sl-zoom-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #8b949e;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+    user-select: none;
+  }
+
+  .sl-zoom-btn:hover {
+    background: #21262d;
+    color: #e6edf3;
+    border-color: #58a6ff;
+  }
+
+  .sl-zoom-btn:active {
+    background: #30363d;
+  }
+
+  .sl-zoom-reset {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-family: "Berkeley Mono", "Courier New", monospace;
+  }
+
+  /* ── SVG ── */
+  .sl-arc-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    user-select: none;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .sl-arc-svg:active {
+    cursor: grabbing;
+  }
+
+  /* ── Type-group ring segments ── */
+  .sl-type-ring-segment {
+    opacity: 0.18;
+  }
+
+  /* ── Type-group labels ── */
+  .sl-type-group-label {
+    font-family: "Berkeley Mono", "Courier New", monospace;
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    dominant-baseline: middle;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* ── Arcs ── */
+  .sl-arc-path {
+    fill: none;
+    pointer-events: none;
+  }
+  .sl-arc-path.default {
+    opacity: 0.15;
+  }
+  .sl-arc-path.highlighted {
+    opacity: 0.75;
+  }
+  .sl-arc-path.dimmed {
+    opacity: 0.02;
+  }
+
+  /* ── Node groups ── */
+  .sl-node-group {
+    cursor: pointer;
+  }
+
+  .sl-node-dot {
+    transition: r 0.12s ease;
+  }
+
+  .sl-node-group.active .sl-node-dot {
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+
+  .sl-node-label {
+    font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 8px;
+    font-weight: 300;
+    dominant-baseline: middle;
+    pointer-events: all;
+    cursor: pointer;
+  }
+
+  .sl-node-group:hover .sl-node-label {
+    fill: #e8edf4 !important;
+  }
+
+  .sl-node-group.dimmed .sl-node-dot {
+    opacity: 0.15;
+  }
+  .sl-node-group.dimmed .sl-node-label {
+    opacity: 0.15;
+  }
+</style>
+
+<div class="sl-arc-wrapper">
+
+  {{! ── Zoom controls ── }}
+  <div class="sl-zoom-controls">
+    <button
+      class="sl-zoom-btn"
+      type="button"
+      {{on "click" this.zoomIn}}
+      title="Zoom in"
+    >+</button>
+    <button
+      class="sl-zoom-btn"
+      type="button"
+      {{on "click" this.zoomOut}}
+      title="Zoom out"
+    >−</button>
+    <button
+      class="sl-zoom-btn sl-zoom-reset"
+      type="button"
+      {{on "click" this.zoomReset}}
+      title="Reset zoom"
+    >1:1</button>
+  </div>
+
+  <svg
+    class="sl-arc-svg"
+    viewBox={{this.viewBox}}
+    preserveAspectRatio="xMidYMid meet"
+    xmlns="http://www.w3.org/2000/svg"
+    {{did-insert this.registerSvg}}
+    {{on "pointerdown" this.handlePointerDown}}
+    {{on "pointermove" this.handlePointerMove}}
+    {{on "pointerup" this.handlePointerUp}}
+    {{on "pointercancel" this.handlePointerUp}}
+  >
+
+    {{! ── Zoom group — wraps everything so scale is centred ── }}
+    <g class="sl-zoom-group" transform={{this.zoomTransform}}>
+
+      {{! ── Rotatable ring group ── }}
+      <g class="sl-ring" transform={{this.ringTransform}}>
+
+        {{! ── Type-group ring segments ── }}
+        {{#each this.typeGroupArcs as |seg|}}
+          <path
+            class="sl-type-ring-segment"
+            d={{seg.path}}
+            fill={{seg.color}}
+          />
+        {{/each}}
+
+        {{! ── Chord arcs ── }}
+        <g class="sl-arcs">
+          {{#each this.arcDisplayList as |arc|}}
+            <path
+              class={{arc.arcClass}}
+              d={{arc.path}}
+              stroke={{arc.stroke}}
+              stroke-width={{arc.strokeWidth}}
+            />
+          {{/each}}
+        </g>
+
+        {{! ── Nodes ── }}
+        <g class="sl-nodes">
+          {{#each this.nodeDisplayList as |item|}}
+            <g class={{item.groupClass}} data-node-slug={{item.node.slug}}>
+              {{! Invisible hit area so the whole label+dot region is clickable }}
+              <circle
+                cx={{item.cx}}
+                cy={{item.cy}}
+                r="12"
+                fill="transparent"
+                style="pointer-events:all; cursor:pointer;"
+              />
+              <circle
+                class="sl-node-dot"
+                cx={{item.cx}}
+                cy={{item.cy}}
+                r={{item.dotR}}
+                fill={{item.color}}
+                opacity={{item.dotOpacity}}
+              />
+              <text
+                class="sl-node-label"
+                x={{item.labelX}}
+                y={{item.labelY}}
+                fill={{item.labelFill}}
+                font-weight={{item.labelWeight}}
+                text-anchor={{item.textAnchor}}
+                transform="rotate({{item.labelRotate}}, {{item.labelX}}, {{item.labelY}})"
+              >{{item.node.slug}}</text>
+            </g>
+          {{/each}}
+        </g>
+
+      </g>{{! end .sl-ring }}
+
+    </g>{{! end .sl-zoom-group }}
+
+  </svg>
+
+</div>
