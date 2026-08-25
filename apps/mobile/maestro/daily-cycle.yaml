@@ -1,0 +1,25 @@
+# Full happy path on the demo org: check in → sale → check out.
+# Requires the device to be inside the demo store geofence (or the seed
+# store coordinates adjusted for local testing).
+appId: app.fazoo.mobile
+---
+- runFlow: sign-in.yaml
+- assertVisible: "Check In"
+- tapOn: "Check In"
+- tapOn: "Get my location"
+- tapOn: "Continue"
+- tapOn: "Take a stock photo"   # camera stub / emulator media
+- tapOn: "Continue"
+- tapOn: "Take your selfie"
+- tapOn: "Check In"
+- assertVisible: "Record Sale"
+- tapOn: "Record Sale"
+- tapOn: "ThinkPad.*"
+- tapOn: "Save sale"
+- back
+- tapOn: "Check Out"
+- swipe:
+    direction: DOWN
+- tapOn: "Confirm checkout lock"
+- tapOn: "Check Out"
+- assertVisible: "Day complete"

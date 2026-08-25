@@ -1,0 +1,22 @@
+# Supabase local development configuration (fazoo)
+project_id = "fazoo"
+
+[api]
+port = 54321
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+port = 54323
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:8081"]
+
+[auth.email]
+enable_signup = true
+
+# Phone/SMS auth can be enabled later for true self-service password reset;
+# see docs/roles-and-permissions.md §password-reset.

@@ -1,0 +1,11 @@
+# Sign in with the demo BA account (seeded by supabase/seed.sql).
+appId: app.fazoo.mobile
+---
+- launchApp
+- assertVisible: "Sign in"
+- tapOn: "0803 123 4567"
+- inputText: "08031234567"
+- tapOn: "Password"
+- inputText: "Demo-Ba#001!"
+- tapOn: "Sign in"
+- assertVisible: "Today"

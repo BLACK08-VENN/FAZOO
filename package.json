@@ -1,0 +1,32 @@
+{
+  "name": "fazoo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fazoo — field-force management and sales-reporting platform",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev:admin": "pnpm --filter @fazoo/admin dev",
+    "dev:mobile": "pnpm --filter @fazoo/mobile start",
+    "build:admin": "pnpm --filter @fazoo/admin build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,css,md,json}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@fazoo/typescript-config": "workspace:*",
+    "@types/node": "^24.3.1",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^6.1.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.9.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.44.0"
+  }
+}

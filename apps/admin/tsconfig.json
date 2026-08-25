@@ -1,0 +1,17 @@
+{
+  "extends": "../../packages/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src",
+    "next.config.ts",
+    "playwright.config.ts",
+    "e2e",
+    "middleware.ts",
+    ".next/types/**/*.ts"
+  ]
+}

@@ -1,0 +1,9 @@
+appId: app.fazoo.mobile
+---
+- runFlow: sign-in.yaml
+- tapOn: "Check In"
+- setPermissions:
+    permissions:
+      location: deny
+- tapOn: "Get my location"
+- assertVisible: ".*Location.*"

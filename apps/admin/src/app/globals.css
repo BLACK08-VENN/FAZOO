@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+@import '@fazoo/ui/tokens.css';
+
+@theme {
+  --color-primary: #7b2fbe;
+  --color-deep: #5a1e82;
+  --color-bright: #8b2fd1;
+  --color-ink: #0b0b0f;
+  --color-charcoal: #17171c;
+  --color-lavender: #f6f2fa;
+  --color-muted: #6b6472;
+  --color-ok: #22c55e;
+  --color-warn: #f97316;
+  --color-bad: #dc2626;
+}
+
+body {
+  @apply bg-lavender text-ink antialiased;
+}
+
+@keyframes fazoo-aurora-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(40px, -24px, 0) scale(1.08); }
+}
+
+@keyframes fazoo-scan {
+  0% { top: 8%; opacity: 0; }
+  15%, 85% { opacity: 1; }
+  100% { top: 92%; opacity: 0; }
+}
+
+@keyframes fazoo-radar-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fazoo-signal {
+  0%, 100% { opacity: 0.45; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.fazoo-aurora { animation: fazoo-aurora-drift 12s ease-in-out infinite; }
+.fazoo-aurora-delayed { animation: fazoo-aurora-drift 15s ease-in-out -5s infinite reverse; }
+.fazoo-scan-line { animation: fazoo-scan 8s linear infinite; }
+.fazoo-radar-sweep { animation: fazoo-radar-spin 6s linear infinite; }
+.fazoo-pulse, .fazoo-node { animation: fazoo-signal 2.2s ease-in-out infinite; }
+.fazoo-node-delayed { animation: fazoo-signal 2.2s ease-in-out -1.1s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fazoo-aurora,
+  .fazoo-aurora-delayed,
+  .fazoo-scan-line,
+  .fazoo-radar-sweep,
+  .fazoo-pulse,
+  .fazoo-node,
+  .fazoo-node-delayed {
+    animation: none;
+  }
+}

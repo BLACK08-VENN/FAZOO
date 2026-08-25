@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+.next/
+dist/
+build/
+out/
+.expo/
+web-build/
+*.tsbuildinfo
+
+# Environment — never commit real secrets
+.env
+.env.*
+!.env.example
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+
+# Native / IDE / OS
+.DS_Store
+*.log
+.idea/
+.vscode/
+*.orig
+
+# Legacy artifacts (removed codebase)
+applications/
+config/legacy/
+uploads/
+logs/

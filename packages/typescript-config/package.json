@@ -1,0 +1,6 @@
+{
+  "name": "@fazoo/typescript-config",
+  "version": "0.1.0",
+  "private": true,
+  "files": ["base.json", "nextjs.json", "react-native.json", "package.json"]
+}

@@ -1,0 +1,16 @@
+appId: app.fazoo.mobile
+---
+- runFlow: sign-in.yaml
+- assertVisible: "Record Sale"
+- tapOn: "Record Sale"
+- tapOn: "ThinkPad.*"
+- tapOn: "1"
+- inputText: "2"
+- tapOn: "Save sale"
+- tapOn: "Edit ThinkPad.*"
+- eraseText
+- inputText: "3"
+- tapOn: "Save ThinkPad.* quantity"
+- assertVisible: "×3"
+- tapOn: "Delete ThinkPad.*"
+- tapOn: "Delete"
