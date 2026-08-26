@@ -4,22 +4,6 @@
 -- supplies organization ids, roles or approval status.
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- Safety: ensure no stale functions from a prior partial run
-DROP FUNCTION IF EXISTS public.set_updated_at() CASCADE;
-DROP FUNCTION IF EXISTS public.current_profile() CASCADE;
-DROP FUNCTION IF EXISTS public.is_super_admin() CASCADE;
-DROP FUNCTION IF EXISTS public.current_user_role_hint() CASCADE;
-DROP FUNCTION IF EXISTS public.account_status_active() CASCADE;
-DROP FUNCTION IF EXISTS public.is_org_admin(uuid) CASCADE;
-DROP FUNCTION IF EXISTS public.supervisor_can_see_store(uuid, uuid) CASCADE;
-DROP FUNCTION IF EXISTS public.supervisor_can_see_campaign(uuid, uuid) CASCADE;
-DROP FUNCTION IF EXISTS public.can_read_org(uuid) CASCADE;
-DROP FUNCTION IF EXISTS public.distance_metres(double precision, double precision, double precision, double precision) CASCADE;
-DROP FUNCTION IF EXISTS public.write_audit(text, text, uuid, jsonb, uuid, uuid) CASCADE;
-DROP FUNCTION IF EXISTS public.audit_row_change() CASCADE;
-DROP FUNCTION IF EXISTS public.guard_profile_update() CASCADE;
-DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
-
 -- ── updated_at maintenance ──────────────────────────────────────────────────
 create function public.set_updated_at()
 returns trigger
