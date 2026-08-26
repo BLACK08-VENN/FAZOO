@@ -1,0 +1,12 @@
+# Registration flow — navigates to the registration form.
+appId: app.fazoo.mobile
+---
+- launchApp
+- assertVisible: "Sign in"
+- tapOn: "New here? Register as a Brand Ambassador"
+- assertVisible: "Become a Brand Ambassador"
+- assertVisible: "Profile photograph"
+- assertVisible: "Full name"
+- assertVisible: "Mobile number"
+- assertVisible: "Password"
+- assertVisible: "Create my account"

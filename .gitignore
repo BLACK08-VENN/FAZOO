@@ -24,6 +24,7 @@ supabase/.temp/
 coverage/
 playwright-report/
 test-results/
+**/e2e/.auth/
 
 # Native / IDE / OS
 .DS_Store

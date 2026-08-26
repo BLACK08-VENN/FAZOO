@@ -19,7 +19,7 @@ export function StatusPill({
     neutral: 'bg-ink/5 border-ink/15',
   } as const;
   return (
-    <View className={`mt-3 rounded-xl border px-4 py-3 ${map[tone]}`} accessibilityRole="text">
+    <View className={`mt-3 rounded-xl border px-4 py-3 ${map[tone]}`} accessibilityRole="text" accessibilityLabel={`${tone} status: ${label}`}>
       <Text className="font-medium text-charcoal capitalize">{label}</Text>
     </View>
   );

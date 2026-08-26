@@ -59,8 +59,8 @@ export default async function StoresPage() {
                   status: 'active',
                 });
                 if (!parsed.success) return;
-                const { client: c } = await requireStaff();
-                await c.from('stores').insert(parsed.data);
+                const { client: c, profile } = await requireStaff();
+                await c.from('stores').insert({ ...parsed.data, organization_id: profile.organization_id });
                 revalidatePath('/stores');
               }}
               className="space-y-3"

@@ -1,6 +1,5 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { serverSupabase, serviceSupabase } from '@fazoo/database';
 import { toAuthEmail } from '@fazoo/validation';
 import {
@@ -8,13 +7,17 @@ import {
   RATE_LIMIT_SIGNIN_WINDOW_S,
 } from '@fazoo/config';
 
-export type SignInState = { error: string | null };
+export type SignInState = { error: string | null; redirectTo?: string };
 
 /**
  * Staff sign-in. Accepts a mobile number or an email (super admins may use
  * platform accounts). Rate-limited via the check_rate_limit RPC when the
  * service role is configured; otherwise falls back to Supabase's built-in
  * per-IP limits.
+ *
+ * Returns a redirectTo URL on success instead of calling redirect() so the
+ * client component can navigate via router.push — avoids a Next.js 16
+ * useActionState / redirect() interaction that leaves the form pending.
  */
 export async function signInAction(
   _prev: SignInState,
@@ -64,5 +67,5 @@ export async function signInAction(
     return { error: 'Invalid credentials. Please try again.' };
   }
 
-  redirect(next.startsWith('/') ? next : '/overview');
+  return { error: null, redirectTo: next.startsWith('/') ? next : '/overview' };
 }

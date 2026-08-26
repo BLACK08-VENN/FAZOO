@@ -17,7 +17,7 @@ export default function SickLeave() {
     setError(null);
     const requestId = newRequestId();
     const payload = {
-      p_note: note.trim() || null,
+      p_note: note.trim() || undefined,
       p_client_request_id: requestId,
     };
     try {

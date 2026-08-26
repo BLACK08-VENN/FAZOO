@@ -1,0 +1,6 @@
+# History screen — verify past attendance records render.
+appId: app.fazoo.mobile
+---
+- runFlow: sign-in.yaml
+- tapOn: "History"
+- assertVisible: "History"

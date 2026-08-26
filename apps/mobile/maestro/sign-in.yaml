@@ -3,9 +3,16 @@ appId: app.fazoo.mobile
 ---
 - launchApp
 - assertVisible: "Sign in"
-- tapOn: "0803 123 4567"
+- tapOn:
+    text: "Mobile number"
+    optional: true
+- tapOn:
+    id: "phone-input"
+    optional: true
+- eraseText
 - inputText: "08031234567"
 - tapOn: "Password"
+- eraseText
 - inputText: "Demo-Ba#001!"
 - tapOn: "Sign in"
 - assertVisible: "Today"

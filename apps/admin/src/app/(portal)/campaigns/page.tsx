@@ -58,8 +58,8 @@ export default async function CampaignsPage() {
                     status: 'active',
                   });
                   if (!parsed.success) return;
-                  const { client: c } = await requireStaff();
-                  await c.from('campaigns').insert(parsed.data);
+                  const { client: c, profile } = await requireStaff();
+                  await c.from('campaigns').insert({ ...parsed.data, organization_id: profile.organization_id });
                   revalidatePath('/campaigns');
                 }}
                 className="space-y-3"

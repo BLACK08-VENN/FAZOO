@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useEffect, useActionState } from 'react';
 import { signInAction, type SignInState } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
@@ -9,6 +9,12 @@ const initialState: SignInState = { error: null };
 
 export function SignInForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(signInAction, initialState);
+
+  useEffect(() => {
+    if (state.redirectTo) {
+      window.location.href = state.redirectTo;
+    }
+  }, [state.redirectTo]);
 
   return (
     <form action={formAction} className="space-y-5">

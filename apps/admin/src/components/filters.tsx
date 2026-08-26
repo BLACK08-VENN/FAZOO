@@ -23,7 +23,7 @@ export function LogFiltersForm({
   current: Record<string, string | undefined>;
 }) {
   return (
-    <form method="get" action={action} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+    <form method="get" action={action} role="search" aria-label="Filter daily logs" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
       <div>
         <Label htmlFor="f-preset">Range</Label>
         <Select id="f-preset" name="preset" defaultValue={current.preset ?? '30d'}>
@@ -81,7 +81,7 @@ export function LogFiltersForm({
         </div>
         <button
           type="submit"
-          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep"
+          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           Apply
         </button>

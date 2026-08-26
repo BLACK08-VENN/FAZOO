@@ -1,0 +1,7 @@
+# Profile screen — verify sign out and profile info.
+appId: app.fazoo.mobile
+---
+- runFlow: sign-in.yaml
+- tapOn: "Profile"
+- assertVisible: "Profile"
+- assertVisible: "Sign out"

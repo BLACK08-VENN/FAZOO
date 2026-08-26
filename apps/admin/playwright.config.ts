@@ -7,6 +7,18 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
+    channel: 'chrome',
+    storageState: 'e2e/.auth/admin.json',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  globalSetup: './e2e/global-setup.ts',
+  projects: [
+    {
+      name: 'desktop-chrome',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+  ],
 });

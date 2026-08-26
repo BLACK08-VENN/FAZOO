@@ -37,7 +37,7 @@ export default function Checkout() {
       const payload = {
         p_latitude: fix.latitude,
         p_longitude: fix.longitude,
-        p_accuracy_metres: fix.accuracy,
+        p_accuracy_metres: fix.accuracy ?? undefined,
         p_client_request_id: requestId,
       };
       try {

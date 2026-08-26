@@ -18,7 +18,7 @@ create extension if not exists pgcrypto;
 -- ── organization ─────────────────────────────────────────────────────────────
 insert into public.organizations (id, name, slug, timezone, primary_color, secondary_color)
 values (
-  '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111'::uuid,
   'Lenovo Nigeria (Demo)',
   'lenovo-nigeria',
   'Africa/Lagos',
@@ -40,12 +40,12 @@ select
   now(), '{"provider":"email","providers":["email"]}'::jsonb,
   u.meta::jsonb, now(), now(), '', '', '', ''
 from (values
-  ('22222222-2222-4222-8222-000000000001','super.admin.demo@ba.fazoo.app', crypt('Demo-Super1!', gen_salt('bf')), jsonb_build_object('full_name','Ngozi Okafor (Demo)','phone','+23480000000001','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000002','org.admin.demo@ba.fazoo.app',  crypt('Demo-Admin1!', gen_salt('bf')), jsonb_build_object('full_name','Tunde Balogun (Demo)','phone','+23480000000002','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000003','supervisor.demo@ba.fazoo.app',crypt('Demo-SuperV1!', gen_salt('bf')), jsonb_build_object('full_name','Chiamaka Eze (Demo)','phone','+23480000000003','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000010','ba.one.demo@ba.fazoo.app',    crypt('Demo-Ba#001!', gen_salt('bf')), jsonb_build_object('full_name','Emeka Nwosu (Demo)','phone','+23480000000010','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000011','ba.two.demo@ba.fazoo.app',    crypt('Demo-Ba#002!', gen_salt('bf')), jsonb_build_object('full_name','Amina Sule (Demo)','phone','+23480000000011','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000012','ba.three.demo@ba.fazoo.app',  crypt('Demo-Ba#003!', gen_salt('bf')), jsonb_build_object('full_name','Kelechi Obi (Demo)','phone','+23480000000012','organization_slug','lenovo-nigeria'))
+  ('22222222-2222-4222-8222-000000000001'::uuid,'super.admin.demo@ba.fazoo.app', crypt('Demo-Super1!', gen_salt('bf')), jsonb_build_object('full_name','Ngozi Okafor (Demo)','phone','+23480000000001','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000002'::uuid,'org.admin.demo@ba.fazoo.app',  crypt('Demo-Admin1!', gen_salt('bf')), jsonb_build_object('full_name','Tunde Balogun (Demo)','phone','+23480000000002','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000003'::uuid,'supervisor.demo@ba.fazoo.app',crypt('Demo-SuperV1!', gen_salt('bf')), jsonb_build_object('full_name','Chiamaka Eze (Demo)','phone','+23480000000003','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000010'::uuid,'ba.one.demo@ba.fazoo.app',    crypt('Demo-Ba#001!', gen_salt('bf')), jsonb_build_object('full_name','Emeka Nwosu (Demo)','phone','+23480000000010','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000011'::uuid,'ba.two.demo@ba.fazoo.app',    crypt('Demo-Ba#002!', gen_salt('bf')), jsonb_build_object('full_name','Amina Sule (Demo)','phone','+23480000000011','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000012'::uuid,'ba.three.demo@ba.fazoo.app',  crypt('Demo-Ba#003!', gen_salt('bf')), jsonb_build_object('full_name','Kelechi Obi (Demo)','phone','+23480000000012','organization_slug','lenovo-nigeria'))
 ) as u(id, email, password_hash, meta)
 where not exists (select 1 from auth.users au where au.id = u.id);
 
@@ -58,19 +58,24 @@ where u.email like '%.demo@ba.fazoo.app'
 on conflict do nothing;
 
 -- ── roles & approval ─────────────────────────────────────────────────────────
-update public.profiles set role = 'super_admin',        account_status = 'approved' where id = '22222222-2222-4222-8222-000000000001';
-update public.profiles set role = 'organization_admin', account_status = 'approved' where id = '22222222-2222-4222-8222-000000000002';
-update public.profiles set role = 'supervisor',         account_status = 'approved' where id = '22222222-2222-4222-8222-000000000003';
+-- Temporarily disable the privilege-escalation guard for seed data.
+alter table public.profiles disable trigger guard_profile_update;
+
+update public.profiles set role = 'super_admin',        account_status = 'approved' where id = '22222222-2222-4222-8222-000000000001'::uuid;
+update public.profiles set role = 'organization_admin', account_status = 'approved' where id = '22222222-2222-4222-8222-000000000002'::uuid;
+update public.profiles set role = 'supervisor',         account_status = 'approved' where id = '22222222-2222-4222-8222-000000000003'::uuid;
 
 -- Approved BAs with photos pending first upload; one BA left PENDING on purpose
-update public.profiles set account_status = 'approved' where id = '22222222-2222-4222-8222-000000000010';
-update public.profiles set account_status = 'approved' where id = '22222222-2222-4222-8222-000000000011';
+update public.profiles set account_status = 'approved' where id = '22222222-2222-4222-8222-000000000010'::uuid;
+update public.profiles set account_status = 'approved' where id = '22222222-2222-4222-8222-000000000011'::uuid;
+
+alter table public.profiles enable trigger guard_profile_update;
 
 -- ── campaign ─────────────────────────────────────────────────────────────────
 insert into public.campaigns (id, organization_id, name, description, start_date, status)
 values (
-  '33333333-3333-4333-8333-333333333301',
-  '11111111-1111-4111-8111-111111111111',
+  '33333333-3333-4333-8333-333333333301'::uuid,
+  '11111111-1111-4111-8111-111111111111'::uuid,
   'Retail Push Q3 2026 (Demo)',
   'Demonstration campaign for local development only.',
   date_trunc('month', now())::date - interval '1 month',
@@ -81,28 +86,28 @@ on conflict do nothing;
 -- ── stores (fictitious demo locations around Lagos for geofence testing) ────
 insert into public.stores (id, organization_id, name, address, latitude, longitude, geofence_radius_metres)
 values
-  ('44444444-4444-4444-8444-444444444401', '11111111-1111-4111-8111-111111111111', 'Ikeja Tech Plaza (Demo)',    'Plot 1, Demo Road, Ikeja',          6.601900,  3.351500, 200),
-  ('44444444-4444-4444-8444-444444444402', '11111111-1111-4111-8111-111111111111', 'Yaba Gadget Hub (Demo)',     '12 Sample Street, Yaba',            6.509500,  3.371100, 250),
-  ('44444444-4444-4444-8444-444444444403', '11111111-1111-4111-8111-111111111111', 'Lekki Electronics Bay (Demo)','34 Test Avenue, Lekki Phase 1',    6.445700,  3.552300, 150)
+  ('44444444-4444-4444-8444-444444444401'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Ikeja Tech Plaza (Demo)',    'Plot 1, Demo Road, Ikeja',          6.601900,  3.351500, 200),
+  ('44444444-4444-4444-8444-444444444402'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Yaba Gadget Hub (Demo)',     '12 Sample Street, Yaba',            6.509500,  3.371100, 250),
+  ('44444444-4444-4444-8444-444444444403'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Lekki Electronics Bay (Demo)','34 Test Avenue, Lekki Phase 1',    6.445700,  3.552300, 150)
 on conflict do nothing;
 
 -- ── SKUs (public product-line names, fictitious codes) ──────────────────────
 insert into public.skus (id, organization_id, campaign_id, name, code, status)
 values
-  ('55555555-5555-4555-8555-555555555501', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', 'ThinkPad E14 Gen 6',   'TP-E14-G6',  'active'),
-  ('55555555-5555-4555-8555-555555555502', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', 'IdeaPad Slim 3',       'IP-SLIM3',   'active'),
-  ('55555555-5555-4555-8555-555555555503', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', 'Tab M11',              'TAB-M11',    'active'),
-  ('55555555-5555-4555-8555-555555555504', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', 'Smart Paper Display',  'SPD-10',     'inactive')
+  ('55555555-5555-4555-8555-555555555501'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, 'ThinkPad E14 Gen 6',   'TP-E14-G6',  'active'),
+  ('55555555-5555-4555-8555-555555555502'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, 'IdeaPad Slim 3',       'IP-SLIM3',   'active'),
+  ('55555555-5555-4555-8555-555555555503'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, 'Tab M11',              'TAB-M11',    'active'),
+  ('55555555-5555-4555-8555-555555555504'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, 'Smart Paper Display',  'SPD-10',     'inactive')
 on conflict do nothing;
 
 -- ── assignments (weekly off-days stored per assignment) ─────────────────────
 insert into public.brand_ambassador_assignments
   (organization_id, brand_ambassador_id, campaign_id, store_id, weekly_off_day, start_date, status)
 values
-  ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-000000000010', '33333333-3333-4333-8333-333333333301', '44444444-4444-4444-8444-444444444401', 0, current_date - 30, 'active'),
-  ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-000000000011', '33333333-3333-4333-8333-333333333301', '44444444-4444-4444-8444-444444444402', 2, current_date - 30, 'active');
+  ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000010'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, '44444444-4444-4444-8444-444444444401'::uuid, 0, current_date - 30, 'active'),
+  ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000011'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, '44444444-4444-4444-8444-444444444402'::uuid, 2, current_date - 30, 'active');
 
 -- ── supervisor scope: sees the Ikeja store ───────────────────────────────────
 insert into public.supervisor_scopes (organization_id, supervisor_id, store_id)
-values ('11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-000000000003', '44444444-4444-4444-8444-444444444401')
+values ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000003'::uuid, '44444444-4444-4444-8444-444444444401'::uuid)
 on conflict do nothing;

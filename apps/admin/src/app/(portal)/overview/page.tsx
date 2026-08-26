@@ -116,6 +116,7 @@ export default async function OverviewPage({
       <Card className="mt-6">
         <div className="border-b border-ink/8 px-5 py-4">
           <h2 className="text-sm font-semibold text-ink">Sales &amp; completion trends</h2>
+          <p className="mt-0.5 text-xs text-muted">Units and completion rate per day in the selected range.</p>
         </div>
         <TrendsChart data={stats.trend} />
       </Card>

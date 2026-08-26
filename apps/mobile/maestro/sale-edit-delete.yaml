@@ -1,3 +1,4 @@
+# Sale edit and delete flow — requires an open daily log.
 appId: app.fazoo.mobile
 ---
 - runFlow: sign-in.yaml

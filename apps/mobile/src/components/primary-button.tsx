@@ -7,6 +7,7 @@ export function PrimaryButton({
   busy,
   variant = 'primary',
   accessibilityLabel,
+  accessibilityHint,
   children,
 }: {
   label?: string;
@@ -15,6 +16,7 @@ export function PrimaryButton({
   busy?: boolean;
   variant?: 'primary' | 'ghost' | 'danger';
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   children?: React.ReactNode;
 }) {
   const styles =
@@ -28,12 +30,15 @@ export function PrimaryButton({
       onPress={onPress}
       disabled={disabled || busy}
       accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole="button"
+      accessibilityState={{ busy, disabled }}
       className={`h-14 rounded-xl items-center justify-center px-6 my-1.5 ${styles} ${
         disabled ? 'opacity-40' : ''
       }`}
     >
       {busy ? (
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color="#fff" accessibilityLabel="Loading" />
       ) : children ? (
         <View className="w-full h-full items-center justify-center overflow-hidden rounded-xl">
           {children}

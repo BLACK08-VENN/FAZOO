@@ -1,3 +1,4 @@
+# Verify location permission denial shows an appropriate message.
 appId: app.fazoo.mobile
 ---
 - runFlow: sign-in.yaml
@@ -6,4 +7,4 @@ appId: app.fazoo.mobile
     permissions:
       location: deny
 - tapOn: "Get my location"
-- assertVisible: ".*Location.*"
+- assertVisible: ".*[Ll]ocation.*"

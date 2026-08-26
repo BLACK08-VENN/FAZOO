@@ -9,6 +9,7 @@ port = 54322
 major_version = 15
 
 [studio]
+enabled = false
 port = 54323
 
 [auth]
@@ -17,6 +18,12 @@ additional_redirect_urls = ["http://localhost:8081"]
 
 [auth.email]
 enable_signup = true
+
+[storage]
+enabled = false
+
+[db.meta]
+enabled = false
 
 # Phone/SMS auth can be enabled later for true self-service password reset;
 # see docs/roles-and-permissions.md §password-reset.

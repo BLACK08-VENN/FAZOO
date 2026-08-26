@@ -50,8 +50,8 @@ export default async function SkusPage() {
                   status: 'active',
                 });
                 if (!parsed.success) return;
-                const { client: c } = await requireStaff();
-                await c.from('skus').insert(parsed.data);
+                const { client: c, profile } = await requireStaff();
+                await c.from('skus').insert({ ...parsed.data, organization_id: profile.organization_id });
                 revalidatePath('/skus');
               }}
               className="space-y-3"

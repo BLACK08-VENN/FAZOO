@@ -32,7 +32,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-screen">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-ink px-3 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-ink px-3 py-5 lg:flex" aria-label="Sidebar navigation">
         <div className="mb-8 px-3">
           <span className="text-lg font-bold tracking-tight text-white">
             Fazoo<span className="text-bright">.</span>
@@ -43,9 +43,9 @@ export default async function PortalLayout({ children }: { children: React.React
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
             >
-              <Icon size={16} aria-hidden />
+              <Icon size={16} aria-hidden="true" />
               {label}
             </Link>
           ))}
@@ -56,7 +56,7 @@ export default async function PortalLayout({ children }: { children: React.React
           <form action={signOutAction} className="mt-3">
             <button
               type="submit"
-              className="w-full rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white"
+              className="w-full rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
             >
               Sign out
             </button>
@@ -69,7 +69,7 @@ export default async function PortalLayout({ children }: { children: React.React
         <header className="flex items-center justify-between bg-ink px-4 py-3 lg:hidden">
           <span className="text-lg font-bold text-white">Fazoo.</span>
           <form action={signOutAction}>
-            <button type="submit" className="text-xs font-medium text-white/80">
+            <button type="submit" className="text-xs font-medium text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white">
               Sign out
             </button>
           </form>
@@ -77,18 +77,19 @@ export default async function PortalLayout({ children }: { children: React.React
         <nav
           aria-label="Primary mobile"
           className="flex gap-1 overflow-x-auto bg-charcoal px-2 py-2 lg:hidden"
+          role="navigation"
         >
           {NAV.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-white/75 hover:bg-white/10 hover:text-white"
+              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-white/75 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
             >
               {label}
             </Link>
           ))}
         </nav>
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8" id="main-content">{children}</main>
       </div>
     </div>
   );
