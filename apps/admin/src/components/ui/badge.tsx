@@ -32,7 +32,9 @@ export function Badge({
   );
 }
 
-export function attendanceTone(status: string): 'success' | 'warning' | 'danger' | 'purple' | 'neutral' {
+export function attendanceTone(
+  status: string,
+): 'success' | 'warning' | 'danger' | 'purple' | 'neutral' {
   switch (status) {
     case 'present':
     case 'completed':
@@ -44,6 +46,7 @@ export function attendanceTone(status: string): 'success' | 'warning' | 'danger'
       return 'warning';
     case 'absent':
     case 'rejected':
+    case 'denied':
     case 'suspended':
       return 'danger';
     case 'weekly_off':

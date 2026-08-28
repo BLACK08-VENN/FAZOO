@@ -18,6 +18,7 @@
     "db:reset": "cd supabase && supabase db reset",
     "db:push": "cd supabase && supabase db push",
     "db:types": "supabase gen types typescript --local > packages/database/src/database.types.ts",
+    "migrate:csv": "tsx scripts/migrate-csv.ts",
     "clean": "pnpm -r exec rm -rf node_modules .next .expo dist",
     "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,css,md,json}\""
@@ -25,13 +26,17 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@fazoo/typescript-config": "workspace:*",
+    "@supabase/supabase-js": "2.112.3",
     "@types/node": "^24.3.1",
+    "@types/papaparse": "^5.5.2",
     "eslint": "^9.36.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^6.1.0",
     "globals": "^16.4.0",
+    "papaparse": "^5.7.0",
     "prettier": "^3.9.6",
     "supabase": "^2.115.0",
+    "tsx": "^4.23.12",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.44.0"
   }

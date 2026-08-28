@@ -98,6 +98,7 @@ begin
   join public.campaigns c on c.id = ass.campaign_id
   join public.stores s    on s.id = ass.store_id
   where ass.brand_ambassador_id = p.id
+    and ass.organization_id = p.organization_id
     and ass.status = 'active'
     and ass.start_date <= lagos_d
     and (ass.end_date is null or ass.end_date >= lagos_d)
@@ -196,6 +197,7 @@ begin
   join public.campaigns c on c.id = ass.campaign_id
   join public.stores s    on s.id = ass.store_id
   where ass.brand_ambassador_id = p.id
+    and ass.organization_id = p.organization_id
     and ass.status = 'active'
     and ass.start_date <= lagos_d
     and (ass.end_date is null or ass.end_date >= lagos_d)
@@ -500,6 +502,7 @@ begin
 
   select * into a from public.brand_ambassador_assignments
    where brand_ambassador_id = p.id and status = 'active'
+     and organization_id = p.organization_id
      and start_date <= lagos_d and (end_date is null or end_date >= lagos_d)
    order by start_date desc limit 1;
 

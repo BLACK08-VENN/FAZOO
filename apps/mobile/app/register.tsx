@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -11,9 +11,18 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import { registrationSchema, normalizeNigerianPhone, phoneToAuthEmail } from '@fazoo/validation';
+import { registrationSchema, normalizeInternationalPhone, phoneToAuthEmail } from '@fazoo/validation';
 import { supabase } from '@/lib/supabase';
 import { capturePhoto, uploadPhotoWithRetry, type CapturedPhoto } from '@/lib/photos';
+import { BrandLogo } from '@/components/brand-logo';
+
+interface Brand {
+  organization_id: string;
+  organization_slug: string;
+  organization_name: string;
+  logo_url: string | null;
+  has_code_gate: boolean;
+}
 
 export default function Register() {
   const [fullName, setFullName] = useState('');
@@ -22,8 +31,20 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [photo, setPhoto] = useState<CapturedPhoto | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [brandId, setBrandId] = useState<string | null>(null);
+  const [accessCode, setAccessCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void supabase.rpc('joinable_brands').then(({ data }) => {
+      const list = (data as Brand[] | null) ?? [];
+      setBrands(list);
+      const first = list[0];
+      if (list.length === 1 && first) setBrandId(first.organization_id);
+    });
+  }, []);
 
   async function takePhoto() {
     try {
@@ -37,7 +58,11 @@ export default function Register() {
   async function submit() {
     setError(null);
 
-    // Client-side validation mirrors server rules; Supabase + RPC re-check.
+    if (!brandId) {
+      setError('Select the brand you are joining.');
+      return;
+    }
+
     const parsed = registrationSchema.safeParse({
       full_name: fullName,
       phone,
@@ -53,13 +78,12 @@ export default function Register() {
       return;
     }
 
-    const e164 = normalizeNigerianPhone(phone);
+    const e164 = normalizeInternationalPhone(phone);
     if (!e164.ok || !e164.e164) {
-      setError('Enter a valid Nigerian mobile number.');
+      setError('Enter a valid mobile number (include your country code, e.g. +2547…).');
       return;
     }
 
-    // Duplicate check (fast feedback; DB remains authoritative).
     const alias = phoneToAuthEmail(e164.e164);
 
     setBusy(true);
@@ -71,7 +95,6 @@ export default function Register() {
           data: {
             full_name: parsed.data.full_name,
             phone: e164.e164,
-            organization_slug: 'lenovo-nigeria',
           },
         },
       });
@@ -85,6 +108,16 @@ export default function Register() {
       }
       if (!signUp.session || !signUp.user) {
         setError('Registration succeeded but sign-in is pending — please contact support.');
+        return;
+      }
+
+      // Join the chosen brand (gated brands can self-approve with the code).
+      const { error: joinErr } = await supabase.rpc('ba_request_org_membership', {
+        p_organization_id: brandId,
+        ...(accessCode.trim() ? { p_org_code: accessCode.trim() } : {}),
+      });
+      if (joinErr) {
+        setError(joinErr.message);
         return;
       }
 
@@ -112,6 +145,49 @@ export default function Register() {
         <Text className="text-muted mt-1 mb-8">
           All fields are required. You can start after an administrator approves you.
         </Text>
+
+        {/* Brand selection */}
+        <Text className="font-medium text-charcoal mb-2">Brand you are joining *</Text>
+        {brands.length === 0 ? (
+          <ActivityIndicator color="#7B2FBE" className="mb-4" />
+        ) : (
+          brands.map((b) => (
+            <TouchableOpacity
+              key={b.organization_id}
+              onPress={() => setBrandId(b.organization_id)}
+              accessibilityLabel={`Join ${b.organization_name}`}
+              className={`rounded-xl border-2 px-4 py-3 mb-2 ${
+                brandId === b.organization_id ? 'border-primary bg-primary/10' : 'border-transparent bg-white'
+              }`}
+            >
+              <BrandLogo
+                name={b.organization_name}
+                slug={b.organization_slug}
+                logoUrl={b.logo_url}
+              />
+              <Text
+                className={`mt-3 font-semibold ${brandId === b.organization_id ? 'text-primary' : 'text-ink'}`}
+              >
+                {b.organization_name}
+              </Text>
+              {b.has_code_gate ? (
+                <Text className="text-muted text-sm">Access code required</Text>
+              ) : null}
+            </TouchableOpacity>
+          ))
+        )}
+        {brands.find((b) => b.organization_id === brandId)?.has_code_gate ? (
+          <TextInput
+            className="h-14 rounded-xl bg-white px-4 text-lg mb-4"
+            placeholder="Access code (if you have one)"
+            placeholderTextColor="#9a94a5"
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry
+            value={accessCode}
+            onChangeText={setAccessCode}
+          />
+        ) : null}
 
         {/* Photo */}
         <Text className="font-medium text-charcoal mb-2">Profile photograph *</Text>

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Link, router } from 'expo-router';
-import { toAuthEmail, normalizeNigerianPhone } from '@fazoo/validation';
+import { toAuthEmail, normalizeInternationalPhone } from '@fazoo/validation';
 import { supabase } from '@/lib/supabase';
 
 export default function SignIn() {
@@ -19,7 +19,7 @@ export default function SignIn() {
 
   async function submit() {
     setError(null);
-    const normalized = normalizeNigerianPhone(phone);
+    const normalized = normalizeInternationalPhone(phone);
     const email = normalized.ok && normalized.e164 ? toAuthEmail(normalized.e164) : null;
     if (!email || !password) {
       setError('Enter your mobile number and password.');
@@ -42,10 +42,9 @@ export default function SignIn() {
     >
       <Text className="text-white text-3xl font-bold mb-1">Fazoo</Text>
       <Text className="text-white/60 mb-10">Sign in with your mobile number</Text>
-
       <TextInput
         className="h-14 rounded-xl bg-charcoal text-white text-lg px-4 mb-3"
-        placeholder="0803 123 4567"
+        placeholder="+234 803 123 4567"
         placeholderTextColor="#6B6472"
         keyboardType="phone-pad"
         autoComplete="tel"

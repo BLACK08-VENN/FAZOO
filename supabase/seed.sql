@@ -15,15 +15,32 @@
 
 create extension if not exists pgcrypto;
 
--- ── organization ─────────────────────────────────────────────────────────────
-insert into public.organizations (id, name, slug, timezone, primary_color, secondary_color)
+-- ── organizations ─────────────────────────────────────────────────────────────
+insert into public.organizations (id, name, slug, logo_url, timezone, primary_color, secondary_color, has_code_gate, access_code)
 values (
   '11111111-1111-4111-8111-111111111111'::uuid,
   'Lenovo Nigeria (Demo)',
   'lenovo-nigeria',
+  '/brands/lenovo.png',
   'Africa/Lagos',
   '#7B2FBE',
-  '#0B0B0F'
+  '#0B0B0F',
+  true,
+  'LENOVO-DEMO'
+)
+on conflict (slug) do nothing;
+
+insert into public.organizations (id, name, slug, logo_url, timezone, primary_color, secondary_color, has_code_gate, access_code)
+values (
+  '11111111-1111-4111-8111-111111111122'::uuid,
+  'Veda (Demo)',
+  'veda',
+  '/brands/veda.jpeg',
+  'Africa/Nairobi',
+  '#0EA5E9',
+  '#0B0B0F',
+  true,
+  'VEDA-DEMO'
 )
 on conflict (slug) do nothing;
 
@@ -45,7 +62,9 @@ from (values
   ('22222222-2222-4222-8222-000000000003'::uuid,'supervisor.demo@ba.fazoo.app',crypt('Demo-SuperV1!', gen_salt('bf')), jsonb_build_object('full_name','Chiamaka Eze (Demo)','phone','+23480000000003','organization_slug','lenovo-nigeria')),
   ('22222222-2222-4222-8222-000000000010'::uuid,'ba.one.demo@ba.fazoo.app',    crypt('Demo-Ba#001!', gen_salt('bf')), jsonb_build_object('full_name','Emeka Nwosu (Demo)','phone','+23480000000010','organization_slug','lenovo-nigeria')),
   ('22222222-2222-4222-8222-000000000011'::uuid,'ba.two.demo@ba.fazoo.app',    crypt('Demo-Ba#002!', gen_salt('bf')), jsonb_build_object('full_name','Amina Sule (Demo)','phone','+23480000000011','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000012'::uuid,'ba.three.demo@ba.fazoo.app',  crypt('Demo-Ba#003!', gen_salt('bf')), jsonb_build_object('full_name','Kelechi Obi (Demo)','phone','+23480000000012','organization_slug','lenovo-nigeria'))
+  ('22222222-2222-4222-8222-000000000012'::uuid,'ba.three.demo@ba.fazoo.app',  crypt('Demo-Ba#003!', gen_salt('bf')), jsonb_build_object('full_name','Kelechi Obi (Demo)','phone','+23480000000012','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000020'::uuid,'client.demo@ba.fazoo.app',    crypt('Demo-Client1!', gen_salt('bf')), jsonb_build_object('full_name','Lenovo Stakeholder (Demo)','phone','+23480000000020','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000030'::uuid,'veda.ba.demo@ba.fazoo.app',   crypt('Demo-Veda#01!', gen_salt('bf')), jsonb_build_object('full_name','Achieng Demo (Veda)','phone','+254700000001','organization_slug','veda'))
 ) as u(id, email, password_hash, meta)
 where not exists (select 1 from auth.users au where au.id = u.id);
 
@@ -64,6 +83,7 @@ alter table public.profiles disable trigger guard_profile_update;
 update public.profiles set role = 'super_admin',        account_status = 'approved' where id = '22222222-2222-4222-8222-000000000001'::uuid;
 update public.profiles set role = 'organization_admin', account_status = 'approved' where id = '22222222-2222-4222-8222-000000000002'::uuid;
 update public.profiles set role = 'supervisor',         account_status = 'approved' where id = '22222222-2222-4222-8222-000000000003'::uuid;
+update public.profiles set role = 'client',             account_status = 'approved' where id = '22222222-2222-4222-8222-000000000020'::uuid;
 
 -- Approved BAs with photos pending first upload; one BA left PENDING on purpose
 update public.profiles set account_status = 'approved' where id = '22222222-2222-4222-8222-000000000010'::uuid;
@@ -111,3 +131,28 @@ values
 insert into public.supervisor_scopes (organization_id, supervisor_id, store_id)
 values ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000003'::uuid, '44444444-4444-4444-8444-444444444401'::uuid)
 on conflict do nothing;
+
+-- ── multi-brand memberships (one account → many brands) ─────────────────────
+-- Emeka (BA 1) belongs to both Lenovo (approved) and Veda (approved) to
+-- exercise the brand-switcher. The Veda demo BA belongs only to Veda.
+insert into public.organization_memberships
+  (user_id, organization_id, role, account_status, access_code_used, code_granted_at)
+values
+  ('22222222-2222-4222-8222-000000000010'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'approved', 'LENOVO-DEMO', now()),
+  ('22222222-2222-4222-8222-000000000010'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, 'brand_ambassador', 'approved', 'VEDA-DEMO',   now()),
+  ('22222222-2222-4222-8222-000000000011'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'approved', 'LENOVO-DEMO', now()),
+  ('22222222-2222-4222-8222-000000000012'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'pending',   null,          null),
+  ('22222222-2222-4222-8222-000000000030'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, 'brand_ambassador', 'approved', 'VEDA-DEMO',   now())
+on conflict (user_id, organization_id) do nothing;
+
+-- Backfill any profile that landed without a membership (e.g. super admin,
+-- org admin, supervisor, client) so their profile mirror stays consistent.
+insert into public.organization_memberships
+  (user_id, organization_id, role, account_status)
+select id, organization_id, role, account_status
+from public.profiles
+where not exists (
+  select 1 from public.organization_memberships m
+  where m.user_id = profiles.id and m.organization_id = profiles.organization_id
+)
+on conflict (user_id, organization_id) do nothing;

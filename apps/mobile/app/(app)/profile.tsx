@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 import { PASSWORD_MIN_LENGTH } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import { signOut, useSessionProfile } from '@/lib/session';
@@ -71,6 +72,12 @@ export default function Profile() {
           {message ? <Text role="status" className="text-ok font-medium">{message}</Text> : null}
 
           <View className="mt-10">
+            <PrimaryButton
+              label="Switch brand"
+              variant="ghost"
+              onPress={() => router.replace('/brand-select')}
+            />
+            <View className="h-3" />
             <PrimaryButton label="Sign out" variant="ghost" onPress={confirmSignOut} />
           </View>
           <Text className="text-center text-xs text-muted mt-6">

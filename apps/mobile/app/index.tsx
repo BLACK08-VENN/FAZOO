@@ -10,5 +10,5 @@ export default function Index() {
   if (profile.account_status !== 'approved') {
     return <Redirect href="/pending-approval" />;
   }
-  return <Redirect href="/today" />;
+  return <Redirect href="/brand-select" />;
 }

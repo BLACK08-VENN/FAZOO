@@ -5,6 +5,7 @@ export const AppRole = {
   OrganizationAdmin: 'organization_admin',
   Supervisor: 'supervisor',
   BrandAmbassador: 'brand_ambassador',
+  Client: 'client',
 } as const;
 export type AppRole = (typeof AppRole)[keyof typeof AppRole];
 
@@ -21,8 +22,7 @@ export const OrganizationStatus = {
   Active: 'active',
   Suspended: 'suspended',
 } as const;
-export type OrganizationStatus =
-  (typeof OrganizationStatus)[keyof typeof OrganizationStatus];
+export type OrganizationStatus = (typeof OrganizationStatus)[keyof typeof OrganizationStatus];
 
 export const CampaignStatus = {
   Draft: 'draft',
@@ -30,8 +30,7 @@ export const CampaignStatus = {
   Completed: 'completed',
   Cancelled: 'cancelled',
 } as const;
-export type CampaignStatus =
-  (typeof CampaignStatus)[keyof typeof CampaignStatus];
+export type CampaignStatus = (typeof CampaignStatus)[keyof typeof CampaignStatus];
 
 export const StoreStatus = {
   Active: 'active',
@@ -44,8 +43,7 @@ export const AssignmentStatus = {
   Ended: 'ended',
   Cancelled: 'cancelled',
 } as const;
-export type AssignmentStatus =
-  (typeof AssignmentStatus)[keyof typeof AssignmentStatus];
+export type AssignmentStatus = (typeof AssignmentStatus)[keyof typeof AssignmentStatus];
 
 export const SkuStatus = {
   Active: 'active',
@@ -59,16 +57,14 @@ export const AttendanceStatus = {
   WeeklyOff: 'weekly_off',
   Absent: 'absent',
 } as const;
-export type AttendanceStatus =
-  (typeof AttendanceStatus)[keyof typeof AttendanceStatus];
+export type AttendanceStatus = (typeof AttendanceStatus)[keyof typeof AttendanceStatus];
 
 export const DailyLogStatus = {
   Open: 'open',
   Completed: 'completed',
   Cancelled: 'cancelled',
 } as const;
-export type DailyLogStatus =
-  (typeof DailyLogStatus)[keyof typeof DailyLogStatus];
+export type DailyLogStatus = (typeof DailyLogStatus)[keyof typeof DailyLogStatus];
 
 export const PhotoType = {
   StockShelf: 'stock_shelf',
@@ -77,3 +73,21 @@ export const PhotoType = {
   Other: 'other',
 } as const;
 export type PhotoType = (typeof PhotoType)[keyof typeof PhotoType];
+
+export const LeaveType = {
+  Annual: 'annual_leave',
+  Sick: 'sick_leave',
+  Paternity: 'paternity_leave',
+  Maternity: 'maternity_leave',
+  Casual: 'casual_leave',
+  Other: 'other',
+} as const;
+export type LeaveType = (typeof LeaveType)[keyof typeof LeaveType];
+
+export const LeaveRequestStatus = {
+  Pending: 'pending',
+  Approved: 'approved',
+  Denied: 'denied',
+  Cancelled: 'cancelled',
+} as const;
+export type LeaveRequestStatus = (typeof LeaveRequestStatus)[keyof typeof LeaveRequestStatus];

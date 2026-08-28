@@ -38,3 +38,12 @@ applications/
 config/legacy/
 uploads/
 logs/
+
+# Credentials / one-time setup exports (contain plaintext passwords)
+ba_login_credentials.csv
+ba_contacts.csv
+admin_login_credentials.csv
+
+# Historical migration inputs and derived location cache (private operational data)
+migration/data/
+scripts/.geocode-cache.json

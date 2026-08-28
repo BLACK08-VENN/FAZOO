@@ -8,19 +8,25 @@ const PROTECTED = [
   '/checkin',
   '/checkout',
   '/sick-leave',
-];
-const GUEST_ONLY = ['/', '/sign-in', '/register', '/forgot-password'];
+] as const;
+const GUEST_ONLY = ['/', '/sign-in', '/register', '/forgot-password'] as const;
+
+export type RedirectRoute =
+  | '/update-password'
+  | '/sign-in'
+  | '/brand-select'
+  | '/pending-approval';
 
 export function routeRedirect(
   pathname: string,
   authenticated: boolean,
   status?: AccountStatus,
   recovery = false,
-): string | null {
+): RedirectRoute | null {
   if (recovery) return pathname === '/update-password' ? null : '/update-password';
   if (!authenticated)
     return PROTECTED.some((path) => pathname.startsWith(path)) ? '/sign-in' : null;
-  if (GUEST_ONLY.includes(pathname)) return '/today';
+  if (GUEST_ONLY.some((path) => path === pathname)) return '/brand-select';
   if (pathname !== '/update-password' && status !== 'approved') return '/pending-approval';
   return null;
 }

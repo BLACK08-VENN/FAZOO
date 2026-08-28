@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Linking from 'expo-linking';
 import { Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import { normalizeNigerianPhone } from '@fazoo/validation';
+import { normalizeInternationalPhone, phoneToAuthEmail } from '@fazoo/validation';
 import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/primary-button';
 
@@ -17,14 +17,14 @@ export default function ForgotPassword() {
   //  • administrator-triggered secure reset link.
   async function requestReset() {
     setError(null);
-    const normalized = normalizeNigerianPhone(phone);
+    const normalized = normalizeInternationalPhone(phone);
     if (!normalized.ok || !normalized.e164) {
-      setError('Enter a valid Nigerian mobile number.');
+      setError('Enter a valid mobile number (include your country code, e.g. +2547…).');
       return;
     }
     setBusy(true);
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      `${normalized.e164.slice(1)}@ba.fazoo.app`,
+      phoneToAuthEmail(normalized.e164),
       { redirectTo: Linking.createURL('/update-password') },
     );
     setBusy(false);
@@ -53,7 +53,7 @@ export default function ForgotPassword() {
         </Text>
       ) : null}
       <TextInput
-        placeholder="0803 123 4567"
+        placeholder="+234 803 123 4567"
         placeholderTextColor="#9a94a5"
         keyboardType="phone-pad"
         className="h-14 rounded-xl bg-white px-4 text-lg mb-4"

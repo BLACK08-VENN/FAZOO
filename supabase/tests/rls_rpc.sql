@@ -26,6 +26,18 @@ select public.ba_update_sale(
   '77777777-7777-4777-8777-777777777710', 3,
   '88888888-8888-4888-8888-888888888810'
 );
+
+select public.ba_submit_leave_request(
+  'annual_leave', current_date + 10, current_date + 12, current_date + 13,
+  true, null, 'Planned annual family leave.', array['not_applicable'], true,
+  '88888888-8888-4888-8888-888888888811'
+);
+
+do $$ begin
+  if (select count(*) from public.leave_requests) <> 1 then
+    raise exception 'Leave RLS failure: BA cannot read own request or can read another request';
+  end if;
+end $$;
 select public.ba_update_sale(
   '77777777-7777-4777-8777-777777777710', 3,
   '88888888-8888-4888-8888-888888888810'
@@ -38,6 +50,25 @@ do $$ begin
   end if;
   if (select count(*) from public.operation_receipts where client_request_id = '88888888-8888-4888-8888-888888888810') <> 1 then
     raise exception 'Idempotency failure: expected one operation receipt';
+  end if;
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-000000000002', true);
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-000000000002","role":"authenticated"}', true);
+
+select public.admin_review_leave_request(
+  (select id from public.leave_requests where client_request_id = '88888888-8888-4888-8888-888888888811'),
+  'approve', 'Coverage confirmed.'
+);
+
+reset role;
+do $$ begin
+  if (select status from public.leave_requests where client_request_id = '88888888-8888-4888-8888-888888888811') <> 'approved' then
+    raise exception 'Leave review failure: request was not approved';
+  end if;
+  if not exists (select 1 from public.audit_logs where action = 'leave_request.approved') then
+    raise exception 'Leave audit failure: admin decision was not recorded';
   end if;
 end $$;
 

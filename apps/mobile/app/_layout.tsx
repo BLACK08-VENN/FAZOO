@@ -36,6 +36,7 @@ function RootLayout() {
       >
         <Stack.Screen name="(app)" />
         <Stack.Screen name="update-password" />
+        <Stack.Screen name="brand-select" />
       </Stack>
     </>
   );

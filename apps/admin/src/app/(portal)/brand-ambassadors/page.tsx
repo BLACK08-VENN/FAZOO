@@ -11,19 +11,16 @@ export default async function BrandAmbassadorsPage() {
   const { client, profile } = await requireStaff();
   const elevated = isElevated(profile.role);
 
-  const [{ data: bas }, { data: pending }] = await Promise.all([
+  const [{ data: bas }, { data: pendingRaw }] = await Promise.all([
     client
       .from('profiles')
-      .select('id, full_name, phone, role, account_status')
+      .select('id, full_name, phone, role, account_status, organization_id')
       .eq('role', 'brand_ambassador')
       .order('full_name'),
-    client
-      .from('profiles')
-      .select('id, full_name, phone, account_status, created_at')
-      .eq('role', 'brand_ambassador')
-      .eq('account_status', 'pending')
-      .order('created_at', { ascending: true }),
+    client.rpc('admin_list_pending_memberships'),
   ]);
+
+  const pending = (pendingRaw as PendingMembership[] | null) ?? [];
 
   return (
     <>
@@ -32,7 +29,7 @@ export default async function BrandAmbassadorsPage() {
       <Card className="mb-6">
         <CardHeader
           title="Pending registration queue"
-          description="New BAs wait here until an administrator approves them."
+          description="New BAs wait here until an administrator approves them, per brand."
         />
         <CardBody className="p-0">
           <TableWrap className="rounded-none border-0">
@@ -41,23 +38,25 @@ export default async function BrandAmbassadorsPage() {
                 <tr>
                   <Th>Name</Th>
                   <Th>Mobile</Th>
+                  <Th>Brand</Th>
                   <Th>Status</Th>
                   {elevated ? <Th className="text-right">Actions</Th> : null}
                 </tr>
               </thead>
               <tbody>
-                {(pending ?? []).length === 0 ? (
-                  <EmptyRow colSpan={4}>No pending registrations.</EmptyRow>
+                {pending.length === 0 ? (
+                  <EmptyRow colSpan={5}>No pending registrations.</EmptyRow>
                 ) : (
-                  (pending ?? []).map((p) => (
-                    <tr key={p.id}>
+                  pending.map((p) => (
+                    <tr key={p.membership_id}>
                       <Td className="font-medium">{p.full_name}</Td>
                       <Td>{p.phone}</Td>
+                      <Td>{p.brand_name}</Td>
                       <Td><Badge tone={attendanceTone(p.account_status)}>{p.account_status}</Badge></Td>
                       {elevated ? (
                         <Td>
                           <div className="flex justify-end gap-2">
-                            <ApproveButtons profileId={p.id} />
+                            <ApproveButtons profileId={p.user_id} />
                           </div>
                         </Td>
                       ) : null}
@@ -98,6 +97,15 @@ export default async function BrandAmbassadorsPage() {
       </TableWrap>
     </>
   );
+}
+
+interface PendingMembership {
+  membership_id: string;
+  user_id: string;
+  full_name: string;
+  phone: string;
+  brand_name: string;
+  account_status: string;
 }
 
 function ApproveButtons({ profileId }: { profileId: string }) {

@@ -67,5 +67,22 @@ export async function signInAction(
     return { error: 'Invalid credentials. Please try again.' };
   }
 
-  return { error: null, redirectTo: next.startsWith('/') ? next : '/overview' };
+  // Determine redirect based on role.
+  let redirectTo = next.startsWith('/') ? next : '/overview';
+  try {
+    const { data } = await client.auth.getUser();
+    const userId = data?.user?.id;
+    if (userId) {
+      const { data: profile } = await client
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      if (profile?.role === 'client') redirectTo = '/brand';
+    }
+  } catch {
+    // Fall back to default redirect.
+  }
+
+  return { error: null, redirectTo };
 }

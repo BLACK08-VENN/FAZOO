@@ -8,8 +8,6 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  const previewAvailable =
-    !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   return (
     <main className="grid min-h-screen bg-[#f5f1f8] lg:grid-cols-[1.16fr_0.84fr]">
@@ -116,20 +114,18 @@ export default async function SignInPage({
             <Suspense fallback={null}>
               <SignInForm next={next && next.startsWith('/') ? next : '/overview'} />
             </Suspense>
-            {previewAvailable ? (
-              <div className="mt-5 border-t border-ink/[0.07] pt-5">
-                <Link
-                  href="/preview"
-                  className="group flex h-12 items-center justify-between rounded-xl border border-primary/15 bg-primary/[0.055] px-4 text-sm font-semibold text-deep transition-all hover:border-primary/30 hover:bg-primary/[0.09]"
-                >
-                  Explore the demo workspace
-                  <span aria-hidden className="transition-transform group-hover:translate-x-1">→</span>
-                </Link>
-                <p className="mt-2 text-center text-[10px] uppercase tracking-[0.12em] text-muted/65">
-                  Preview data · no sign-in required
-                </p>
-              </div>
-            ) : null}
+            <div className="mt-5 border-t border-ink/[0.07] pt-5">
+              <Link
+                href="/how-it-works"
+                className="group flex h-12 items-center justify-between rounded-xl border border-primary/15 bg-primary/[0.055] px-4 text-sm font-semibold text-deep transition-all hover:border-primary/30 hover:bg-primary/[0.09]"
+              >
+                See how Fazoo helps your team
+                <span aria-hidden className="transition-transform group-hover:translate-x-1">→</span>
+              </Link>
+              <p className="mt-2 text-center text-[10px] uppercase tracking-[0.12em] text-muted/65">
+                For brands &amp; brand ambassadors · no sign-in required
+              </p>
+            </div>
           </div>
 
           <p className="mt-6 text-center text-xs leading-5 text-muted/90">

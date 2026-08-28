@@ -353,6 +353,114 @@ export type Database = {
           },
         ]
       }
+      leave_requests: {
+        Row: {
+          assignment_id: string
+          brand_ambassador_id: string
+          client_request_id: string
+          created_at: string
+          end_date: string
+          expected_return_date: string
+          id: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
+          organization_id: string
+          policy_acknowledged_at: string
+          reason: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["leave_request_status"]
+          store_id: string
+          supervisor_informed: boolean
+          supervisor_not_informed_reason: string | null
+          supporting_document_types: string[]
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          brand_ambassador_id: string
+          client_request_id: string
+          created_at?: string
+          end_date: string
+          expected_return_date: string
+          id?: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
+          organization_id: string
+          policy_acknowledged_at: string
+          reason: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["leave_request_status"]
+          store_id: string
+          supervisor_informed: boolean
+          supervisor_not_informed_reason?: string | null
+          supporting_document_types?: string[]
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          brand_ambassador_id?: string
+          client_request_id?: string
+          created_at?: string
+          end_date?: string
+          expected_return_date?: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["leave_type"]
+          organization_id?: string
+          policy_acknowledged_at?: string
+          reason?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["leave_request_status"]
+          store_id?: string
+          supervisor_informed?: boolean
+          supervisor_not_informed_reason?: string | null
+          supporting_document_types?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "brand_ambassador_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_brand_ambassador_id_fkey"
+            columns: ["brand_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operation_receipts: {
         Row: {
           brand_ambassador_id: string
@@ -398,9 +506,55 @@ export type Database = {
           },
         ]
       }
+      organization_memberships: {
+        Row: {
+          access_code_used: string | null
+          account_status: Database["public"]["Enums"]["account_status"]
+          code_granted_at: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_code_used?: string | null
+          account_status?: Database["public"]["Enums"]["account_status"]
+          code_granted_at?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_code_used?: string | null
+          account_status?: Database["public"]["Enums"]["account_status"]
+          code_granted_at?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_memberships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
+          access_code: string | null
           created_at: string
+          has_code_gate: boolean
           id: string
           logo_url: string | null
           name: string
@@ -413,7 +567,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_code?: string | null
           created_at?: string
+          has_code_gate?: boolean
           id?: string
           logo_url?: string | null
           name: string
@@ -426,7 +582,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_code?: string | null
           created_at?: string
+          has_code_gate?: boolean
           id?: string
           logo_url?: string | null
           name?: string
@@ -444,6 +602,7 @@ export type Database = {
         Row: {
           account_status: Database["public"]["Enums"]["account_status"]
           created_at: string
+          current_membership_id: string | null
           full_name: string
           id: string
           organization_id: string
@@ -455,6 +614,7 @@ export type Database = {
         Insert: {
           account_status?: Database["public"]["Enums"]["account_status"]
           created_at?: string
+          current_membership_id?: string | null
           full_name: string
           id: string
           organization_id: string
@@ -466,6 +626,7 @@ export type Database = {
         Update: {
           account_status?: Database["public"]["Enums"]["account_status"]
           created_at?: string
+          current_membership_id?: string | null
           full_name?: string
           id?: string
           organization_id?: string
@@ -696,15 +857,188 @@ export type Database = {
           },
         ]
       }
+      veda_activities: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["veda_activity_type"]
+          created_at: string
+          id: string
+          learner_count: number
+          organization_id: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["veda_activity_type"]
+          created_at?: string
+          id?: string
+          learner_count: number
+          organization_id: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["veda_activity_type"]
+          created_at?: string
+          id?: string
+          learner_count?: number
+          organization_id?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veda_activities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_activities_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "veda_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veda_schools: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number | null
+          legacy_id: number
+          longitude: number | null
+          name: string
+          organization_id: string
+          region: string | null
+          status: Database["public"]["Enums"]["store_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          legacy_id: number
+          longitude?: number | null
+          name: string
+          organization_id: string
+          region?: string | null
+          status?: Database["public"]["Enums"]["store_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          legacy_id?: number
+          longitude?: number | null
+          name?: string
+          organization_id?: string
+          region?: string | null
+          status?: Database["public"]["Enums"]["store_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veda_schools_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veda_sessions: {
+        Row: {
+          brand_ambassador_id: string
+          created_at: string
+          id: string
+          learner_count: number
+          legacy_id: number
+          organization_id: string
+          school_id: string
+          session_date: string
+          status: Database["public"]["Enums"]["daily_log_status"]
+          updated_at: string
+        }
+        Insert: {
+          brand_ambassador_id: string
+          created_at?: string
+          id?: string
+          learner_count: number
+          legacy_id: number
+          organization_id: string
+          school_id: string
+          session_date: string
+          status?: Database["public"]["Enums"]["daily_log_status"]
+          updated_at?: string
+        }
+        Update: {
+          brand_ambassador_id?: string
+          created_at?: string
+          id?: string
+          learner_count?: number
+          legacy_id?: number
+          organization_id?: string
+          school_id?: string
+          session_date?: string
+          status?: Database["public"]["Enums"]["daily_log_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veda_sessions_brand_ambassador_id_fkey"
+            columns: ["brand_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_sessions_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "veda_schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       account_status_active: { Args: never; Returns: boolean }
+      admin_list_pending_memberships: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          brand_name: string
+          created_at: string
+          full_name: string
+          membership_id: string
+          phone: string
+          user_id: string
+        }[]
+      }
       admin_reopen_daily_log: {
         Args: { p_daily_log_id: string }
         Returns: undefined
+      }
+      admin_review_leave_request: {
+        Args: {
+          p_decision: string
+          p_leave_request_id: string
+          p_review_note?: string
+        }
+        Returns: Json
       }
       admin_set_account_status: {
         Args: { p_action: string; p_profile_id: string; p_reason?: string }
@@ -728,6 +1062,7 @@ export type Database = {
         Returns: {
           account_status: Database["public"]["Enums"]["account_status"]
           created_at: string
+          current_membership_id: string | null
           full_name: string
           id: string
           organization_id: string
@@ -782,7 +1117,63 @@ export type Database = {
         }
         Returns: Json
       }
+      ba_request_org_membership: {
+        Args: { p_org_code?: string; p_organization_id: string }
+        Returns: {
+          access_code_used: string | null
+          account_status: Database["public"]["Enums"]["account_status"]
+          code_granted_at: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "organization_memberships"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ba_submit_leave_request: {
+        Args: {
+          p_client_request_id: string
+          p_end_date: string
+          p_expected_return_date: string
+          p_leave_type: Database["public"]["Enums"]["leave_type"]
+          p_policy_acknowledged: boolean
+          p_reason: string
+          p_start_date: string
+          p_supervisor_informed: boolean
+          p_supervisor_not_informed_reason: string
+          p_supporting_document_types: string[]
+        }
+        Returns: Json
+      }
+      ba_switch_brand: { Args: { p_organization_id: string }; Returns: string }
       ba_today: { Args: never; Returns: Json }
+      ba_unlock_brand: {
+        Args: { p_code: string; p_organization_id: string }
+        Returns: {
+          access_code_used: string | null
+          account_status: Database["public"]["Enums"]["account_status"]
+          code_granted_at: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "organization_memberships"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       ba_update_sale: {
         Args: {
           p_client_request_id: string
@@ -799,6 +1190,26 @@ export type Database = {
       complete_receipt: {
         Args: { p_client_request_id: string; p_result: Json }
         Returns: undefined
+      }
+      create_brand: {
+        Args: {
+          p_access_code: string | null
+          p_ba_user_ids: string[]
+          p_brand_admin_user_id: string
+          p_campaign_end: string | null
+          p_campaign_name: string
+          p_campaign_start: string
+          p_name: string
+          p_slug: string
+          p_store_address: string | null
+          p_store_lat: number | null
+          p_store_lng: number | null
+          p_store_name: string | null
+          p_store_radius?: number
+          p_timezone?: string
+          p_weekly_off_day?: number
+        }
+        Returns: Json
       }
       current_profile: {
         Args: never
@@ -817,8 +1228,32 @@ export type Database = {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
+      is_client: { Args: never; Returns: boolean }
       is_org_admin: { Args: { p_organization_id: string }; Returns: boolean }
+      is_org_client: { Args: { p_organization_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      joinable_brands: {
+        Args: never
+        Returns: {
+          has_code_gate: boolean
+          logo_url: string | null
+          organization_id: string
+          organization_name: string
+          organization_slug: string
+        }[]
+      }
+      my_memberships: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          has_code_gate: boolean
+          logo_url: string | null
+          organization_id: string
+          organization_name: string
+          organization_slug: string
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
       supervisor_can_see_campaign: {
         Args: { p_campaign_id: string; p_supervisor_id: string }
         Returns: boolean
@@ -859,14 +1294,27 @@ export type Database = {
         | "organization_admin"
         | "supervisor"
         | "brand_ambassador"
+        | "client"
       assignment_status: "active" | "ended" | "cancelled"
       attendance_status: "present" | "sick_leave" | "weekly_off" | "absent"
       campaign_status: "draft" | "active" | "completed" | "cancelled"
       daily_log_status: "open" | "completed" | "cancelled"
+      leave_request_status: "pending" | "approved" | "denied" | "cancelled"
+      leave_type:
+        | "annual_leave"
+        | "sick_leave"
+        | "paternity_leave"
+        | "maternity_leave"
+        | "casual_leave"
+        | "other"
       organization_status: "active" | "suspended"
       photo_type: "stock_shelf" | "uniform_selfie" | "checkout" | "other"
       sku_status: "active" | "inactive"
       store_status: "active" | "inactive"
+      veda_activity_type:
+        | "crayon_colouring"
+        | "watercolour_painting"
+        | "paper_crafts"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1009,16 +1457,30 @@ export const Constants = {
         "organization_admin",
         "supervisor",
         "brand_ambassador",
+        "client",
       ],
       assignment_status: ["active", "ended", "cancelled"],
       attendance_status: ["present", "sick_leave", "weekly_off", "absent"],
       campaign_status: ["draft", "active", "completed", "cancelled"],
       daily_log_status: ["open", "completed", "cancelled"],
+      leave_request_status: ["pending", "approved", "denied", "cancelled"],
+      leave_type: [
+        "annual_leave",
+        "sick_leave",
+        "paternity_leave",
+        "maternity_leave",
+        "casual_leave",
+        "other",
+      ],
       organization_status: ["active", "suspended"],
       photo_type: ["stock_shelf", "uniform_selfie", "checkout", "other"],
       sku_status: ["active", "inactive"],
       store_status: ["active", "inactive"],
+      veda_activity_type: [
+        "crayon_colouring",
+        "watercolour_painting",
+        "paper_crafts",
+      ],
     },
   },
 } as const
-

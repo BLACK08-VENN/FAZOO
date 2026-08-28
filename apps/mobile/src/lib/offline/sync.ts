@@ -69,6 +69,7 @@ async function runOperation(operation: QueuedOperation): Promise<void> {
       update_sale: 'ba_update_sale',
       delete_sale: 'ba_delete_sale',
       sick_leave: 'ba_mark_sick_leave',
+      leave_request: 'ba_submit_leave_request',
     } as const
   )[operation.operation];
   const { data, error } = await supabase.rpc(rpc, operation.payload as never);

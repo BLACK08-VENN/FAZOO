@@ -99,9 +99,9 @@ create table public.brand_ambassador_assignments (
   updated_at          timestamptz not null default now(),
   constraint assignments_date_order check (end_date is null or start_date <= end_date)
 );
--- A BA holds at most one ACTIVE assignment at any time.
+-- A BA holds at most one ACTIVE assignment at any time (per brand).
 create unique index assignments_one_active_idx
-  on public.brand_ambassador_assignments (brand_ambassador_id)
+  on public.brand_ambassador_assignments (brand_ambassador_id, organization_id)
   where status = 'active';
 create index assignments_store_idx   on public.brand_ambassador_assignments (store_id, status);
 create index assignments_campaign_idx on public.brand_ambassador_assignments (campaign_id, status);

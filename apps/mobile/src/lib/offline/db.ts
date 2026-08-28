@@ -2,7 +2,13 @@ import * as SQLite from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
 
 export type OperationName =
-  'checkin' | 'checkout' | 'sale' | 'update_sale' | 'delete_sale' | 'sick_leave';
+  | 'checkin'
+  | 'checkout'
+  | 'sale'
+  | 'update_sale'
+  | 'delete_sale'
+  | 'sick_leave'
+  | 'leave_request';
 export type OperationStatus = 'pending' | 'syncing' | 'done' | 'terminal';
 export interface QueuedAttachment {
   localUri: string;

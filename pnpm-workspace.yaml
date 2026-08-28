@@ -3,6 +3,7 @@ packages:
   - packages/*
 allowBuilds:
   '@sentry/cli': true
+  esbuild: true
 minimumReleaseAgeExclude:
   - '@expo/cli@57.0.18'
   - '@expo/config-plugins@57.0.9'

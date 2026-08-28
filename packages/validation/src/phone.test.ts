@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  normalizeInternationalPhone,
   normalizeNigerianPhone,
   phoneToAuthEmail,
+  requireInternationalPhone,
   requireNigerianPhone,
 } from './phone';
 
@@ -52,5 +54,48 @@ describe('phoneToAuthEmail', () => {
   });
   it('rejects non-E.164 input', () => {
     expect(() => phoneToAuthEmail('08031234567')).toThrow();
+  });
+});
+
+describe('normalizeInternationalPhone', () => {
+  it('keeps full E.164 with country code (Kenya)', () => {
+    expect(normalizeInternationalPhone('+254796402289')).toEqual({ ok: true, e164: '+254796402289' });
+  });
+  it('keeps full E.164 with country code (India)', () => {
+    expect(normalizeInternationalPhone('+919810960131')).toEqual({ ok: true, e164: '+919810960131' });
+  });
+  it('keeps full E.164 with country code (UAE)', () => {
+    expect(normalizeInternationalPhone('+971585645890')).toEqual({ ok: true, e164: '+971585645890' });
+  });
+  it('keeps full E.164 with country code (Nigeria)', () => {
+    expect(normalizeInternationalPhone('+2348031234567')).toEqual({ ok: true, e164: '+2348031234567' });
+  });
+  it('recognises a bare Nigerian country-code prefix', () => {
+    expect(normalizeInternationalPhone('2348031234567')).toEqual({ ok: true, e164: '+2348031234567' });
+  });
+  it('recognises a bare Kenyan country-code prefix', () => {
+    expect(normalizeInternationalPhone('254796402289')).toEqual({ ok: true, e164: '+254796402289' });
+  });
+  it('normalises a Kenyan local trunk-zero number', () => {
+    expect(normalizeInternationalPhone('0796402289')).toEqual({ ok: true, e164: '+254796402289' });
+  });
+  it('still normalises Nigerian local formats', () => {
+    expect(normalizeInternationalPhone('08031234567')).toEqual({ ok: true, e164: '+2348031234567' });
+    expect(normalizeInternationalPhone('8031234567')).toEqual({ ok: true, e164: '+2348031234567' });
+  });
+  it('rejects an unknown/ambiguous bare number', () => {
+    expect(normalizeInternationalPhone('12345')).toEqual({ ok: false, reason: 'invalid_length' });
+  });
+  it('rejects empty input', () => {
+    expect(normalizeInternationalPhone('   ').ok).toBe(false);
+  });
+});
+
+describe('requireInternationalPhone', () => {
+  it('returns E.164 on success', () => {
+    expect(requireInternationalPhone('0796402289')).toBe('+254796402289');
+  });
+  it('throws a friendly message on failure', () => {
+    expect(() => requireInternationalPhone('12')).toThrow(/country code/);
   });
 });

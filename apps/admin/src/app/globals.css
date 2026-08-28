@@ -136,3 +136,28 @@ body {
     animation: none;
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+  }
+  .fazoo-shell::before {
+    display: none !important;
+  }
+  aside,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .print-sheet {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}

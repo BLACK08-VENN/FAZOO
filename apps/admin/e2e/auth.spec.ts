@@ -62,7 +62,8 @@ test.describe('authentication & role isolation', () => {
     await page.getByLabel('Password').fill(ADMIN_PASSWORD!);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/overview/);
-    await page.getByRole('button', { name: 'Sign out' }).first().click();
+    const signOut = page.getByRole('button', { name: 'Sign out' });
+    await signOut.locator('visible=true').first().click();
     await expect(page).toHaveURL(/sign-in/);
   });
 

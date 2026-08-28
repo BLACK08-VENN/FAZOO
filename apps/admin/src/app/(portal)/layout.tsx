@@ -2,8 +2,10 @@ import Link from 'next/link';
 import {
   BarChart3,
   Boxes,
+  Building2,
   CalendarCheck2,
   ClipboardList,
+  FileClock,
   Download,
   MapPin,
   ScrollText,
@@ -17,11 +19,13 @@ import { signOutAction } from './actions';
 const NAV = [
   { href: '/overview', label: 'Overview', icon: BarChart3 },
   { href: '/daily-logs', label: 'Daily Logs', icon: CalendarCheck2 },
+  { href: '/leave-requests', label: 'Leave Requests', icon: FileClock },
   { href: '/sales', label: 'Sales', icon: ClipboardList },
   { href: '/brand-ambassadors', label: 'Brand Ambassadors', icon: Users },
   { href: '/stores', label: 'Stores', icon: MapPin },
   { href: '/skus', label: 'SKUs', icon: Boxes },
   { href: '/campaigns', label: 'Campaigns', icon: Store },
+  { href: '/brands', label: 'Add Brand', icon: Building2 },
   { href: '/reports', label: 'Reports', icon: Download },
   { href: '/settings', label: 'Settings', icon: Settings },
   { href: '/audit-logs', label: 'Audit Logs', icon: ScrollText },
@@ -55,7 +59,9 @@ export default async function PortalLayout({ children }: { children: React.React
         </nav>
         <div className="border-t border-white/10 pt-4">
           <p className="truncate px-3 text-sm font-medium text-white">{profile.full_name}</p>
-          <p className="truncate px-3 text-xs text-white/50">{profile.role.replace('_', ' ')}</p>
+          <p className="truncate px-3 text-xs text-white/50">
+            {profile.role.replace('_', ' ')}
+          </p>
           <form action={signOutAction} className="mt-3">
             <button
               type="submit"
@@ -72,7 +78,10 @@ export default async function PortalLayout({ children }: { children: React.React
         <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 lg:hidden">
           <span className="text-lg font-bold text-white">Fazoo.</span>
           <form action={signOutAction}>
-            <button type="submit" className="text-xs font-medium text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white">
+            <button
+              type="submit"
+              className="text-xs font-medium text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
+            >
               Sign out
             </button>
           </form>
@@ -92,7 +101,9 @@ export default async function PortalLayout({ children }: { children: React.React
             </Link>
           ))}
         </nav>
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8" id="main-content">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8" id="main-content">
+          {children}
+        </main>
       </div>
     </div>
   );
