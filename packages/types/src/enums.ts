@@ -69,6 +69,8 @@ export type DailyLogStatus = (typeof DailyLogStatus)[keyof typeof DailyLogStatus
 export const PhotoType = {
   StockShelf: 'stock_shelf',
   UniformSelfie: 'uniform_selfie',
+  CheckoutStockShelf: 'checkout_stock_shelf',
+  CheckoutUniformSelfie: 'checkout_uniform_selfie',
   Checkout: 'checkout',
   Other: 'other',
 } as const;

@@ -1097,6 +1097,8 @@ export type Database = {
           p_client_request_id: string
           p_latitude: number
           p_longitude: number
+          p_stock_photo_path: string
+          p_uniform_selfie_path: string
         }
         Returns: Json
       }
@@ -1308,7 +1310,7 @@ export type Database = {
         | "casual_leave"
         | "other"
       organization_status: "active" | "suspended"
-      photo_type: "stock_shelf" | "uniform_selfie" | "checkout" | "other"
+      photo_type: "stock_shelf" | "uniform_selfie" | "checkout_stock_shelf" | "checkout_uniform_selfie" | "checkout" | "other"
       sku_status: "active" | "inactive"
       store_status: "active" | "inactive"
       veda_activity_type:
@@ -1473,7 +1475,14 @@ export const Constants = {
         "other",
       ],
       organization_status: ["active", "suspended"],
-      photo_type: ["stock_shelf", "uniform_selfie", "checkout", "other"],
+      photo_type: [
+        "stock_shelf",
+        "uniform_selfie",
+        "checkout_stock_shelf",
+        "checkout_uniform_selfie",
+        "checkout",
+        "other",
+      ],
       sku_status: ["active", "inactive"],
       store_status: ["active", "inactive"],
       veda_activity_type: [

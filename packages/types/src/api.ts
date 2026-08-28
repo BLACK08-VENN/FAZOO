@@ -21,6 +21,8 @@ export interface BaCheckoutInput {
   latitude: number;
   longitude: number;
   accuracy_metres?: number | null;
+  stock_photo_path: string;
+  uniform_selfie_path: string;
   checkout_photo_path?: string | null;
   client_request_id: Uuid;
 }

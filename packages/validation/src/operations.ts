@@ -28,6 +28,8 @@ export const checkinSchema = gpsCoordinatesSchema.extend({
 });
 
 export const checkoutSchema = gpsCoordinatesSchema.extend({
+  stock_photo_path: z.string().min(1),
+  uniform_selfie_path: z.string().min(1),
   checkout_photo_path: z.string().min(1).nullable().optional(),
   client_request_id: z.string().uuid(),
 });

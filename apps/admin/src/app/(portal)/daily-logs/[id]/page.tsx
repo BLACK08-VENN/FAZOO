@@ -57,8 +57,13 @@ export default async function DailyLogDetailPage({
   };
 
   const totalUnits = (log.sales_entries ?? []).reduce((s, e) => s + e.quantity, 0);
-  const stockPhoto = log.daily_log_photos?.find((p) => p.photo_type === 'stock_shelf');
-  const selfiePhoto = log.daily_log_photos?.find((p) => p.photo_type === 'uniform_selfie');
+  const photos: Array<[string, { id: string; storage_path: string } | undefined]> = [
+    ['Stock on shelf · check-in', log.daily_log_photos?.find((p) => p.photo_type === 'stock_shelf')],
+    ['Uniform selfie · check-in', log.daily_log_photos?.find((p) => p.photo_type === 'uniform_selfie')],
+    ['Stock on shelf · check-out', log.daily_log_photos?.find((p) => p.photo_type === 'checkout_stock_shelf')],
+    ['Uniform selfie · check-out', log.daily_log_photos?.find((p) => p.photo_type === 'checkout_uniform_selfie')],
+  ];
+  const anyPhoto = photos.some(([, p]) => Boolean(p));
   const checkinMap = mapsLink(log.checkin_latitude, log.checkin_longitude);
   const checkoutMap = mapsLink(log.checkout_latitude, log.checkout_longitude);
 
@@ -136,14 +141,14 @@ export default async function DailyLogDetailPage({
                 {log.stores?.address ? <span className="block text-xs text-muted">{log.stores.address}</span> : null}
               </dd>
             </dl>
-            {(stockPhoto || selfiePhoto) && (
+            {(anyPhoto) && (
               <div className="mt-4 grid grid-cols-2 gap-3">
-                {[['Stock on shelf', stockPhoto], ['Uniform selfie', selfiePhoto]].map(
+                {photos.map(
                   ([label, p]) =>
                     p ? (
-                      <figure key={(p as { id: string }).id}>
-                        <PhotoFrame path={(p as { storage_path: string }).storage_path} />
-                        <figcaption className="mt-1 text-center text-xs text-muted">{label as string}</figcaption>
+                      <figure key={p.id}>
+                        <PhotoFrame path={p.storage_path} />
+                        <figcaption className="mt-1 text-center text-xs text-muted">{label}</figcaption>
                       </figure>
                     ) : null,
                 )}

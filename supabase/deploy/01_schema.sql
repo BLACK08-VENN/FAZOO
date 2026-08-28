@@ -16,7 +16,7 @@ create type assignment_status   as enum ('active','ended','cancelled');
 create type sku_status          as enum ('active','inactive');
 create type attendance_status   as enum ('present','sick_leave','weekly_off','absent');
 create type daily_log_status    as enum ('open','completed','cancelled');
-create type photo_type          as enum ('stock_shelf','uniform_selfie','checkout','other');
+create type photo_type          as enum ('stock_shelf','uniform_selfie','checkout','other','checkout_stock_shelf','checkout_uniform_selfie');
 
 -- ── organizations ───────────────────────────────────────────────────────────
 create table public.organizations (
@@ -202,7 +202,7 @@ create index daily_log_photos_log_idx on public.daily_log_photos (daily_log_id);
 -- One canonical stock/selfie per log; extras only for 'other'
 create unique index daily_log_photos_unique_type_idx
   on public.daily_log_photos (daily_log_id, photo_type)
-  where photo_type in ('stock_shelf','uniform_selfie');
+  where photo_type in ('stock_shelf','uniform_selfie','checkout_stock_shelf','checkout_uniform_selfie');
 
 -- ── supervisor_scopes (which stores/campaigns a supervisor may see) ─────────
 create table public.supervisor_scopes (

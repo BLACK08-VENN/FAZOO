@@ -279,6 +279,8 @@ create function public.ba_checkout(
   p_latitude            double precision,
   p_longitude           double precision,
   p_client_request_id   uuid,
+  p_stock_photo_path    text,
+  p_uniform_selfie_path text,
   p_accuracy_metres     double precision default null,
   p_checkout_photo_path text default null
 )
@@ -318,6 +320,12 @@ begin
     raise exception 'No open day to check out from.';
   end if;
 
+  -- Completion photos must live inside this BA's private upload folder.
+  if not (p_stock_photo_path like p.organization_id::text || '/' || p.id::text || '/%')
+     or not (p_uniform_selfie_path like p.organization_id::text || '/' || p.id::text || '/%') then
+    raise exception 'Photo upload paths are invalid';
+  end if;
+
   select * into s from public.stores where id = l.store_id;
   select settings->>'allow_out_of_geofence_checkout' as allow_flag into org
     from public.organizations where id = p.organization_id;
@@ -338,6 +346,11 @@ begin
     flagged                = outside,
     status                 = 'completed'
   where id = l.id;
+
+  insert into public.daily_log_photos (organization_id, daily_log_id, photo_type, storage_path, captured_at)
+  values (p.organization_id, l.id, 'checkout_stock_shelf', p_stock_photo_path, now()),
+         (p.organization_id, l.id, 'checkout_uniform_selfie', p_uniform_selfie_path, now())
+  on conflict do nothing;
 
   if p_checkout_photo_path is not null then
     if not (p_checkout_photo_path like p.organization_id::text || '/' || p.id::text || '/%') then
@@ -752,7 +765,7 @@ grant execute on function public.check_rate_limit(text, int, int) to service_rol
 grant execute on function
   public.ba_today(),
   public.ba_checkin(double precision, double precision, text, text, uuid, double precision, text),
-  public.ba_checkout(double precision, double precision, uuid, double precision, text),
+  public.ba_checkout(double precision, double precision, uuid, text, text, double precision, text),
   public.ba_record_sale(uuid, integer, uuid, timestamptz),
   public.ba_update_sale(uuid, integer),
   public.ba_delete_sale(uuid),

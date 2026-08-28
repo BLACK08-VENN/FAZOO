@@ -6,7 +6,8 @@ insert into public.daily_logs
   (id, organization_id, campaign_id, brand_ambassador_id, store_id, attendance_date, attendance_status, status)
 values
   ('66666666-6666-4666-8666-666666666610', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', '22222222-2222-4222-8222-000000000010', '44444444-4444-4444-8444-444444444401', '2000-01-01', 'present', 'open'),
-  ('66666666-6666-4666-8666-666666666611', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', '22222222-2222-4222-8222-000000000011', '44444444-4444-4444-8444-444444444402', '2000-01-01', 'present', 'open');
+  ('66666666-6666-4666-8666-666666666611', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', '22222222-2222-4222-8222-000000000011', '44444444-4444-4444-8444-444444444402', '2000-01-01', 'present', 'open'),
+  ('66666666-6666-4666-8666-666666666612', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333301', '22222222-2222-4222-8222-000000000010', '44444444-4444-4444-8444-444444444401', (now() at time zone 'Africa/Lagos')::date, 'present', 'open');
 insert into public.sales_entries
   (id, organization_id, daily_log_id, sku_id, quantity)
 values
@@ -69,6 +70,37 @@ do $$ begin
   end if;
   if not exists (select 1 from public.audit_logs where action = 'leave_request.approved') then
     raise exception 'Leave audit failure: admin decision was not recorded';
+  end if;
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-000000000010', true);
+select set_config('request.jwt.claims', '{"sub":"22222222-2222-4222-8222-000000000010","role":"authenticated"}', true);
+
+do $$ begin
+  begin
+    perform public.ba_checkout(6.6020, 3.3515, '88888888-8888-4888-8888-888888888812', 'invalid-a.jpg', 'invalid-b.jpg');
+    raise exception 'Checkout failure: invalid photo paths were accepted';
+  exception when others then
+    null;
+  end;
+end $$;
+
+select public.ba_checkout(
+  6.6020, 3.3515, '88888888-8888-4888-8888-888888888813',
+  '11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-000000000010/co-stock.jpg',
+  '11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-000000000010/co-selfie.jpg'
+);
+
+reset role;
+do $$ begin
+  if (select status from public.daily_logs where id = '66666666-6666-4666-8666-666666666612') <> 'completed' then
+    raise exception 'Checkout failure: log was not completed';
+  end if;
+  if (select count(*) from public.daily_log_photos
+        where daily_log_id = '66666666-6666-4666-8666-666666666612'
+          and photo_type in ('checkout_stock_shelf','checkout_uniform_selfie')) <> 2 then
+    raise exception 'Checkout failure: completion photos were not recorded';
   end if;
 end $$;
 
