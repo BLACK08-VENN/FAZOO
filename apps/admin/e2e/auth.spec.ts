@@ -55,21 +55,20 @@ test.describe('authentication & role isolation', () => {
     await expect(page.getByText('BA-days', { exact: true })).toBeVisible();
   });
 
-  test('signs out and returns to sign-in', async ({ page }) => {
-    test.skip(!ADMIN_ID || !ADMIN_PASSWORD, 'Demo credentials not configured');
-    await page.goto('/sign-in');
-    await page.getByLabel('Mobile number or email').fill(ADMIN_ID!);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD!);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/overview/);
-    const signOut = page.getByRole('button', { name: 'Sign out' });
-    await signOut.locator('visible=true').first().click();
-    await expect(page).toHaveURL(/sign-in/);
-  });
-
   test('not-authorized page renders', async ({ page }) => {
     await page.goto('/not-authorized');
     await expect(page.getByText('Not authorized')).toBeVisible();
     await expect(page.getByText('Brand Ambassadors use the mobile app')).toBeVisible();
+  });
+});
+
+test.describe('sign out', () => {
+  test('signs out and returns to sign-in', async ({ page }) => {
+    test.skip(!ADMIN_ID || !ADMIN_PASSWORD, 'Demo credentials not configured');
+    await page.goto('/overview');
+    await expect(page).toHaveURL(/overview/);
+    const signOut = page.getByRole('button', { name: 'Sign out' });
+    await signOut.filter({ visible: true }).first().click();
+    await expect(page).toHaveURL(/sign-in/);
   });
 });
