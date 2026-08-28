@@ -31,8 +31,11 @@ export default async function PortalLayout({ children }: { children: React.React
   const { profile } = await requireStaff();
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-ink px-3 py-5 lg:flex" aria-label="Sidebar navigation">
+    <div className="fazoo-shell flex min-h-screen">
+      <aside
+        className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 lg:flex"
+        aria-label="Sidebar navigation"
+      >
         <div className="mb-8 px-3">
           <span className="text-lg font-bold tracking-tight text-white">
             Fazoo<span className="text-bright">.</span>
@@ -66,7 +69,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
       {/* Mobile top bar */}
       <div className="flex w-full flex-col">
-        <header className="flex items-center justify-between bg-ink px-4 py-3 lg:hidden">
+        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 lg:hidden">
           <span className="text-lg font-bold text-white">Fazoo.</span>
           <form action={signOutAction}>
             <button type="submit" className="text-xs font-medium text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white">
@@ -76,7 +79,7 @@ export default async function PortalLayout({ children }: { children: React.React
         </header>
         <nav
           aria-label="Primary mobile"
-          className="flex gap-1 overflow-x-auto bg-charcoal px-2 py-2 lg:hidden"
+          className="fazoo-glass-dark no-print sticky top-[52px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-2 lg:hidden"
           role="navigation"
         >
           {NAV.map(({ href, label }) => (

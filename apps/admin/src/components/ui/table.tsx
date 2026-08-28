@@ -4,7 +4,10 @@ import { cn } from '@/lib/cn';
 export function TableWrap({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('overflow-x-auto rounded-xl border border-ink/8 bg-white', className)}
+      className={cn(
+        'overflow-x-auto rounded-xl border border-white/80 bg-white/72 shadow-[0_14px_40px_rgba(45,20,58,0.06)] backdrop-blur-xl supports-[not_(backdrop-filter:blur(1px))]:bg-white',
+        className,
+      )}
       role="region"
       aria-label="Data table"
       tabIndex={0}

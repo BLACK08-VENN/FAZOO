@@ -16,6 +16,11 @@
 
 body {
   @apply bg-lavender text-ink antialiased;
+  background-image:
+    radial-gradient(circle at 8% 8%, rgb(139 47 209 / 0.12), transparent 28rem),
+    radial-gradient(circle at 92% 88%, rgb(90 30 130 / 0.09), transparent 32rem),
+    linear-gradient(135deg, #f8f5fb 0%, #f3edf8 52%, #f8f5fb 100%);
+  background-attachment: fixed;
   font-family:
     Inter,
     ui-sans-serif,
@@ -24,6 +29,37 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+}
+
+.fazoo-shell {
+  isolation: isolate;
+  position: relative;
+}
+
+.fazoo-shell::before {
+  background-image:
+    linear-gradient(rgb(123 47 190 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(123 47 190 / 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+.fazoo-glass-dark {
+  background: rgb(11 11 15 / 0.92);
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow: 10px 0 36px rgb(25 8 36 / 0.14);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+  backdrop-filter: blur(20px) saturate(125%);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .fazoo-glass-dark {
+    background: #0b0b0f;
+  }
 }
 
 @keyframes fazoo-aurora-drift {
