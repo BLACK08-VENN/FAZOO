@@ -8,9 +8,19 @@ import { Input, Label } from '@/components/ui/input';
 
 const initialState: SignInState = { error: null };
 
+type RoleTab = 'admin' | 'ba' | 'brand';
+
+const ROLE_TABS: { key: RoleTab; label: string; hint: string; field: string; placeholder: string }[] = [
+  { key: 'admin', label: 'Admin', hint: 'Email + password', field: 'Email', placeholder: 'you@company.com' },
+  { key: 'ba', label: 'Brand Ambassador', hint: 'Phone + password', field: 'Phone number', placeholder: '+234 803 123 4567' },
+  { key: 'brand', label: 'Brand / Client', hint: 'Phone + password', field: 'Phone number', placeholder: '+234 803 123 4567' },
+];
+
 export function SignInForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(signInAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState<RoleTab>('admin');
+  const active = ROLE_TABS.find((t) => t.key === role)!;
 
   useEffect(() => {
     if (state.redirectTo) {
@@ -21,15 +31,35 @@ export function SignInForm({ next }: { next: string }) {
   return (
     <form action={formAction} className="space-y-5">
       <input type="hidden" name="next" value={next} />
+      <input type="hidden" name="role" value={role} />
+
+      <div role="tablist" aria-label="Choose an account type" className="grid grid-cols-3 gap-1.5 rounded-xl bg-ink/[0.04] p-1.5">
+        {ROLE_TABS.map((t) => (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={role === t.key}
+            type="button"
+            onClick={() => setRole(t.key)}
+            className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-center transition-all focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary aria-selected:bg-white aria-selected:shadow-sm"
+          >
+            <span className="text-xs font-bold text-ink">{t.label}</span>
+            <span className={`text-[10px] leading-tight ${role === t.key ? 'text-primary' : 'text-muted/70'}`}>
+              {t.hint}
+            </span>
+          </button>
+        ))}
+      </div>
+
       <div>
         <Label htmlFor="identifier" className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
-          Phone number
+          {active.field}
         </Label>
         <Input
           id="identifier"
           name="identifier"
           autoComplete="username"
-          placeholder="e.g. 0803 123 4567"
+          placeholder={active.placeholder}
           className="h-12 rounded-xl border-ink/10 bg-[#faf9fb] px-4 transition-shadow focus:bg-white focus:shadow-[0_0_0_4px_rgba(123,47,190,.08)]"
           required
         />

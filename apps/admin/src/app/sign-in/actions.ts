@@ -10,10 +10,15 @@ import {
 export type SignInState = { error: string | null; redirectTo?: string };
 
 /**
- * Staff sign-in. Accepts a mobile number or an email (super admins may use
- * platform accounts). Rate-limited via the check_rate_limit RPC when the
- * service role is configured; otherwise falls back to Supabase's built-in
- * per-IP limits.
+ * Portal sign-in with an account-type selector (role tab).
+ *
+ *   • Admin      – email + password (super_admin / organization_admin / supervisor)
+ *   • BA         – phone + password (brand_ambassador)
+ *   • Brand      – phone + password (client)
+ *
+ * Phone numbers map to the internal email alias (<digits>@ba.fazoo.app).
+ * Rate-limited via the check_rate_limit RPC when the service role is
+ * configured; otherwise falls back to Supabase's built-in per-IP limits.
  *
  * Returns a redirectTo URL on success instead of calling redirect() so the
  * client component can navigate via router.push — avoids a Next.js 16
@@ -23,25 +28,43 @@ export async function signInAction(
   _prev: SignInState,
   formData: FormData,
 ): Promise<SignInState> {
+  // Selected role tab: 'admin' (email), 'ba' (phone), 'brand' (phone).
+  const role = String(formData.get('role') ?? 'admin') as 'admin' | 'ba' | 'brand';
   const identifier = String(formData.get('identifier') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const next = String(formData.get('next') ?? '/overview');
 
   if (!identifier || !password) {
-    return { error: 'Enter your mobile number and password.' };
+    return { error: 'Enter your identifier and password.' };
   }
 
-  // Phone-number identity maps to the internal email alias.
-  if (identifier.includes('@')) {
-    return { error: 'Sign in with your phone number, not an email address.' };
+  // Admins sign in with email; brand ambassadors and brands/clients sign in
+  // with a phone number that maps to their internal email alias
+  // (<digits>@ba.fazoo.app).
+  let email: string | null;
+  if (role === 'admin') {
+    if (!identifier.includes('@')) {
+      return { error: 'Sign in to the admin portal with your email address.' };
+    }
+    email = identifier;
+  } else {
+    if (identifier.includes('@')) {
+      return { error: 'Sign in with your phone number, not an email address.' };
+    }
+    try {
+      email = toAuthEmail(identifier);
+    } catch {
+      return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
+    }
+    if (!email) return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
   }
-  let email: string | null = null;
-  try {
-    email = toAuthEmail(identifier);
-  } catch {
-    return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
-  }
-  if (!email) return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
+
+  const expectedRoles =
+    role === 'admin'
+      ? ['super_admin', 'organization_admin', 'supervisor']
+      : role === 'brand'
+        ? ['client']
+        : ['brand_ambassador'];
 
   // Run the actual sign-in in a guarded block: any unhandled server exception
   // would otherwise surface to the client as an opaque Next.js error digest
@@ -73,7 +96,8 @@ export async function signInAction(
       return { error: 'Invalid credentials. Please try again.' };
     }
 
-    // Determine redirect based on role.
+    // Determine redirect based on role, and confirm the account belongs to
+    // the selected login tab.
     let redirectTo = next.startsWith('/') ? next : '/overview';
     try {
       const { data } = await client.auth.getUser();
@@ -84,7 +108,13 @@ export async function signInAction(
           .select('role')
           .eq('id', userId)
           .single();
-        if (profile?.role === 'client' || profile?.role === 'brand_ambassador') {
+        if (!profile?.role || !expectedRoles.includes(profile.role)) {
+          await client.auth.signOut();
+          return {
+            error: 'This account is not set up for the selected login. Choose the right one.',
+          };
+        }
+        if (profile.role === 'client' || profile.role === 'brand_ambassador') {
           redirectTo = '/brand';
         }
       }
