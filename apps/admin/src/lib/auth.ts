@@ -30,12 +30,12 @@ export async function requireStaff(): Promise<{ client: FazooClient; profile: Ad
     .eq('id', user.id)
     .single();
 
-  if (
-    !profile ||
-    profile.role === 'brand_ambassador' ||
-    profile.account_status !== 'approved'
-  ) {
+  if (!profile || profile.account_status !== 'approved') {
     redirect('/not-authorized');
+  }
+
+  if (profile.role === 'brand_ambassador') {
+    redirect('/brand');
   }
 
   return { client, profile: profile as AdminProfile };

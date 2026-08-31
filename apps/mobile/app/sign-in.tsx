@@ -3,17 +3,21 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import { Link, router } from 'expo-router';
+import * as Sentry from '@sentry/react-native';
 import { toAuthEmail, normalizeInternationalPhone } from '@fazoo/validation';
 import { supabase } from '@/lib/supabase';
 
 export default function SignIn() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,13 +30,24 @@ export default function SignIn() {
       return;
     }
     setBusy(true);
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (err) {
-      setError('Invalid mobile number or password.');
-      return;
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (err) {
+        setError(
+          err.name === 'AuthRetryableFetchError'
+            ? 'Cannot reach the server. Check your connection and try again.'
+            : 'Invalid mobile number or password.',
+        );
+        return;
+      }
+      router.replace('/today');
+    } catch (cause) {
+      console.error('[sign-in] unexpected failure', cause);
+      Sentry.captureException(cause);
+      setError('Something went wrong. This has been noted — please try again.');
+    } finally {
+      setBusy(false);
     }
-    router.replace('/today');
   }
 
   return (
@@ -51,15 +66,28 @@ export default function SignIn() {
         value={phone}
         onChangeText={setPhone}
       />
-      <TextInput
-        className="h-14 rounded-xl bg-charcoal text-white text-lg px-4 mb-2"
-        placeholder="Password"
-        placeholderTextColor="#6B6472"
-        secureTextEntry
-        autoComplete="password"
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View className="relative mb-2">
+        <TextInput
+          className="h-14 rounded-xl bg-charcoal text-white text-lg px-4 pr-16"
+          placeholder="Password"
+          placeholderTextColor="#6B6472"
+          secureTextEntry={!showPassword}
+          autoComplete="password"
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Pressable
+          onPress={() => setShowPassword((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+          hitSlop={8}
+          className="absolute inset-y-0 right-0 items-center justify-center pr-4"
+        >
+          <Text className={`text-sm font-semibold ${showPassword ? 'text-bright' : 'text-white/60'}`}>
+            {showPassword ? 'Hide' : 'Show'}
+          </Text>
+        </Pressable>
+      </View>
 
       {error ? (
         <Text role="alert" className="text-bad font-medium mb-2">

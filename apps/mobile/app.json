@@ -28,13 +28,36 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B0B0F"
       },
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "CAMERA"]
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ]
     },
-    "plugins": ["expo-router", "expo-sqlite", "expo-file-system", "@sentry/react-native/expo"],
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-file-system",
+      "@sentry/react-native/expo"
+    ],
     "experiments": {
       "typedRoutes": true
     },
-    "runtimeVersion": { "policy": "appVersion" },
-    "updates": { "fallbackToCacheTimeout": 0 }
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c9289e63-d3a0-4120-b5b3-02c24f454f4f"
+      }
+    },
+    "owner": "izuafrica"
   }
 }

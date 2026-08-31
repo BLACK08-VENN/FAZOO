@@ -78,7 +78,10 @@ export default function Checkout() {
         const { error: rpcError } = await supabase.rpc('ba_checkout', payload);
         if (rpcError) throw new Error(rpcError.message);
       } catch (err) {
-        if (/distance|geofence/i.test(err instanceof Error ? err.message : '')) throw err;
+        const message = err instanceof Error ? err.message : '';
+        // A geofence rejection is authoritative and must be retried while at
+        // the store, so surface it immediately instead of queuing offline.
+        if (/(geofence|m or less\.?$)/i.test(message)) throw err;
         await enqueue('checkout', payload, requestId, [
           {
             localUri: localStock,

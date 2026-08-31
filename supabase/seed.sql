@@ -11,6 +11,8 @@
 --   org admin         +23480000000002@ba.fazoo.app     Demo-Admin1!
 --   supervisor        +23480000000003@ba.fazoo.app     Demo-SuperV1!
 --   BA 1–3            +23480000000010..12@ba…          Demo-Ba#001!
+--   client            +23480000000020@ba.fazoo.app     Demo-Client1!
+--   Veda BA           +254700000001@ba.fazoo.app       Demo-Veda#01!
 -- ═══════════════════════════════════════════════════════════════════════════
 
 create extension if not exists pgcrypto;
@@ -64,7 +66,7 @@ from (values
   ('22222222-2222-4222-8222-000000000011'::uuid,'ba.two.demo@ba.fazoo.app',    crypt('Demo-Ba#002!', gen_salt('bf')), jsonb_build_object('full_name','Amina Sule (Demo)','phone','+23480000000011','organization_slug','lenovo-nigeria')),
   ('22222222-2222-4222-8222-000000000012'::uuid,'ba.three.demo@ba.fazoo.app',  crypt('Demo-Ba#003!', gen_salt('bf')), jsonb_build_object('full_name','Kelechi Obi (Demo)','phone','+23480000000012','organization_slug','lenovo-nigeria')),
   ('22222222-2222-4222-8222-000000000020'::uuid,'client.demo@ba.fazoo.app',    crypt('Demo-Client1!', gen_salt('bf')), jsonb_build_object('full_name','Lenovo Stakeholder (Demo)','phone','+23480000000020','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000030'::uuid,'veda.ba.demo@ba.fazoo.app',   crypt('Demo-Veda#01!', gen_salt('bf')), jsonb_build_object('full_name','Achieng Demo (Veda)','phone','+254700000001','organization_slug','veda'))
+  ('22222222-2222-4222-8222-000000000030'::uuid,'254700000001@ba.fazoo.app', crypt('Demo-Veda#01!', gen_salt('bf')), jsonb_build_object('full_name','Achieng Demo (Veda)','phone','+254700000001','organization_slug','veda'))
 ) as u(id, email, password_hash, meta)
 where not exists (select 1 from auth.users au where au.id = u.id);
 
@@ -73,7 +75,7 @@ select gen_random_uuid(), u.id, 'email', 'email',
        jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
        now(), now(), now()
 from auth.users u
-where u.email like '%.demo@ba.fazoo.app'
+where u.email like '%@ba.fazoo.app'
 on conflict do nothing;
 
 -- ── roles & approval ─────────────────────────────────────────────────────────
@@ -156,3 +158,66 @@ where not exists (
   where m.user_id = profiles.id and m.organization_id = profiles.organization_id
 )
 on conflict (user_id, organization_id) do nothing;
+
+-- ── Veda demo BA data (own web view + mobile smoke) ────────────────────────
+-- A Veda campaign, one Nairobi store and SKUs so the Veda BA has an active
+-- assignment, plus a week of demo shifts with sales for the BA web view.
+insert into public.campaigns (id, organization_id, name, description, start_date, status)
+values (
+  '33333333-3333-4333-8333-333333333302'::uuid,
+  '11111111-1111-4111-8111-111111111122'::uuid,
+  'Nairobi Launch (Demo)',
+  'Demonstration campaign for local development only.',
+  date_trunc('month', now())::date - interval '1 month',
+  'active'
+)
+on conflict do nothing;
+
+insert into public.stores (id, organization_id, name, address, latitude, longitude, geofence_radius_metres)
+values (
+  '44444444-4444-4444-8444-444444444404'::uuid,
+  '11111111-1111-4111-8111-111111111122'::uuid,
+  'Westgate Demo Outlet (Demo)',
+  'Demo Road, Westlands, Nairobi',
+  -1.264900, 36.803800, 250
+)
+on conflict do nothing;
+
+insert into public.skus (id, organization_id, campaign_id, name, code, status)
+values
+  ('55555555-5555-4555-8555-555555555505'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, 'Veda Spark',       'VEDA-SPK', 'active'),
+  ('55555555-5555-4555-8555-555555555506'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, 'Veda Glow Serum', 'VEDA-GLW', 'active')
+on conflict do nothing;
+
+insert into public.brand_ambassador_assignments
+  (organization_id, brand_ambassador_id, campaign_id, store_id, weekly_off_day, start_date, status)
+values
+  ('11111111-1111-4111-8111-111111111122'::uuid, '22222222-2222-4222-8222-000000000030'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, '44444444-4444-4444-8444-444444444404'::uuid, 1, current_date - 30, 'active');
+
+-- Approve the Veda demo BA so the brand workspace and RLS active-checks pass.
+alter table public.profiles disable trigger guard_profile_update;
+update public.profiles set account_status = 'approved' where id = '22222222-2222-4222-8222-000000000030'::uuid;
+alter table public.profiles enable trigger guard_profile_update;
+
+-- Last week of demo shifts (completed with sales, one open today).
+insert into public.daily_logs
+  (organization_id, campaign_id, brand_ambassador_id, store_id,
+   attendance_date, attendance_status, status, checkin_at, checkout_at, flagged)
+values
+  ('11111111-1111-4111-8111-111111111122'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, '22222222-2222-4222-8222-000000000030'::uuid, '44444444-4444-4444-8444-444444444404'::uuid, current_date - 6, 'present', 'completed', now() - interval '6 days' + interval '9 hours',  now() - interval '6 days' + interval '16 hours', false),
+  ('11111111-1111-4111-8111-111111111122'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, '22222222-2222-4222-8222-000000000030'::uuid, '44444444-4444-4444-8444-444444444404'::uuid, current_date - 5, 'present', 'completed', now() - interval '5 days' + interval '9 hours',  now() - interval '5 days' + interval '16 hours', false),
+  ('11111111-1111-4111-8111-111111111122'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, '22222222-2222-4222-8222-000000000030'::uuid, '44444444-4444-4444-8444-444444444404'::uuid, current_date - 4, 'present', 'completed', now() - interval '4 days' + interval '9 hours',  now() - interval '4 days' + interval '16 hours', false),
+  ('11111111-1111-4111-8111-111111111122'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, '22222222-2222-4222-8222-000000000030'::uuid, '44444444-4444-4444-8444-444444444404'::uuid, current_date - 2, 'present', 'completed', now() - interval '2 days' + interval '9 hours',  now() - interval '2 days' + interval '16 hours', true),
+  ('11111111-1111-4111-8111-111111111122'::uuid, '33333333-3333-4333-8333-333333333302'::uuid, '22222222-2222-4222-8222-000000000030'::uuid, '44444444-4444-4444-8444-444444444404'::uuid, current_date,     'present', 'open',     now() - interval '9 hours',                     null,                                            false);
+
+-- Demo sales on the completed Veda shifts.
+insert into public.sales_entries (organization_id, daily_log_id, sku_id, quantity)
+select '11111111-1111-4111-8111-111111111122'::uuid, dl.id, '55555555-5555-4555-8555-555555555505'::uuid, v.quantity
+from public.daily_logs dl
+cross join lateral (values (4), (3), (5), (2)) as v(quantity)
+where dl.organization_id = '11111111-1111-4111-8111-111111111122'::uuid
+  and dl.attendance_date < current_date
+  and not exists (
+    select 1 from public.sales_entries e where e.daily_log_id = dl.id
+  )
+  and v.quantity > 0;

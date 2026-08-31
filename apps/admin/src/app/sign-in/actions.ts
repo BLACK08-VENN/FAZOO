@@ -32,57 +32,72 @@ export async function signInAction(
   }
 
   // Phone-number identity maps to the internal email alias.
-  let email = identifier.includes('@') ? identifier : null;
-  if (!email) {
+  if (identifier.includes('@')) {
+    return { error: 'Sign in with your phone number, not an email address.' };
+  }
+  let email: string | null = null;
+  try {
+    email = toAuthEmail(identifier);
+  } catch {
+    return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
+  }
+  if (!email) return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
+
+  // Run the actual sign-in in a guarded block: any unhandled server exception
+  // would otherwise surface to the client as an opaque Next.js error digest
+  // (e.g. "Error: 1186245521"). Never leak credentials or server internals to
+  // the client; log non-secret details server-side for diagnostics instead.
+  try {
+    // Rate limit: fixed-window counter keyed per identifier.
     try {
-      email = toAuthEmail(identifier);
+      const limiter = serviceSupabase();
+      const { data: allowed } = await limiter.rpc('check_rate_limit', {
+        p_key: `signin:${email}`,
+        p_max: RATE_LIMIT_SIGNIN_MAX,
+        p_window_seconds: RATE_LIMIT_SIGNIN_WINDOW_S,
+      });
+      if (allowed === false) {
+        return {
+          error:
+            'Too many sign-in attempts. Please wait a few minutes and try again.',
+        };
+      }
     } catch {
-      return { error: 'Enter a valid mobile number or email address.' };
+      // Limiter unavailable (e.g. local dev without service key): continue;
+      // Supabase built-in per-IP limits still apply.
     }
-    if (!email) return { error: 'Enter a valid mobile number or email address.' };
-  }
 
-  // Rate limit: fixed-window counter keyed per identifier.
-  try {
-    const limiter = serviceSupabase();
-    const { data: allowed } = await limiter.rpc('check_rate_limit', {
-      p_key: `signin:${email}`,
-      p_max: RATE_LIMIT_SIGNIN_MAX,
-      p_window_seconds: RATE_LIMIT_SIGNIN_WINDOW_S,
-    });
-    if (allowed === false) {
-      return {
-        error:
-          'Too many sign-in attempts. Please wait a few minutes and try again.',
-      };
+    const client = await serverSupabase();
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (error) {
+      return { error: 'Invalid credentials. Please try again.' };
     }
-  } catch {
-    // Limiter unavailable (e.g. local dev without service key): continue;
-    // Supabase built-in per-IP limits still apply.
-  }
 
-  const client = await serverSupabase();
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) {
-    return { error: 'Invalid credentials. Please try again.' };
-  }
-
-  // Determine redirect based on role.
-  let redirectTo = next.startsWith('/') ? next : '/overview';
-  try {
-    const { data } = await client.auth.getUser();
-    const userId = data?.user?.id;
-    if (userId) {
-      const { data: profile } = await client
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      if (profile?.role === 'client') redirectTo = '/brand';
+    // Determine redirect based on role.
+    let redirectTo = next.startsWith('/') ? next : '/overview';
+    try {
+      const { data } = await client.auth.getUser();
+      const userId = data?.user?.id;
+      if (userId) {
+        const { data: profile } = await client
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single();
+        if (profile?.role === 'client' || profile?.role === 'brand_ambassador') {
+          redirectTo = '/brand';
+        }
+      }
+    } catch {
+      // Fall back to default redirect.
     }
-  } catch {
-    // Fall back to default redirect.
-  }
 
-  return { error: null, redirectTo };
+    return { error: null, redirectTo };
+  } catch (cause) {
+    // cause may be an Error (Supabase, env, JSON) — never log credentials.
+    console.error('[sign-in] action failed', cause);
+    return {
+      error: 'Something went wrong signing you in. Please try again in a moment.',
+    };
+  }
 }

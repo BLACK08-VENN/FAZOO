@@ -685,8 +685,8 @@ returns boolean
 language plpgsql security definer set search_path = public, private as $$
 declare window_start timestamptz; hits int; now_ts timestamptz := now();
 begin
-  select window_start, hit_count into window_start, hits
-    from private.rate_limits where key = p_key;
+  select r.window_start, r.hit_count into window_start, hits
+    from private.rate_limits r where r.key = p_key;
 
   if window_start is null or now_ts - window_start > make_interval(secs => p_window_seconds) then
     insert into private.rate_limits (key, window_start, hit_count)

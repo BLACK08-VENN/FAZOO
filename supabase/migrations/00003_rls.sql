@@ -182,4 +182,5 @@ create policy receipts_select_admin on public.operation_receipts
 create policy audit_select_admin on public.audit_logs
   for select using (public.is_org_admin(organization_id));
 
--- Storage policies are in 00008_storage.sql (conditional on storage schema).
+-- Storage buckets + policies are in 00020_storage_buckets.sql, migrated after
+-- the relational layer. They are gated on storage.objects existing.

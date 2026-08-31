@@ -4,6 +4,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -245,18 +246,34 @@ function Field({
   secure?: boolean;
   keyboardType?: 'default' | 'phone-pad';
 }) {
+  const [show, setShow] = useState(false);
   return (
     <View className="mb-4">
       <Text className="font-medium text-charcoal mb-2">{label}</Text>
-      <TextInput
-        className="h-14 rounded-xl bg-white px-4 text-lg"
-        placeholderTextColor="#9a94a5"
-        autoCapitalize="none"
-        secureTextEntry={secure}
-        keyboardType={keyboardType}
-        value={value}
-        onChangeText={onChange}
-      />
+      <View className="relative">
+        <TextInput
+          className={`h-14 rounded-xl bg-white px-4 text-lg ${secure ? 'pr-16' : ''}`}
+          placeholderTextColor="#9a94a5"
+          autoCapitalize="none"
+          secureTextEntry={secure && !show}
+          keyboardType={keyboardType}
+          value={value}
+          onChangeText={onChange}
+        />
+        {secure ? (
+          <Pressable
+            onPress={() => setShow((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={show ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+            hitSlop={8}
+            className="absolute inset-y-0 right-0 items-center justify-center pr-4"
+          >
+            <Text className={`text-sm font-semibold ${show ? 'text-primary' : 'text-muted'}`}>
+              {show ? 'Hide' : 'Show'}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }

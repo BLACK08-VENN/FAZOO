@@ -11,8 +11,12 @@ const NAV = [
   { href: '/brand/bas', label: 'Brand Ambassadors', icon: Users },
 ] as const;
 
+const ROLE_LABEL = { client: 'Client', brand_ambassador: 'Brand Ambassador' } as const;
+
 export default async function BrandLayout({ children }: { children: React.ReactNode }) {
   const { profile, brand } = await requireClient();
+  const roleLabel = ROLE_LABEL[profile.role as keyof typeof ROLE_LABEL] ?? 'Brand workspace';
+  const nav = NAV.filter((item) => item.href === '/brand' || profile.role !== 'brand_ambassador');
 
   return (
     <div className="fazoo-shell flex min-h-screen">
@@ -40,7 +44,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
           </p>
         </div>
         <nav aria-label="Brand navigation" className="flex-1 space-y-1">
-          {NAV.map(({ href, label, icon: Icon }) => (
+          {nav.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -53,7 +57,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
         </nav>
         <div className="border-t border-white/10 pt-4">
           <p className="truncate px-3 text-sm font-medium text-white">{profile.full_name}</p>
-          <p className="truncate px-3 text-xs text-white/50">Client</p>
+          <p className="truncate px-3 text-xs text-white/50">{roleLabel}</p>
           <form action={signOutAction} className="mt-3">
             <button
               type="submit"
@@ -83,7 +87,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
           className="fazoo-glass-dark sticky top-[52px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-2 lg:hidden"
           role="navigation"
         >
-          {NAV.map(({ href, label }) => (
+          {nav.map(({ href, label }) => (
             <Link
               key={href}
               href={href}

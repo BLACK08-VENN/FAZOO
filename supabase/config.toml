@@ -20,7 +20,7 @@ additional_redirect_urls = ["http://localhost:8081"]
 enable_signup = true
 
 [storage]
-enabled = false
+enabled = true
 
 [db.meta]
 enabled = false

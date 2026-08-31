@@ -1,10 +1,25 @@
-import { requireClient } from '@/lib/client-auth';
+import { requireClient, type ClientBrand } from '@/lib/client-auth';
 import { PageHeader, StatCard } from '@/components/page';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from '../../(portal)/overview/trends-chart';
 
+type BaHistoryRow = {
+  attendance_date: string;
+  attendance_status: string;
+  status: string;
+  flagged: boolean;
+  units: number;
+  campaign_name: string;
+  store_name: string;
+  store_address: string | null;
+};
+
 export default async function BrandOverviewPage() {
-  const { client } = await requireClient();
+  const { client, profile, brand } = await requireClient();
+
+  if (profile.role === 'brand_ambassador') {
+    return <BrandAmbassadorOverview brand={brand} />;
+  }
 
   const { data: campaigns } = await client
     .from('campaigns')
@@ -136,6 +151,106 @@ export default async function BrandOverviewPage() {
           })}
         </div>
       </Card>
+    </>
+  );
+}
+
+async function BrandAmbassadorOverview({ brand }: { brand: ClientBrand }) {
+  const { client } = await requireClient();
+
+  const { data } = await client.rpc('ba_my_history');
+  const rows = (Array.isArray(data) ? (data as BaHistoryRow[]) : []);
+
+  const units = rows.reduce((s, r) => s + r.units, 0);
+  const completed = rows.filter((r) => r.status === 'completed').length;
+  const open = rows.filter((r) => r.status === 'open').length;
+  const present = rows.filter((r) => r.attendance_status === 'present').length;
+  const flagged = rows.filter((r) => r.flagged).length;
+  const campaigns = new Set(rows.map((r) => r.campaign_name)).size;
+  const stores = new Set(rows.map((r) => r.store_name)).size;
+
+  const byDay = new Map<string, { units: number; total: number; completed: number }>();
+  for (const r of rows) {
+    const day = byDay.get(r.attendance_date) ?? { units: 0, total: 0, completed: 0 };
+    day.units += r.units;
+    day.total += 1;
+    if (r.status === 'completed') day.completed += 1;
+    byDay.set(r.attendance_date, day);
+  }
+
+  const trend: TrendPoint[] = [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, v]) => ({
+      day,
+      units: v.units,
+      completionPct: v.total === 0 ? 0 : Math.round((v.completed / v.total) * 100),
+    }));
+
+  return (
+    <>
+      <PageHeader
+        title={`My Activity — ${brand.name}`}
+        description="Your own shifts, sales and check-ins. Data you can see from the mobile app."
+      />
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard label="Days logged" value={rows.length} />
+        <StatCard label="Units sold" value={units} />
+        <StatCard label="Days completed" value={completed} />
+        <StatCard label="Open days" value={open} />
+        <StatCard label="Days present" value={present} />
+        <StatCard label="Stores visited" value={stores} />
+        <StatCard label="Campaigns" value={campaigns} />
+        <StatCard label="Flagged" value={flagged} />
+      </div>
+
+      {rows.length > 0 ? (
+        <>
+          <Card className="mt-6">
+            <div className="border-b border-ink/8 px-5 py-4">
+              <h2 className="text-sm font-semibold text-ink">Your sales &amp; completion</h2>
+              <p className="mt-0.5 text-xs text-muted">Units and completion rate per day.</p>
+            </div>
+            <TrendsChart data={trend} />
+          </Card>
+
+          <Card className="mt-6">
+            <div className="border-b border-ink/8 px-5 py-4">
+              <h2 className="text-sm font-semibold text-ink">Recent shifts</h2>
+            </div>
+            <div className="divide-y divide-ink/5">
+              {rows.slice(0, 20).map((r) => (
+                <div key={`${r.campaign_name}-${r.store_name}-${r.attendance_date}`} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-ink">
+                      {r.attendance_date} · {r.store_name}
+                    </p>
+                    <p className="text-xs text-muted">{r.campaign_name}</p>
+                  </div>
+                  <div className="flex gap-4 text-right">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{r.units}</p>
+                      <p className="text-xs text-muted">Units</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-ink">
+                        {r.status === 'completed' ? '✓ Done' : r.status === 'open' ? 'Open' : r.attendance_status}
+                      </p>
+                      <p className="text-xs text-muted">{r.flagged ? 'Flagged' : 'Status'}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </>
+      ) : (
+        <Card className="mt-6">
+          <p className="px-5 py-6 text-sm text-muted">
+            You haven&apos;t logged any days yet. Shifts you complete on the mobile app will appear here.
+          </p>
+        </Card>
+      )}
     </>
   );
 }

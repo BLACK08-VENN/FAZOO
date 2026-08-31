@@ -1155,6 +1155,7 @@ export type Database = {
         Returns: Json
       }
       ba_switch_brand: { Args: { p_organization_id: string }; Returns: string }
+      ba_my_history: { Args: { p_limit?: number }; Returns: Json }
       ba_today: { Args: never; Returns: Json }
       ba_unlock_brand: {
         Args: { p_code: string; p_organization_id: string }

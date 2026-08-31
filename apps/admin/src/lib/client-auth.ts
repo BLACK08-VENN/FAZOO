@@ -18,9 +18,10 @@ export type ClientBrand = {
 };
 
 /**
- * Resolve a signed-in client (brand stakeholder).
- * Redirects to sign-in when unauthenticated, or to /not-authorized
- * when the account is not an approved client.
+ * Resolve a signed-in brand-workspace user (approved client stakeholder or
+ * brand ambassador, who gets a read-only view of their OWN activity).
+ * Redirects to sign-in when unauthenticated, or to /not-authorized when the
+ * account is not approved for the brand workspace.
  */
 export async function requireClient(): Promise<{
   client: FazooClient;
@@ -40,7 +41,11 @@ export async function requireClient(): Promise<{
     .eq('id', user.id)
     .single();
 
-  if (!profile || profile.role !== 'client' || profile.account_status !== 'approved') {
+  if (
+    !profile ||
+    (profile.role !== 'client' && profile.role !== 'brand_ambassador') ||
+    profile.account_status !== 'approved'
+  ) {
     redirect('/not-authorized');
   }
 

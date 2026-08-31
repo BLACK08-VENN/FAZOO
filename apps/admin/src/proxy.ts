@@ -47,7 +47,15 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && pathname === '/sign-in') {
-    return NextResponse.redirect(new URL('/overview', request.url));
+    // Send brand-workspace roles (client / BA) to /brand, staff to /overview.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    const role = profile?.role;
+    const target = role === 'client' || role === 'brand_ambassador' ? '/brand' : '/overview';
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
   return response;

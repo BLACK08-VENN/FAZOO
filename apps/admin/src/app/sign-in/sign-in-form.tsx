@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useActionState } from 'react';
+import { useEffect, useActionState, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { signInAction, type SignInState } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input, Label } from '@/components/ui/input';
@@ -9,6 +10,7 @@ const initialState: SignInState = { error: null };
 
 export function SignInForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(signInAction, initialState);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (state.redirectTo) {
@@ -21,7 +23,7 @@ export function SignInForm({ next }: { next: string }) {
       <input type="hidden" name="next" value={next} />
       <div>
         <Label htmlFor="identifier" className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
-          Mobile number or email
+          Phone number
         </Label>
         <Input
           id="identifier"
@@ -36,15 +38,26 @@ export function SignInForm({ next }: { next: string }) {
         <Label htmlFor="password" className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
           Password
         </Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Enter your password"
-          className="h-12 rounded-xl border-ink/10 bg-[#faf9fb] px-4 transition-shadow focus:bg-white focus:shadow-[0_0_0_4px_rgba(123,47,190,.08)]"
-          required
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            className="h-12 rounded-xl border-ink/10 bg-[#faf9fb] pr-12 transition-shadow focus:bg-white focus:shadow-[0_0_0_4px_rgba(123,47,190,.08)]"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-pressed={showPassword}
+            className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+          >
+            {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+          </button>
+        </div>
       </div>
 
       {state.error ? (
