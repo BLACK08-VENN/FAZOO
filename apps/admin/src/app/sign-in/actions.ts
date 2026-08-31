@@ -14,9 +14,10 @@ export type SignInState = { error: string | null; redirectTo?: string };
  *
  *   • Admin      – email + password (super_admin / organization_admin / supervisor)
  *   • BA         – phone + password (brand_ambassador)
- *   • Brand      – phone + password (client)
+ *   • Brand      – email or phone + password (client)
  *
- * Phone numbers map to the internal email alias (<digits>@ba.fazoo.app).
+ * Phone numbers map to the internal email alias (<digits>@ba.fazoo.app);
+ * brand clients may also sign in with a plain email address.
  * Rate-limited via the check_rate_limit RPC when the service role is
  * configured; otherwise falls back to Supabase's built-in per-IP limits.
  *
@@ -38,14 +39,18 @@ export async function signInAction(
     return { error: 'Enter your identifier and password.' };
   }
 
-  // Admins sign in with email; brand ambassadors and brands/clients sign in
-  // with a phone number that maps to their internal email alias
-  // (<digits>@ba.fazoo.app).
+  // Admins and brand clients sign in with an email address; brand
+  // ambassadors and brands may also use a phone number that maps to their
+  // internal email alias (<digits>@ba.fazoo.app). Brand clients additionally
+  // accept a plain email so documented logins like admin.lenovo@fazoo.app
+  // work directly.
   let email: string | null;
   if (role === 'admin') {
     if (!identifier.includes('@')) {
       return { error: 'Sign in to the admin portal with your email address.' };
     }
+    email = identifier;
+  } else if (role === 'brand' && identifier.includes('@')) {
     email = identifier;
   } else {
     if (identifier.includes('@')) {

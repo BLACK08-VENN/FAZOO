@@ -114,8 +114,8 @@ export async function createBrandAction(
 
   // 2. Create the organization + campaign + memberships via the audited RPC
   //    (run as the signed-in user so auth.uid() = caller inside the function).
-  let storeLat: number | null = null;
-  let storeLng: number | null = null;
+  let storeLat: number | undefined;
+  let storeLng: number | undefined;
   if (v.store_name && v.store_name !== '' && v.store_lat && v.store_lng) {
     storeLat = Number(v.store_lat);
     storeLng = Number(v.store_lng);
@@ -125,13 +125,13 @@ export async function createBrandAction(
     p_name: v.name,
     p_slug: v.slug,
     p_timezone: v.timezone || 'Africa/Lagos',
-    p_access_code: v.access_code && v.access_code !== '' ? v.access_code : null,
+    p_access_code: v.access_code && v.access_code !== '' ? v.access_code : undefined,
     p_brand_admin_user_id: brandAdminId,
     p_campaign_name: v.campaign_name,
     p_campaign_start: v.campaign_start,
-    p_campaign_end: v.campaign_end && v.campaign_end !== '' ? v.campaign_end : null,
-    p_store_name: v.store_name && v.store_name !== '' ? v.store_name : null,
-    p_store_address: v.store_address && v.store_address !== '' ? v.store_address : null,
+    p_campaign_end: v.campaign_end && v.campaign_end !== '' ? v.campaign_end : undefined,
+    p_store_name: v.store_name && v.store_name !== '' ? v.store_name : undefined,
+    p_store_address: v.store_address && v.store_address !== '' ? v.store_address : undefined,
     p_store_lat: storeLat,
     p_store_lng: storeLng,
     p_store_radius: v.store_radius ?? 200,

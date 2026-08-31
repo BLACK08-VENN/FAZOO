@@ -9,6 +9,7 @@ export type ClientProfile = {
   role: AppRole;
   account_status: 'pending' | 'approved' | 'rejected' | 'suspended' | 'inactive';
   organization_id: string;
+  profile_photo_path: string | null;
 };
 
 export type ClientBrand = {
@@ -37,7 +38,7 @@ export async function requireClient(): Promise<{
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, full_name, phone, role, account_status, organization_id')
+    .select('id, full_name, phone, role, account_status, organization_id, profile_photo_path')
     .eq('id', user.id)
     .single();
 

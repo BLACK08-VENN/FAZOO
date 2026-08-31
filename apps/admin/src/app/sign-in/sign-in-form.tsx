@@ -13,7 +13,7 @@ type RoleTab = 'admin' | 'ba' | 'brand';
 const ROLE_TABS: { key: RoleTab; label: string; hint: string; field: string; placeholder: string }[] = [
   { key: 'admin', label: 'Admin', hint: 'Email + password', field: 'Email', placeholder: 'you@company.com' },
   { key: 'ba', label: 'Brand Ambassador', hint: 'Phone + password', field: 'Phone number', placeholder: '+234 803 123 4567' },
-  { key: 'brand', label: 'Brand / Client', hint: 'Phone + password', field: 'Phone number', placeholder: '+234 803 123 4567' },
+  { key: 'brand', label: 'Brand / Client', hint: 'Email or phone + password', field: 'Email or phone number', placeholder: 'you@company.com or +234 803 123 4567' },
 ];
 
 export function SignInForm({ next }: { next: string }) {

@@ -1,4 +1,9 @@
-import { requireClient, type ClientBrand } from '@/lib/client-auth';
+import {
+  requireClient,
+  type ClientBrand,
+  type ClientProfile,
+} from '@/lib/client-auth';
+import type { FazooClient } from '@fazoo/database';
 import { PageHeader, StatCard } from '@/components/page';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from '../../(portal)/overview/trends-chart';
@@ -18,7 +23,7 @@ export default async function BrandOverviewPage() {
   const { client, profile, brand } = await requireClient();
 
   if (profile.role === 'brand_ambassador') {
-    return <BrandAmbassadorOverview brand={brand} />;
+    return <BrandAmbassadorOverview brand={brand} profile={profile} />;
   }
 
   const { data: campaigns } = await client
@@ -155,11 +160,29 @@ export default async function BrandOverviewPage() {
   );
 }
 
-async function BrandAmbassadorOverview({ brand }: { brand: ClientBrand }) {
+async function BrandAmbassadorOverview({
+  brand,
+  profile,
+}: {
+  brand: ClientBrand;
+  profile: ClientProfile;
+}) {
   const { client } = await requireClient();
 
   const { data } = await client.rpc('ba_my_history');
   const rows = (Array.isArray(data) ? (data as BaHistoryRow[]) : []);
+
+  const { data: campaignRows } = await client.rpc('ba_my_campaigns');
+  const campaignRecords = Array.isArray(campaignRows)
+    ? (campaignRows as Record<string, unknown>[])
+    : [];
+  const activeCampaigns: ActiveCampaign[] = campaignRecords.map((r) => ({
+      id: r.campaign_id as string,
+      name: r.campaign_name as string,
+      status: r.status as string,
+      start_date: r.start_date as string,
+      end_date: (r.end_date as string | null) ?? null,
+    }));
 
   const units = rows.reduce((s, r) => s + r.units, 0);
   const completed = rows.filter((r) => r.status === 'completed').length;
@@ -188,6 +211,13 @@ async function BrandAmbassadorOverview({ brand }: { brand: ClientBrand }) {
 
   return (
     <>
+      <WorkProfile
+        client={client}
+        profile={profile}
+        brand={brand}
+        activeCampaigns={activeCampaigns}
+      />
+
       <PageHeader
         title={`My Activity — ${brand.name}`}
         description="Your own shifts, sales and check-ins. Data you can see from the mobile app."
@@ -257,4 +287,105 @@ async function BrandAmbassadorOverview({ brand }: { brand: ClientBrand }) {
 
 export function generateMetadata() {
   return { title: 'Campaign Performance — Brand Dashboard' };
+}
+
+type ActiveCampaign = {
+  id: string;
+  name: string;
+  status: string;
+  start_date: string;
+  end_date: string | null;
+};
+
+/**
+ * Renders the signed-in brand ambassador's work profile at the top of the
+ * dashboard: profile picture, contact details and the campaigns they are
+ * actively assigned to. The picture is served via a short-lived signed URL
+ * (never persisted) with a graceful fallback when the BA has no photo.
+ */
+async function WorkProfile({
+  client,
+  profile,
+  brand,
+  activeCampaigns,
+}: {
+  client: FazooClient;
+  profile: ClientProfile;
+  brand: ClientBrand;
+  activeCampaigns: ActiveCampaign[];
+}) {
+  let photoSrc: string | null = null;
+  if (profile.profile_photo_path) {
+    const { data } = await client.storage
+      .from('profile-photos')
+      .createSignedUrl(profile.profile_photo_path, 300);
+    photoSrc = data?.signedUrl ?? null;
+  }
+
+  const initials = (profile.full_name || 'BA')
+    .split(/\s+/)
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  return (
+    <Card className="mb-6 overflow-hidden">
+      <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
+        <div className="flex shrink-0 items-center gap-4 sm:gap-5">
+          {photoSrc ? (
+            <img
+              src={photoSrc}
+              alt={`${profile.full_name}'s profile`}
+              className="size-16 rounded-full border border-ink/10 object-cover sm:size-20"
+            />
+          ) : (
+            <span className="grid size-16 place-items-center rounded-full bg-primary/10 text-xl font-bold text-primary sm:size-20">
+              {initials}
+            </span>
+          )}
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-ink">{profile.full_name}</h1>
+            <p className="text-sm text-muted">{brand.name}</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-primary">Brand Ambassador</p>
+          </div>
+        </div>
+
+        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:pl-5 sm:border-l sm:border-ink/8">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">Phone</p>
+            <p className="mt-0.5 text-sm text-ink">{profile.phone || '—'}</p>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">Brand / workspace</p>
+            <p className="mt-0.5 text-sm text-ink">{brand.name}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-ink/8 bg-ink/[0.02] px-5 py-4 sm:px-6">
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
+          Active campaigns
+        </p>
+        {activeCampaigns.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {activeCampaigns.map((c) => (
+              <span
+                key={c.id}
+                className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-xs font-medium text-primary"
+              >
+                {c.name}
+                <span className="text-[10px] text-muted">
+                  {c.start_date} → {c.end_date ?? 'ongoing'}
+                </span>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">No active campaigns assigned right now.</p>
+        )}
+      </div>
+    </Card>
+  );
 }

@@ -1110,6 +1110,8 @@ export type Database = {
         Args: { p_client_request_id?: string; p_note?: string }
         Returns: Json
       }
+      ba_my_campaigns: { Args: never; Returns: Json }
+      ba_my_history: { Args: { p_limit?: number }; Returns: Json }
       ba_record_sale: {
         Args: {
           p_client_request_id: string
@@ -1155,7 +1157,6 @@ export type Database = {
         Returns: Json
       }
       ba_switch_brand: { Args: { p_organization_id: string }; Returns: string }
-      ba_my_history: { Args: { p_limit?: number }; Returns: Json }
       ba_today: { Args: never; Returns: Json }
       ba_unlock_brand: {
         Args: { p_code: string; p_organization_id: string }
@@ -1196,18 +1197,18 @@ export type Database = {
       }
       create_brand: {
         Args: {
-          p_access_code: string | null
-          p_ba_user_ids: string[]
+          p_access_code?: string
+          p_ba_user_ids?: string[]
           p_brand_admin_user_id: string
-          p_campaign_end: string | null
+          p_campaign_end?: string
           p_campaign_name: string
           p_campaign_start: string
           p_name: string
           p_slug: string
-          p_store_address: string | null
-          p_store_lat: number | null
-          p_store_lng: number | null
-          p_store_name: string | null
+          p_store_address?: string
+          p_store_lat?: number
+          p_store_lng?: number
+          p_store_name?: string
           p_store_radius?: number
           p_timezone?: string
           p_weekly_off_day?: number
@@ -1239,7 +1240,7 @@ export type Database = {
         Args: never
         Returns: {
           has_code_gate: boolean
-          logo_url: string | null
+          logo_url: string
           organization_id: string
           organization_name: string
           organization_slug: string
@@ -1250,7 +1251,7 @@ export type Database = {
         Returns: {
           account_status: Database["public"]["Enums"]["account_status"]
           has_code_gate: boolean
-          logo_url: string | null
+          logo_url: string
           organization_id: string
           organization_name: string
           organization_slug: string
@@ -1311,7 +1312,13 @@ export type Database = {
         | "casual_leave"
         | "other"
       organization_status: "active" | "suspended"
-      photo_type: "stock_shelf" | "uniform_selfie" | "checkout_stock_shelf" | "checkout_uniform_selfie" | "checkout" | "other"
+      photo_type:
+        | "stock_shelf"
+        | "uniform_selfie"
+        | "checkout"
+        | "other"
+        | "checkout_stock_shelf"
+        | "checkout_uniform_selfie"
       sku_status: "active" | "inactive"
       store_status: "active" | "inactive"
       veda_activity_type:
@@ -1479,10 +1486,10 @@ export const Constants = {
       photo_type: [
         "stock_shelf",
         "uniform_selfie",
-        "checkout_stock_shelf",
-        "checkout_uniform_selfie",
         "checkout",
         "other",
+        "checkout_stock_shelf",
+        "checkout_uniform_selfie",
       ],
       sku_status: ["active", "inactive"],
       store_status: ["active", "inactive"],
