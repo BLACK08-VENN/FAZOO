@@ -68,3 +68,80 @@ export interface BaTodayResult {
   attendance_status: AttendanceStatus | null;
   log_status: DailyLogStatus | null;
 }
+
+/** Payload for the `veda_checkin` RPC. Coordinates are hints; the server
+ *  recomputes the haversine distance against the school geofence. */
+export interface VedaCheckinInput {
+  latitude: number;
+  longitude: number;
+  accuracy_metres?: number | null;
+  learner_count?: number | null;
+  notes?: string | null;
+  selfie_photo_path: string;
+  stamped_document_path: string;
+  client_request_id: Uuid;
+}
+
+export interface VedaRecordDistributionInput {
+  session_id: Uuid;
+  stationery_item_id: Uuid;
+  quantity: number;
+  client_request_id: Uuid;
+}
+
+export interface VedaRemoveDistributionInput {
+  session_id: Uuid;
+  stationery_item_id: Uuid;
+  client_request_id: Uuid;
+}
+
+export interface VedaCheckoutInput {
+  session_id: Uuid;
+  latitude: number;
+  longitude: number;
+  accuracy_metres?: number | null;
+  notes?: string | null;
+  client_request_id: Uuid;
+}
+
+/** Result of the `veda_today` RPC — the BA's school-visit dashboard. */
+export interface VedaTodayResult {
+  attendance_date: IsoDate;
+  weekly_off_day: number | null;
+  is_weekly_off_today: boolean;
+  assignment: {
+    id: Uuid;
+    school_id: Uuid;
+    school_name: string;
+    school_region: string | null;
+    school_latitude: number;
+    school_longitude: number;
+    geofence_radius_metres: number;
+  } | null;
+  session: {
+    id: Uuid;
+    session_date: IsoDate;
+    learner_count: number;
+    status: DailyLogStatus;
+    checkin_at: string | null;
+    checkout_at: string | null;
+    checkin_latitude: number | null;
+    checkin_longitude: number | null;
+    checkin_distance_metres: number | null;
+    notes: string | null;
+  } | null;
+  distributions: Array<{
+    id: Uuid;
+    stationery_item_id: Uuid;
+    item_name: string;
+    item_code: string | null;
+    quantity: number;
+  }>;
+  stationery_items: Array<{
+    id: Uuid;
+    name: string;
+    code: string | null;
+  }>;
+  session_status: DailyLogStatus | null;
+  learner_count: number;
+}

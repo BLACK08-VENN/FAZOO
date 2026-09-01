@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { BaTodayResult } from '@fazoo/types';
+import type { BaTodayResult, VedaTodayResult, OrganizationKind } from '@fazoo/types';
 import { supabase } from './supabase';
 import type { SessionProfile } from './session';
 
@@ -30,7 +30,18 @@ export const writeCachedProfile = (profile: SessionProfile): Promise<void> =>
   write('profile', profile);
 export const readCachedToday = (): Promise<BaTodayResult | null> => read('today');
 export const writeCachedToday = (today: BaTodayResult): Promise<void> => write('today', today);
+export const readCachedVedaToday = (): Promise<VedaTodayResult | null> => read('veda-today');
+export const writeCachedVedaToday = (today: VedaTodayResult): Promise<void> =>
+  write('veda-today', today);
+export const readCachedOrgKind = (): Promise<OrganizationKind | null> => read('org-kind');
+export const writeCachedOrgKind = (kind: OrganizationKind): Promise<void> =>
+  write('org-kind', kind);
 
 export async function clearUserCache(id: string): Promise<void> {
-  await AsyncStorage.multiRemove([`fazoo.profile.${id}`, `fazoo.today.${id}`]);
+  await AsyncStorage.multiRemove([
+    `fazoo.profile.${id}`,
+    `fazoo.today.${id}`,
+    `fazoo.veda-today.${id}`,
+    `fazoo.org-kind.${id}`,
+  ]);
 }

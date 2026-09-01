@@ -4,22 +4,35 @@ import NetInfo from '@react-native-community/netinfo';
 import { router, useFocusEffect } from 'expo-router';
 import { lagosDate, weeklyOffDayName } from '@fazoo/config';
 import { useToday } from '@/lib/today';
+import { useOrgKind } from '@/lib/org-kind';
 import { operationCounts, retryTerminal } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
+import VedaToday from '@/components/veda-today';
 
 /**
- * Today dashboard — a strict state machine driven entirely by the
- * server-computed `ba_today` result:
- *   no assignment      → message + refresh
- *   weekly off today   → off-day notice
- *   sick leave logged  → sick-leave status
- *   open log           → Record Sale / Check Out
- *   completed day      → read-only summary
- *   otherwise          → Check In / Mark Sick Leave
+ * Today dashboard — routes between two flows based on the active
+ * organization's kind, which only the server can assert:
+ *   'schools' → Veda activation dashboard (school visit + stationery)
+ *   'retail'  → in-store dashboard (below, driven by ba_today)
  */
 export default function Today() {
+  const { kind, loading: kindLoading } = useOrgKind();
+
+  if (kind === 'schools') return <VedaToday />;
+  if (kindLoading && kind === null) {
+    return (
+      <View className="flex-1 items-center justify-center bg-lavender">
+        <ActivityIndicator size="large" color="#7B2FBE" />
+      </View>
+    );
+  }
+
+  return <RetailToday />;
+}
+
+function RetailToday() {
   const { data, loading, error, refresh } = useToday();
   const [counts, setCounts] = useState({ pending: 0, failed: 0 });
   const [online, setOnline] = useState<boolean | null>(null);

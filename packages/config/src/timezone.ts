@@ -70,3 +70,17 @@ export const WEEKDAY_NAMES = [
 export function weeklyOffDayName(day: number): string {
   return WEEKDAY_NAMES[day] ?? 'Unknown';
 }
+
+/** Locale-aware display for Veda (Africa/Nairobi) wall-clock times. */
+export function formatNairobiDisplay(
+  instant: Date | string,
+  locale = 'en-KE',
+): string {
+  const d = typeof instant === 'string' ? new Date(instant) : instant;
+  if (Number.isNaN(d.getTime())) throw new RangeError('Invalid date');
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: 'Africa/Nairobi',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(d);
+}

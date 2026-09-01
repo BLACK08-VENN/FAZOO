@@ -8,6 +8,9 @@ const PROTECTED = [
   '/checkin',
   '/checkout',
   '/sick-leave',
+  '/veda-checkin',
+  '/veda-checkout',
+  '/veda-activation',
 ] as const;
 const GUEST_ONLY = ['/', '/sign-in', '/register', '/forgot-password'] as const;
 

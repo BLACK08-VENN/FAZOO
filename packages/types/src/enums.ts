@@ -24,6 +24,12 @@ export const OrganizationStatus = {
 } as const;
 export type OrganizationStatus = (typeof OrganizationStatus)[keyof typeof OrganizationStatus];
 
+export const OrganizationKind = {
+  Retail: 'retail',
+  Schools: 'schools',
+} as const;
+export type OrganizationKind = (typeof OrganizationKind)[keyof typeof OrganizationKind];
+
 export const CampaignStatus = {
   Draft: 'draft',
   Active: 'active',
@@ -93,3 +99,9 @@ export const LeaveRequestStatus = {
   Cancelled: 'cancelled',
 } as const;
 export type LeaveRequestStatus = (typeof LeaveRequestStatus)[keyof typeof LeaveRequestStatus];
+
+export const VedaPhotoType = {
+  SiteSelfie: 'site_selfie',
+  StampedDocument: 'stamped_document',
+} as const;
+export type VedaPhotoType = (typeof VedaPhotoType)[keyof typeof VedaPhotoType];

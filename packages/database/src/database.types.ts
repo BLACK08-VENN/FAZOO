@@ -556,6 +556,7 @@ export type Database = {
           created_at: string
           has_code_gate: boolean
           id: string
+          kind: string
           logo_url: string | null
           name: string
           primary_color: string | null
@@ -571,6 +572,7 @@ export type Database = {
           created_at?: string
           has_code_gate?: boolean
           id?: string
+          kind?: string
           logo_url?: string | null
           name: string
           primary_color?: string | null
@@ -586,6 +588,7 @@ export type Database = {
           created_at?: string
           has_code_gate?: boolean
           id?: string
+          kind?: string
           logo_url?: string | null
           name?: string
           primary_color?: string | null
@@ -902,12 +905,74 @@ export type Database = {
           },
         ]
       }
+      veda_assignments: {
+        Row: {
+          brand_ambassador_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          organization_id: string
+          school_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["assignment_status"]
+          updated_at: string
+          weekly_off_day: number | null
+        }
+        Insert: {
+          brand_ambassador_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          organization_id: string
+          school_id: string
+          start_date: string
+          status?: Database["public"]["Enums"]["assignment_status"]
+          updated_at?: string
+          weekly_off_day?: number | null
+        }
+        Update: {
+          brand_ambassador_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          organization_id?: string
+          school_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["assignment_status"]
+          updated_at?: string
+          weekly_off_day?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veda_assignments_brand_ambassador_id_fkey"
+            columns: ["brand_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_assignments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "veda_schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       veda_schools: {
         Row: {
           created_at: string
+          geofence_radius_metres: number
           id: string
           latitude: number | null
-          legacy_id: number
+          legacy_id: number | null
           longitude: number | null
           name: string
           organization_id: string
@@ -917,9 +982,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          geofence_radius_metres?: number
           id?: string
           latitude?: number | null
-          legacy_id: number
+          legacy_id?: number | null
           longitude?: number | null
           name: string
           organization_id: string
@@ -929,9 +995,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          geofence_radius_metres?: number
           id?: string
           latitude?: number | null
-          legacy_id?: number
+          legacy_id?: number | null
           longitude?: number | null
           name?: string
           organization_id?: string
@@ -949,13 +1016,122 @@ export type Database = {
           },
         ]
       }
+      veda_session_distributions: {
+        Row: {
+          client_request_id: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          quantity: number
+          session_id: string
+          stationery_item_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_request_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          quantity: number
+          session_id: string
+          stationery_item_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_request_id?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          quantity?: number
+          session_id?: string
+          stationery_item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veda_session_distributions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_session_distributions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "veda_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_session_distributions_stationery_item_id_fkey"
+            columns: ["stationery_item_id"]
+            isOneToOne: false
+            referencedRelation: "veda_stationery_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veda_session_photos: {
+        Row: {
+          captured_at: string
+          created_at: string
+          id: string
+          organization_id: string
+          photo_type: Database["public"]["Enums"]["veda_photo_type"]
+          session_id: string
+          storage_path: string
+        }
+        Insert: {
+          captured_at?: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          photo_type: Database["public"]["Enums"]["veda_photo_type"]
+          session_id: string
+          storage_path: string
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          photo_type?: Database["public"]["Enums"]["veda_photo_type"]
+          session_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veda_session_photos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veda_session_photos_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "veda_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       veda_sessions: {
         Row: {
           brand_ambassador_id: string
+          checkin_at: string | null
+          checkin_distance_metres: number | null
+          checkin_latitude: number | null
+          checkin_longitude: number | null
+          checkout_at: string | null
+          checkout_latitude: number | null
+          checkout_longitude: number | null
+          client_request_id: string | null
           created_at: string
           id: string
           learner_count: number
-          legacy_id: number
+          legacy_id: number | null
+          notes: string | null
           organization_id: string
           school_id: string
           session_date: string
@@ -964,10 +1140,19 @@ export type Database = {
         }
         Insert: {
           brand_ambassador_id: string
+          checkin_at?: string | null
+          checkin_distance_metres?: number | null
+          checkin_latitude?: number | null
+          checkin_longitude?: number | null
+          checkout_at?: string | null
+          checkout_latitude?: number | null
+          checkout_longitude?: number | null
+          client_request_id?: string | null
           created_at?: string
           id?: string
           learner_count: number
-          legacy_id: number
+          legacy_id?: number | null
+          notes?: string | null
           organization_id: string
           school_id: string
           session_date: string
@@ -976,10 +1161,19 @@ export type Database = {
         }
         Update: {
           brand_ambassador_id?: string
+          checkin_at?: string | null
+          checkin_distance_metres?: number | null
+          checkin_latitude?: number | null
+          checkin_longitude?: number | null
+          checkout_at?: string | null
+          checkout_latitude?: number | null
+          checkout_longitude?: number | null
+          client_request_id?: string | null
           created_at?: string
           id?: string
           learner_count?: number
-          legacy_id?: number
+          legacy_id?: number | null
+          notes?: string | null
           organization_id?: string
           school_id?: string
           session_date?: string
@@ -1006,6 +1200,44 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "veda_schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veda_stationery_items: {
+        Row: {
+          code: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          status: Database["public"]["Enums"]["sku_status"]
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          status?: Database["public"]["Enums"]["sku_status"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          status?: Database["public"]["Enums"]["sku_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veda_stationery_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1224,6 +1456,7 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      current_user_org_kind: { Args: never; Returns: string }
       current_user_role_hint: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1251,6 +1484,7 @@ export type Database = {
         Returns: {
           account_status: Database["public"]["Enums"]["account_status"]
           has_code_gate: boolean
+          kind: string
           logo_url: string
           organization_id: string
           organization_name: string
@@ -1274,6 +1508,80 @@ export type Database = {
         }
         Returns: Json
       }
+      veda_admin_upsert_assignment: {
+        Args: {
+          p_assignment_id?: string
+          p_brand_ambassador_id: string
+          p_end_date?: string
+          p_school_id: string
+          p_start_date?: string
+          p_status?: Database["public"]["Enums"]["assignment_status"]
+          p_weekly_off_day?: number
+        }
+        Returns: string
+      }
+      veda_admin_upsert_school: {
+        Args: {
+          p_geofence_radius_metres?: number
+          p_latitude?: number
+          p_longitude?: number
+          p_name: string
+          p_region?: string
+          p_school_id?: string
+        }
+        Returns: string
+      }
+      veda_admin_upsert_stationery: {
+        Args: {
+          p_code?: string
+          p_item_id?: string
+          p_name: string
+          p_status?: Database["public"]["Enums"]["sku_status"]
+        }
+        Returns: string
+      }
+      veda_checkin: {
+        Args: {
+          p_accuracy_metres?: number
+          p_client_request_id: string
+          p_latitude: number
+          p_learner_count?: number
+          p_longitude: number
+          p_notes?: string
+          p_selfie_photo_path: string
+          p_stamped_document_path: string
+        }
+        Returns: Json
+      }
+      veda_checkout: {
+        Args: {
+          p_accuracy_metres?: number
+          p_client_request_id: string
+          p_latitude: number
+          p_longitude: number
+          p_notes?: string
+          p_session_id: string
+        }
+        Returns: Json
+      }
+      veda_record_distribution: {
+        Args: {
+          p_client_request_id: string
+          p_quantity: number
+          p_session_id: string
+          p_stationery_item_id: string
+        }
+        Returns: Json
+      }
+      veda_remove_distribution: {
+        Args: {
+          p_client_request_id: string
+          p_session_id: string
+          p_stationery_item_id: string
+        }
+        Returns: Json
+      }
+      veda_today: { Args: never; Returns: Json }
       write_audit: {
         Args: {
           p_action: string
@@ -1325,6 +1633,7 @@ export type Database = {
         | "crayon_colouring"
         | "watercolour_painting"
         | "paper_crafts"
+      veda_photo_type: "site_selfie" | "stamped_document"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1498,6 +1807,8 @@ export const Constants = {
         "watercolour_painting",
         "paper_crafts",
       ],
+      veda_photo_type: ["site_selfie", "stamped_document"],
     },
   },
 } as const
+

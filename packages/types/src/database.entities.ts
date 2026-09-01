@@ -5,6 +5,7 @@ import type {
   AttendanceStatus,
   CampaignStatus,
   DailyLogStatus,
+  OrganizationKind,
   OrganizationStatus,
   PhotoType,
   SkuStatus,
@@ -26,6 +27,7 @@ export interface Organization {
   secondary_color: string | null;
   timezone: string;
   status: OrganizationStatus;
+  kind: OrganizationKind;
   settings: Record<string, unknown>;
   created_at: IsoTimestamp;
   updated_at: IsoTimestamp;

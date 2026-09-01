@@ -552,6 +552,29 @@ function deriveSchoolName(title: string): string {
     .trim();
 }
 
+async function importVedaBAs(
+  orgId: string,
+  file = 'veda-brand-ambassadors.csv',
+): Promise<Map<string, string>> {
+  const basRaw = readCsv<{ legacy_id: string; full_name: string; phone: string; email: string; is_admin: string }>(file);
+  const baByLegacy = new Map<string, string>();
+  for (const b of basRaw) {
+    const email = str(b.email).toLowerCase();
+    if (!email || !email.includes('@')) {
+      // No email → match by phone or create with fictitious email.
+      const phone = normalizePhone(b.phone, 'KE');
+      const uid = await ensureBA({ orgId, fullName: str(b.full_name), phone });
+      baByLegacy.set(str(b.legacy_id), uid);
+      continue;
+    }
+    // Match by email first so existing accounts are reused.
+    const existing = await findExistingBA('', email);
+    const userId = existing ?? await ensureBA({ orgId, fullName: str(b.full_name), phone: normalizePhone(b.phone, 'KE'), email });
+    baByLegacy.set(str(b.legacy_id), userId);
+  }
+  return baByLegacy;
+}
+
 async function importVeda() {
   log.info('── importing Veda ──');
   const orgId = orgIds.veda;
@@ -595,24 +618,7 @@ async function importVeda() {
   }
 
   // BA registry by legacy id from the BA csv (email → user), sessions reference ba_id.
-  const basRaw = readCsv<{ legacy_id: string; full_name: string; phone: string; email: string; is_admin: string }>(
-    'veda-brand-ambassadors.csv',
-  );
-  const baByLegacy = new Map<string, string>();
-  for (const b of basRaw) {
-    const email = str(b.email).toLowerCase();
-    if (!email || !email.includes('@')) {
-      // No email → match by phone or create with fictitious email.
-      const phone = normalizePhone(b.phone, 'KE');
-      const uid = await ensureBA({ orgId, fullName: str(b.full_name), phone });
-      baByLegacy.set(str(b.legacy_id), uid);
-      continue;
-    }
-    // Match by email first so existing accounts are reused.
-    const existing = await findExistingBA('', email);
-    const userId = existing ?? await ensureBA({ orgId, fullName: str(b.full_name), phone: normalizePhone(b.phone, 'KE'), email });
-    baByLegacy.set(str(b.legacy_id), userId);
-  }
+  const baByLegacy = await importVedaBAs(orgId);
 
   // Sessions + activities.
   const sessionsRaw = readCsv<{
@@ -686,7 +692,11 @@ async function importVeda() {
 async function main() {
   const arg = process.argv.find((a) => a.startsWith('--brand='));
   const brand = (arg?.split('=')[1] ?? 'all').toLowerCase();
+  const only = process.argv.find((a) => a.startsWith('--only='))?.split('=')[1]?.toLowerCase();
+  const vedaBasFile = process.argv.find((a) => a.startsWith('--veda-bas-file='))?.split('=')[1];
   if (!['lenovo', 'veda', 'all'].includes(brand)) throw new Error(`--brand must be lenovo|veda|all`);
+  if (only && only !== 'bas') throw new Error(`--only must be bas`);
+  if (only === 'bas' && brand !== 'veda') throw new Error(`--only=bas requires --brand=veda`);
 
   const env = loadEnv();
   client = createClient(env.url, env.serviceKey, {
@@ -698,6 +708,12 @@ async function main() {
     veda: await getOrg('veda'),
   };
   log.info(`connected to ${env.url}`);
+
+  if (only === 'bas') {
+    const imported = await importVedaBAs(orgIds.veda, vedaBasFile || 'veda-brand-ambassadors.csv');
+    log.ok(`Veda: ${imported.size} BAs processed`);
+    return;
+  }
 
   if (brand === 'lenovo' || brand === 'all') await importLenovo();
   if (brand === 'veda' || brand === 'all') await importVeda();

@@ -8,7 +8,11 @@ export type OperationName =
   | 'update_sale'
   | 'delete_sale'
   | 'sick_leave'
-  | 'leave_request';
+  | 'leave_request'
+  | 'veda_checkin'
+  | 'veda_distribution'
+  | 'veda_remove_distribution'
+  | 'veda_checkout';
 export type OperationStatus = 'pending' | 'syncing' | 'done' | 'terminal';
 export interface QueuedAttachment {
   localUri: string;

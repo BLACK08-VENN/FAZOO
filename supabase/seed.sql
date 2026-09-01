@@ -31,7 +31,7 @@ values (
 )
 on conflict (slug) do nothing;
 
-insert into public.organizations (id, name, slug, logo_url, timezone, primary_color, secondary_color, has_code_gate, access_code)
+insert into public.organizations (id, name, slug, logo_url, timezone, primary_color, secondary_color, has_code_gate, access_code, kind)
 values (
   '11111111-1111-4111-8111-111111111122'::uuid,
   'Veda',
@@ -41,7 +41,8 @@ values (
   '#0EA5E9',
   '#0B0B0F',
   true,
-  'VEDA-ACCESS'
+  'VEDA-ACCESS',
+  'schools'
 )
 on conflict (slug) do nothing;
 
