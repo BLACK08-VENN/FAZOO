@@ -5,7 +5,7 @@
   "description": "Fazoo — field-force management and sales-reporting platform",
   "packageManager": "pnpm@11.22.0",
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "dev:admin": "pnpm --filter @fazoo/admin dev",
