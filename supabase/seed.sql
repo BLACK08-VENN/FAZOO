@@ -21,28 +21,28 @@ create extension if not exists pgcrypto;
 insert into public.organizations (id, name, slug, logo_url, timezone, primary_color, secondary_color, has_code_gate, access_code)
 values (
   '11111111-1111-4111-8111-111111111111'::uuid,
-  'Lenovo Nigeria (Demo)',
+  'Lenovo Nigeria',
   'lenovo-nigeria',
   '/brands/lenovo.png',
   'Africa/Lagos',
   '#7B2FBE',
   '#0B0B0F',
   true,
-  'LENOVO-DEMO'
+  'LENOVO-ACCESS'
 )
 on conflict (slug) do nothing;
 
 insert into public.organizations (id, name, slug, logo_url, timezone, primary_color, secondary_color, has_code_gate, access_code)
 values (
   '11111111-1111-4111-8111-111111111122'::uuid,
-  'Veda (Demo)',
+  'Veda',
   'veda',
   '/brands/veda.jpeg',
   'Africa/Nairobi',
   '#0EA5E9',
   '#0B0B0F',
   true,
-  'VEDA-DEMO'
+  'VEDA-ACCESS'
 )
 on conflict (slug) do nothing;
 
@@ -59,14 +59,14 @@ select
   now(), '{"provider":"email","providers":["email"]}'::jsonb,
   u.meta::jsonb, now(), now(), '', '', '', ''
 from (values
-  ('22222222-2222-4222-8222-000000000001'::uuid,'super.admin.demo@ba.fazoo.app', crypt('Demo-Super1!', gen_salt('bf')), jsonb_build_object('full_name','Ngozi Okafor (Demo)','phone','+23480000000001','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000002'::uuid,'org.admin.demo@ba.fazoo.app',  crypt('Demo-Admin1!', gen_salt('bf')), jsonb_build_object('full_name','Tunde Balogun (Demo)','phone','+23480000000002','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000003'::uuid,'supervisor.demo@ba.fazoo.app',crypt('Demo-SuperV1!', gen_salt('bf')), jsonb_build_object('full_name','Chiamaka Eze (Demo)','phone','+23480000000003','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000010'::uuid,'ba.one.demo@ba.fazoo.app',    crypt('Demo-Ba#001!', gen_salt('bf')), jsonb_build_object('full_name','Emeka Nwosu (Demo)','phone','+23480000000010','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000011'::uuid,'ba.two.demo@ba.fazoo.app',    crypt('Demo-Ba#002!', gen_salt('bf')), jsonb_build_object('full_name','Amina Sule (Demo)','phone','+23480000000011','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000012'::uuid,'ba.three.demo@ba.fazoo.app',  crypt('Demo-Ba#003!', gen_salt('bf')), jsonb_build_object('full_name','Kelechi Obi (Demo)','phone','+23480000000012','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000020'::uuid,'client.demo@ba.fazoo.app',    crypt('Demo-Client1!', gen_salt('bf')), jsonb_build_object('full_name','Lenovo Stakeholder (Demo)','phone','+23480000000020','organization_slug','lenovo-nigeria')),
-  ('22222222-2222-4222-8222-000000000030'::uuid,'254700000001@ba.fazoo.app', crypt('Demo-Veda#01!', gen_salt('bf')), jsonb_build_object('full_name','Achieng Demo (Veda)','phone','+254700000001','organization_slug','veda'))
+  ('22222222-2222-4222-8222-000000000001'::uuid,'super.admin.demo@ba.fazoo.app', crypt('Demo-Super1!', gen_salt('bf')), jsonb_build_object('full_name','Ngozi Okafor','phone','+23480000000001','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000002'::uuid,'org.admin.demo@ba.fazoo.app',  crypt('Demo-Admin1!', gen_salt('bf')), jsonb_build_object('full_name','Tunde Balogun','phone','+23480000000002','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000003'::uuid,'supervisor.demo@ba.fazoo.app',crypt('Demo-SuperV1!', gen_salt('bf')), jsonb_build_object('full_name','Chiamaka Eze','phone','+23480000000003','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000010'::uuid,'ba.one.demo@ba.fazoo.app',    crypt('Demo-Ba#001!', gen_salt('bf')), jsonb_build_object('full_name','Emeka Nwosu','phone','+23480000000010','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000011'::uuid,'ba.two.demo@ba.fazoo.app',    crypt('Demo-Ba#002!', gen_salt('bf')), jsonb_build_object('full_name','Amina Sule','phone','+23480000000011','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000012'::uuid,'ba.three.demo@ba.fazoo.app',  crypt('Demo-Ba#003!', gen_salt('bf')), jsonb_build_object('full_name','Kelechi Obi','phone','+23480000000012','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000020'::uuid,'client.demo@ba.fazoo.app',    crypt('Demo-Client1!', gen_salt('bf')), jsonb_build_object('full_name','Lenovo Stakeholder','phone','+23480000000020','organization_slug','lenovo-nigeria')),
+  ('22222222-2222-4222-8222-000000000030'::uuid,'254700000001@ba.fazoo.app', crypt('Demo-Veda#01!', gen_salt('bf')), jsonb_build_object('full_name','Achieng Kamau','phone','+254700000001','organization_slug','veda'))
 ) as u(id, email, password_hash, meta)
 where not exists (select 1 from auth.users au where au.id = u.id);
 
@@ -98,8 +98,8 @@ insert into public.campaigns (id, organization_id, name, description, start_date
 values (
   '33333333-3333-4333-8333-333333333301'::uuid,
   '11111111-1111-4111-8111-111111111111'::uuid,
-  'Retail Push Q3 2026 (Demo)',
-  'Demonstration campaign for local development only.',
+  'Retail Push Q3 2026',
+  'Training campaign for local development only.',
   date_trunc('month', now())::date - interval '1 month',
   'active'
 )
@@ -108,9 +108,9 @@ on conflict do nothing;
 -- ── stores (fictitious demo locations around Lagos for geofence testing) ────
 insert into public.stores (id, organization_id, name, address, latitude, longitude, geofence_radius_metres)
 values
-  ('44444444-4444-4444-8444-444444444401'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Ikeja Tech Plaza (Demo)',    'Plot 1, Demo Road, Ikeja',          6.601900,  3.351500, 200),
-  ('44444444-4444-4444-8444-444444444402'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Yaba Gadget Hub (Demo)',     '12 Sample Street, Yaba',            6.509500,  3.371100, 250),
-  ('44444444-4444-4444-8444-444444444403'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Lekki Electronics Bay (Demo)','34 Test Avenue, Lekki Phase 1',    6.445700,  3.552300, 150)
+  ('44444444-4444-4444-8444-444444444401'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Ikeja Tech Plaza',    'Plot 1, Sample Road, Ikeja',          6.601900,  3.351500, 200),
+  ('44444444-4444-4444-8444-444444444402'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Yaba Gadget Hub',     '12 Sample Street, Yaba',            6.509500,  3.371100, 250),
+  ('44444444-4444-4444-8444-444444444403'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'Lekki Electronics Bay','34 Test Avenue, Lekki Phase 1',    6.445700,  3.552300, 150)
 on conflict do nothing;
 
 -- ── SKUs (public product-line names, fictitious codes) ──────────────────────
@@ -140,11 +140,11 @@ on conflict do nothing;
 insert into public.organization_memberships
   (user_id, organization_id, role, account_status, access_code_used, code_granted_at)
 values
-  ('22222222-2222-4222-8222-000000000010'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'approved', 'LENOVO-DEMO', now()),
-  ('22222222-2222-4222-8222-000000000010'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, 'brand_ambassador', 'approved', 'VEDA-DEMO',   now()),
-  ('22222222-2222-4222-8222-000000000011'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'approved', 'LENOVO-DEMO', now()),
+  ('22222222-2222-4222-8222-000000000010'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'approved', 'LENOVO-ACCESS', now()),
+  ('22222222-2222-4222-8222-000000000010'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, 'brand_ambassador', 'approved', 'VEDA-ACCESS',   now()),
+  ('22222222-2222-4222-8222-000000000011'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'approved', 'LENOVO-ACCESS', now()),
   ('22222222-2222-4222-8222-000000000012'::uuid, '11111111-1111-4111-8111-111111111111'::uuid, 'brand_ambassador', 'pending',   null,          null),
-  ('22222222-2222-4222-8222-000000000030'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, 'brand_ambassador', 'approved', 'VEDA-DEMO',   now())
+  ('22222222-2222-4222-8222-000000000030'::uuid, '11111111-1111-4111-8111-111111111122'::uuid, 'brand_ambassador', 'approved', 'VEDA-ACCESS',   now())
 on conflict (user_id, organization_id) do nothing;
 
 -- Backfill any profile that landed without a membership (e.g. super admin,
@@ -166,8 +166,8 @@ insert into public.campaigns (id, organization_id, name, description, start_date
 values (
   '33333333-3333-4333-8333-333333333302'::uuid,
   '11111111-1111-4111-8111-111111111122'::uuid,
-  'Nairobi Launch (Demo)',
-  'Demonstration campaign for local development only.',
+  'Nairobi Launch',
+  'Training campaign for local development only.',
   date_trunc('month', now())::date - interval '1 month',
   'active'
 )
@@ -177,8 +177,8 @@ insert into public.stores (id, organization_id, name, address, latitude, longitu
 values (
   '44444444-4444-4444-8444-444444444404'::uuid,
   '11111111-1111-4111-8111-111111111122'::uuid,
-  'Westgate Demo Outlet (Demo)',
-  'Demo Road, Westlands, Nairobi',
+  'Westgate Training Outlet',
+  'Sample Road, Westlands, Nairobi',
   -1.264900, 36.803800, 250
 )
 on conflict do nothing;

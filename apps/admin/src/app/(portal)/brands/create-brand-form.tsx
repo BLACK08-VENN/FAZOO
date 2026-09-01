@@ -64,7 +64,7 @@ export function CreateBrandForm({ bas }: { bas: BaOption[] }) {
               </div>
               <div>
                 <Label htmlFor="access_code">BA access code (optional)</Label>
-                <Input id="access_code" name="access_code" placeholder="ACME-DEMO" />
+                <Input id="access_code" name="access_code" placeholder="ACME-2026" />
                 <p className="mt-1 text-xs text-muted">Leave blank for an open brand.</p>
               </div>
               <div>

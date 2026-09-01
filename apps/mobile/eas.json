@@ -10,7 +10,10 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "env": { "EXPO_PUBLIC_APP_ENV": "preview" }
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     },
     "production": {
       "autoIncrement": true,
