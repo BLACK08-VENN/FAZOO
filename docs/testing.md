@@ -35,6 +35,7 @@ Two modes — same specs, different targets:
   accounts, then `pnpm test:e2e`.
 
 Notes:
+
 - `apps/admin/e2e/roles.spec.ts` covers role isolation (BA blocked from staff
   routes + CSV export; org-admin access; super-admin views). It relies on
   BA/org-admin accounts that only exist in the local seed by default.
@@ -48,11 +49,11 @@ The one-off importer (`scripts/migrate-csv.ts`) reads the REAL operational CSVs
 from `migration/data/` (gitignored — never commit customer data, AGENTS.md 7/8).
 Required files and columns:
 
-| File | Columns |
-|------|---------|
-| `veda-brand-ambassadors.csv` | `legacy_id`, `full_name`, `phone`, `email`, `is_admin` |
-| `veda-schools.csv` | `id`, `title`, `region` |
-| `veda-sessions.csv` | `id`, `title`, `school_id`, `ba_id`, `session_date`, `activity_type`, `status`, `learner_count` |
+| File                         | Columns                                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| `veda-brand-ambassadors.csv` | `legacy_id`, `full_name`, `phone`, `email`, `is_admin`                                          |
+| `veda-schools.csv`           | `id`, `title`, `region`                                                                         |
+| `veda-sessions.csv`          | `id`, `title`, `school_id`, `ba_id`, `session_date`, `activity_type`, `status`, `learner_count` |
 
 - `activity_type` is a comma-separated list; recognized activities (mapped to
   `veda_activities`): `crayon_colouring`, `watercolour_painting`, `paper_crafts`.
