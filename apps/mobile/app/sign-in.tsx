@@ -23,8 +23,15 @@ export default function SignIn() {
 
   async function submit() {
     setError(null);
-    const normalized = normalizeInternationalPhone(phone);
-    const email = normalized.ok && normalized.e164 ? toAuthEmail(normalized.e164) : null;
+    const trimmed = phone.trim();
+    // BAs sign in with their mobile number (mapped to their auth alias) or,
+    // when a hosted account was provisioned with an email, directly with it.
+    const email = trimmed.includes('@')
+      ? trimmed
+      : (() => {
+          const normalized = normalizeInternationalPhone(trimmed);
+          return normalized.ok && normalized.e164 ? toAuthEmail(normalized.e164) : null;
+        })();
     if (!email || !password) {
       setError('Enter your mobile number and password.');
       return;
@@ -83,7 +90,9 @@ export default function SignIn() {
           hitSlop={8}
           className="absolute inset-y-0 right-0 items-center justify-center pr-4"
         >
-          <Text className={`text-sm font-semibold ${showPassword ? 'text-bright' : 'text-white/60'}`}>
+          <Text
+            className={`text-sm font-semibold ${showPassword ? 'text-bright' : 'text-white/60'}`}
+          >
             {showPassword ? 'Hide' : 'Show'}
           </Text>
         </Pressable>

@@ -6,9 +6,7 @@ const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD;
 
 async function globalSetup(_config: FullConfig) {
   if (!ADMIN_PHONE || !ADMIN_PASSWORD) {
-    throw new Error(
-      'E2E_ADMIN_PHONE and E2E_ADMIN_PASSWORD must be set for global setup',
-    );
+    throw new Error('E2E_ADMIN_PHONE and E2E_ADMIN_PASSWORD must be set for global setup');
   }
 
   const browser = await chromium.launch({ channel: 'chrome' });
@@ -17,7 +15,7 @@ async function globalSetup(_config: FullConfig) {
 
   await page.goto(`${BASE_URL}/sign-in`);
   await page.getByLabel('Mobile number or email').fill(ADMIN_PHONE);
-  await page.getByLabel('Password').fill(ADMIN_PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL(/overview/, { timeout: 30_000 });
 

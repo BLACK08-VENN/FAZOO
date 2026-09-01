@@ -32,7 +32,7 @@ test.describe('authentication & role isolation', () => {
   test('sign-in page shows form elements', async ({ page }) => {
     await page.goto('/sign-in');
     await expect(page.getByLabel('Mobile number or email')).toBeVisible();
-    await expect(page.getByLabel('Password')).toBeVisible();
+    await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
   });
 
@@ -40,7 +40,7 @@ test.describe('authentication & role isolation', () => {
     test.skip(!ADMIN_ID || !ADMIN_PASSWORD, 'Demo credentials not configured');
     await page.goto('/sign-in');
     await page.getByLabel('Mobile number or email').fill('invalid@example.com');
-    await page.getByLabel('Password').fill('wrongpassword');
+    await page.getByLabel('Password', { exact: true }).fill('wrongpassword');
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByRole('alert')).toBeVisible();
   });
@@ -49,7 +49,7 @@ test.describe('authentication & role isolation', () => {
     test.skip(!ADMIN_ID || !ADMIN_PASSWORD, 'Demo credentials not configured');
     await page.goto('/sign-in');
     await page.getByLabel('Mobile number or email').fill(ADMIN_ID!);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD!);
+    await page.getByLabel('Password', { exact: true }).fill(ADMIN_PASSWORD!);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.waitForURL(/overview/, { timeout: 15_000 });
     await expect(page.getByText('BA-days', { exact: true })).toBeVisible();

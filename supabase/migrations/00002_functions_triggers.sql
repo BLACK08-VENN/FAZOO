@@ -68,9 +68,11 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (
     select 1 from public.profiles
     where id = auth.uid()
-      and organization_id = p_organization_id
-      and role in ('super_admin','organization_admin')
       and account_status = 'approved'
+      and (
+        role = 'super_admin'
+        or (role = 'organization_admin' and organization_id = p_organization_id)
+      )
   );
 $$;
 

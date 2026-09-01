@@ -2,10 +2,7 @@
 
 import { serverSupabase, serviceSupabase } from '@fazoo/database';
 import { toAuthEmail } from '@fazoo/validation';
-import {
-  RATE_LIMIT_SIGNIN_MAX,
-  RATE_LIMIT_SIGNIN_WINDOW_S,
-} from '@fazoo/config';
+import { RATE_LIMIT_SIGNIN_MAX, RATE_LIMIT_SIGNIN_WINDOW_S } from '@fazoo/config';
 
 export type SignInState = { error: string | null; redirectTo?: string };
 
@@ -39,23 +36,18 @@ export async function signInAction(
     return { error: 'Enter your identifier and password.' };
   }
 
-  // Admins and brand clients sign in with an email address; brand
-  // ambassadors and brands may also use a phone number that maps to their
-  // internal email alias (<digits>@ba.fazoo.app). Brand clients additionally
-  // accept a plain email so documented logins like admin.lenovo@fazoo.app
-  // work directly.
+  // Admins sign in with an email address; brand ambassadors and brands may
+  // use a phone number that maps to their internal email alias
+  // (<digits>@ba.fazoo.app) or, when provisioned with an email, directly.
   let email: string | null;
   if (role === 'admin') {
     if (!identifier.includes('@')) {
       return { error: 'Sign in to the admin portal with your email address.' };
     }
     email = identifier;
-  } else if (role === 'brand' && identifier.includes('@')) {
+  } else if (identifier.includes('@')) {
     email = identifier;
   } else {
-    if (identifier.includes('@')) {
-      return { error: 'Sign in with your phone number, not an email address.' };
-    }
     try {
       email = toAuthEmail(identifier);
     } catch {
@@ -86,8 +78,7 @@ export async function signInAction(
       });
       if (allowed === false) {
         return {
-          error:
-            'Too many sign-in attempts. Please wait a few minutes and try again.',
+          error: 'Too many sign-in attempts. Please wait a few minutes and try again.',
         };
       }
     } catch {
