@@ -105,7 +105,7 @@ function FeatureCard({
 
 export default function HowItWorksPage() {
   return (
-    <main className="min-h-screen bg-lavender">
+    <main id="main-content" className="min-h-screen bg-lavender">
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#09070d]/85 text-white backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link href="/how-it-works" className="flex items-center gap-3">

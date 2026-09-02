@@ -10,7 +10,7 @@ export default async function SignInPage({
   const { next } = await searchParams;
 
   return (
-    <main className="grid min-h-screen bg-[#f5f1f8] lg:grid-cols-[1.16fr_0.84fr]">
+    <main id="main-content" className="grid min-h-screen bg-[#f5f1f8] lg:grid-cols-[1.16fr_0.84fr]">
       <section className="relative hidden min-h-screen overflow-hidden bg-[#09070d] px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12">
         <div aria-hidden="true" className="absolute inset-0">
           <div className="fazoo-aurora absolute -left-32 top-1/4 h-[32rem] w-[32rem] rounded-full bg-primary/30 blur-[100px]" />

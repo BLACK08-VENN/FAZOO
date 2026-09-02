@@ -1,11 +1,20 @@
 # Full happy path on the demo org: check in → sale → check out.
 # Requires the device to be inside the demo store geofence (or the seed
 # store coordinates adjusted for local testing).
+#
+# NOTE (multi-assignment UI): the Today screen renders one card per active
+# assignment. These steps target the FIRST card via `index: 0` so the flow
+# stays valid even if the demo BA gains a second assignment. The demo BA is
+# seeded with one active assignment (off days {0,6} = Sun+Sat) — run on a
+# Mon-Fri. On a weekend the Today screen shows "weekly off" and has no
+# Check In button, so this flow will fail by design.
 appId: app.fazoo.mobile
 ---
 - runFlow: sign-in.yaml
 - assertVisible: "Check In"
-- tapOn: "Check In"
+- tapOn:
+    text: "Check In"
+    index: 0
 - tapOn: "Get my location"
 - tapOn: "Continue"
 - tapOn: "Take a stock photo"   # camera stub / emulator media
@@ -13,11 +22,15 @@ appId: app.fazoo.mobile
 - tapOn: "Take your selfie"
 - tapOn: "Check In"
 - assertVisible: "Record Sale"
-- tapOn: "Record Sale"
+- tapOn:
+    text: "Record Sale"
+    index: 0
 - tapOn: "ThinkPad.*"
 - tapOn: "Save sale"
 - back
-- tapOn: "Check Out"
+- tapOn:
+    text: "Check Out"
+    index: 0
 - swipe:
     direction: DOWN
 - tapOn: "Confirm checkout lock"

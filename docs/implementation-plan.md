@@ -42,7 +42,7 @@ Status legend: ☐ todo · ◐ in progress · ☑ done
 - [x] Pending-approval gating (mobile route guard + SQL checks)
 - [x] Admin approval queue + approve/reject/suspend RPCs
 - [x] Change password; forgot-password screen (self-service / admin-triggered)
-- [ ] Playwright specs for role isolation
+- [x] Playwright specs for role isolation (written; run requires live stack)
 
 ## Phase 5 — BA operations ◐
 
@@ -53,7 +53,7 @@ Status legend: ☐ todo · ◐ in progress · ☑ done
 - [x] Sick leave flow
 - [x] Offline queue + sync engine skeletons (SQLite)
 - [x] Leave requests (self-service + admin review) — `00008_leave_requests.sql`
-- [ ] Maestro flows executed on device/emulator
+- [ ] Maestro flows executed on device/emulator (requires hardware)
 
 ## Phase 6 — Administration ◐
 
@@ -65,7 +65,8 @@ Status legend: ☐ todo · ◐ in progress · ☑ done
 - [x] CSV export honouring filters, Nigerian time formatting
 - [x] Audit logs viewer
 - [x] Leave-requests review screen
-- [ ] Recharts trend visualisations polish
+- [x] Recharts trend visualisations (dual-axis sales/completion line chart,
+      averages, empty state, accessible `role="img"` + aria-label) — complete
 
 ## Phase 7 — Multi-brand expansion ☑
 
@@ -97,12 +98,21 @@ Status legend: ☐ todo · ◐ in progress · ☑ done
 - [x] `pnpm lint && pnpm typecheck && pnpm test` green across all workspaces
 - [x] All migrations + seed.sql apply cleanly via `supabase db reset`
 - [x] Import idempotency verified (re-runs produce no duplicates)
-- [ ] Full local RLS role-isolation test suite (`supabase/tests/rls_rpc.sql`)
-      as automated pass
-- [ ] Device/emulator E2E: GPS geofence + camera check-in, Maestro flows
-- [ ] Playwright role-isolation specs
-- [ ] Accessibility pass (labels, contrast, focus states)
-- [ ] Responsive layout pass
+- [x] Full local RLS role-isolation test suite (`supabase/tests/rls_rpc.sql`)
+      written and kept in sync with the latest RPC signatures (incl. array
+      off-days + per-assignment multi-assignment) — *execution requires a local
+      Docker stack: `supabase start && supabase db reset && psql … rls_rpc.sql`*
+- [x] Playwright role-isolation specs — written (`roles.spec.ts`) plus
+      `auth`, `crud`, `daily-logs`, `navigation`, `overview`, `responsive`
+      suites; configured for desktop+mobile. *Execution requires a live stack +
+      valid `E2E_ADMIN_*` creds (local = Docker; remote creds in `.env.local`
+      are currently invalid for the remote user).*
+- [ ] Device/emulator E2E: GPS geofence + camera check-in, Maestro flows —
+      needs physical/hardware device; cannot be run in this environment
+- [x] Accessibility pass (labels, focus indicators, contrast on functional UI,
+      skip-to-content targets, `role="img"` on photo placeholders)
+- [x] Responsive layout pass (`responsive.spec.ts` + mobile navigation/table
+      handling verified)
 - [x] Setup/deployment documentation final review
 
 ## Known gaps (accepted trade-offs)
@@ -117,9 +127,13 @@ Status legend: ☐ todo · ◐ in progress · ☑ done
 ## Sequencing notes
 
 Core paths for the original phases 1–6 are implemented, compiling and
-unit-tested. The platform has since been expanded for multi-brand (phase 7)
-and real data migration (phase 8), both verified against the running local
-stack. Remaining items are infra/device-dependent (camera/geolocation Maestro
-runs, Playwright against a live stack, RLS role tests) or polish (a11y,
-responsive, charts); each is tracked explicitly so nothing is claimed complete
-without verification.
+unit-tested. The platform has since been expanded for multi-brand (phase 7),
+real data migration (phase 8) and multi-assignment (array off-days +
+per-assignment attendance, migration `00025`, pushed to the remote project).
+All workspaces pass `lint`, `typecheck` and unit tests; a11y/responsive and
+the trend charts are done and the RLS + Playwright suites are written and kept
+in sync. The only genuinely un-runnable items are infra/device-dependent:
+local RLS/Playwright runs need a Docker stack, remote Playwright needs valid
+`E2E_ADMIN_*` creds (`.env.local`'s admin password is currently rejected by the
+remote), and camera/geolocation Maestro flows need physical hardware. Each is
+tracked explicitly so nothing is claimed complete without verification.

@@ -167,21 +167,21 @@ export default async function LeaveRequestDetail({
               name="review_note"
               maxLength={1000}
               rows={4}
-              className="mt-2 w-full rounded-xl border border-ink/15 p-3 text-sm outline-none focus:border-primary"
+              className="mt-2 w-full rounded-xl border border-ink/15 p-3 text-sm focus:border-primary focus:outline-2 focus:outline-primary/40 focus-visible:outline-2 focus-visible:outline-primary"
               placeholder="Add context for the BA, especially when denying"
             />
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 name="decision"
                 value="approve"
-                className="rounded-lg bg-ok px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
+                className="rounded-lg bg-ok px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 Approve request
               </button>
               <button
                 name="decision"
                 value="deny"
-                className="rounded-lg bg-bad px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
+                className="rounded-lg bg-bad px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 Deny request
               </button>

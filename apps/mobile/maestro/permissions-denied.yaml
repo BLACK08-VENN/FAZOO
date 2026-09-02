@@ -1,8 +1,11 @@
 # Verify location permission denial shows an appropriate message.
+# Multi-assignment note: taps the FIRST Check In (index: 0).
 appId: app.fazoo.mobile
 ---
 - runFlow: sign-in.yaml
-- tapOn: "Check In"
+- tapOn:
+    text: "Check In"
+    index: 0
 - setPermissions:
     permissions:
       location: deny

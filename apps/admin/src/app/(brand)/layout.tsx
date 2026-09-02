@@ -39,7 +39,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
             </span>
           )}
           <p className="truncate text-xs font-medium text-white/70">{brand.name}</p>
-          <p className="mt-0.5 text-[10px] uppercase tracking-wider text-white/35">
+          <p className="mt-0.5 text-[10px] uppercase tracking-wider text-white/55">
             Powered by Fazoo
           </p>
         </div>

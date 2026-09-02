@@ -200,7 +200,7 @@ async function PhotoFrame({ path }: { path: string }) {
   const bucket = path.includes('/') && !path.startsWith('profile') ? 'daily-log-photos' : 'profile-photos';
   const { data } = await client.storage.from(bucket).createSignedUrl(path, 300);
   if (!data) {
-    return <div className="h-40 w-full rounded-lg bg-ink/5" aria-label="photo unavailable" />;
+    return <div role="img" className="h-40 w-full rounded-lg bg-ink/5" aria-label="photo unavailable" />;
   }
   return (
     <img

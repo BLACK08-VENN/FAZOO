@@ -1,9 +1,14 @@
 # Sale edit and delete flow — requires an open daily log.
+# Multi-assignment note: taps target the FIRST assignment card (index: 0).
+# Requires a checked-in (open) day — run daily-cycle.yaml first, or ensure
+# the demo BA already checked in. Off days {0,6} — run Mon-Fri.
 appId: app.fazoo.mobile
 ---
 - runFlow: sign-in.yaml
 - assertVisible: "Record Sale"
-- tapOn: "Record Sale"
+- tapOn:
+    text: "Record Sale"
+    index: 0
 - tapOn: "ThinkPad.*"
 - tapOn: "1"
 - inputText: "2"

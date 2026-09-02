@@ -73,7 +73,7 @@ export function SignInForm({ next }: { next: string }) {
           >
             <span className="text-xs font-bold text-ink">{t.label}</span>
             <span
-              className={`text-[10px] leading-tight ${role === t.key ? 'text-primary' : 'text-muted/70'}`}
+              className={`text-[10px] leading-tight ${role === t.key ? 'text-primary' : 'text-muted'}`}
             >
               {t.hint}
             </span>
