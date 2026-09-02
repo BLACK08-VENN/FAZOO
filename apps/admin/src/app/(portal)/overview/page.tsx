@@ -2,6 +2,7 @@ import { requireStaff } from '@/lib/auth';
 import { fetchLogs, parseLogFilters, type LogRow } from '@/lib/logs-query';
 import { LogFiltersForm } from '@/components/filters';
 import { PageHeader, StatCard } from '@/components/page';
+import { SectionCards } from '@/components/section-cards';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from './trends-chart';
 import type { FazooClient } from '@fazoo/database';
@@ -88,13 +89,20 @@ export default async function OverviewPage({
         description="Attendance and sales across the selected range."
       />
 
+      <Card className="mb-6 p-5">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
+        <SectionCards />
+      </Card>
+
       <Card className="mb-6 p-4">
         <LogFiltersForm
           action="/overview"
           campaigns={options.campaigns}
           bas={options.bas}
           stores={options.stores}
-          current={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, v as string]))}
+          current={Object.fromEntries(
+            Object.entries(filters).map(([k, v]) => [k, v as string]),
+          )}
         />
       </Card>
 
@@ -116,7 +124,9 @@ export default async function OverviewPage({
       <Card className="mt-6">
         <div className="border-b border-ink/8 px-5 py-4">
           <h2 className="text-sm font-semibold text-ink">Sales &amp; completion trends</h2>
-          <p className="mt-0.5 text-xs text-muted">Units and completion rate per day in the selected range.</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Units and completion rate per day in the selected range.
+          </p>
         </div>
         <TrendsChart data={stats.trend} />
       </Card>

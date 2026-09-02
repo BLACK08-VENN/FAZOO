@@ -1,26 +1,34 @@
 import { notFound } from 'next/navigation';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, isElevated } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
 import { Badge, attendanceTone } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { weeklyOffDayName } from '@fazoo/config';
+import { deleteBaAction } from '../actions';
 
 export default async function BADetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const { client } = await requireStaff();
+  const { client, profile: actor } = await requireStaff();
   const { id } = await params;
+  const { error } = await searchParams;
+  const elevated = isElevated(actor.role);
 
   const [{ data: profile }, { data: assignments }] = await Promise.all([
     client.from('profiles').select('*').eq('id', id).single(),
     client
       .from('brand_ambassador_assignments')
-      .select(`
+      .select(
+        `
         *, campaigns ( name ), stores ( name )
-      `)
+      `,
+      )
       .eq('brand_ambassador_id', id)
       .order('start_date', { ascending: false }),
   ]);
@@ -60,10 +68,40 @@ export default async function BADetailPage({
     <>
       <PageHeader title={profile.full_name} description={profile.phone} />
 
+      {error ? (
+        <p
+          role="alert"
+          className="mb-4 rounded-xl border border-bad/20 bg-bad/10 p-3 text-sm font-medium text-bad"
+        >
+          {error}
+        </p>
+      ) : null}
+
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <Badge tone={attendanceTone(profile.account_status)}>{profile.account_status}</Badge>
         <Badge tone="neutral">{profile.role.replace('_', ' ')}</Badge>
       </div>
+
+      {elevated && actor.id !== id ? (
+        <Card className="mb-6">
+          <CardHeader
+            title="Danger zone"
+            description="Permanently remove this BA and all their assignments, attendance and sales history."
+          />
+          <CardBody>
+            <form action={deleteBaAction}>
+              <input type="hidden" name="profile_id" value={id} />
+              <p className="mb-3 text-sm text-muted">
+                This cannot be undone. The BA&apos;s login and all associated data will be
+                deleted. Use the suspension action instead if you only need to pause them.
+              </p>
+              <Button type="submit" variant="destructive">
+                Delete brand ambassador
+              </Button>
+            </form>
+          </CardBody>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Present days" value={presentDays ?? 0} />
@@ -82,7 +120,10 @@ export default async function BADetailPage({
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Assignment history" description="Weekly off-day lives on each assignment." />
+          <CardHeader
+            title="Assignment history"
+            description="Weekly off-day lives on each assignment."
+          />
           <CardBody className="p-0">
             <TableWrap className="rounded-none border-0">
               <Table>
@@ -104,8 +145,14 @@ export default async function BADetailPage({
                         <Td>{a.campaigns?.name}</Td>
                         <Td>{a.stores?.name}</Td>
                         <Td>{weeklyOffDayName(a.weekly_off_day)}</Td>
-                        <Td className="text-xs">{a.start_date} → {a.end_date ?? 'ongoing'}</Td>
-                        <Td><Badge tone={a.status === 'active' ? 'success' : 'neutral'}>{a.status}</Badge></Td>
+                        <Td className="text-xs">
+                          {a.start_date} → {a.end_date ?? 'ongoing'}
+                        </Td>
+                        <Td>
+                          <Badge tone={a.status === 'active' ? 'success' : 'neutral'}>
+                            {a.status}
+                          </Badge>
+                        </Td>
                       </tr>
                     ))
                   )}

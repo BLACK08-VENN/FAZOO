@@ -1,39 +1,9 @@
 import Link from 'next/link';
-import {
-  BarChart3,
-  Boxes,
-  Building2,
-  CalendarCheck2,
-  CalendarRange,
-  ClipboardList,
-  FileClock,
-  Download,
-  GraduationCap,
-  MapPin,
-  ScrollText,
-  Settings,
-  Store,
-  Users,
-} from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { requireStaff } from '@/lib/auth';
 import { signOutAction } from './actions';
 
-const NAV = [
-  { href: '/overview', label: 'Overview', icon: BarChart3 },
-  { href: '/daily-logs', label: 'Daily Logs', icon: CalendarCheck2 },
-  { href: '/leave-requests', label: 'Leave Requests', icon: FileClock },
-  { href: '/sales', label: 'Sales', icon: ClipboardList },
-  { href: '/brand-ambassadors', label: 'Brand Ambassadors', icon: Users },
-  { href: '/stores', label: 'Stores', icon: MapPin },
-  { href: '/skus', label: 'SKUs', icon: Boxes },
-  { href: '/campaigns', label: 'Campaigns', icon: Store },
-  { href: '/veda-activations', label: 'Veda Activations', icon: GraduationCap },
-  { href: '/veda-assignments', label: 'Veda Assignments', icon: CalendarRange },
-  { href: '/brands', label: 'Add Brand', icon: Building2 },
-  { href: '/reports', label: 'Reports', icon: Download },
-  { href: '/settings', label: 'Settings', icon: Settings },
-  { href: '/audit-logs', label: 'Audit Logs', icon: ScrollText },
-] as const;
+const NAV = [{ href: '/overview', label: 'Overview', icon: BarChart3 }] as const;
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireStaff();

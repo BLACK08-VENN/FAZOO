@@ -1289,6 +1289,21 @@ export type Database = {
         }
         Returns: string
       }
+      admin_create_ba: {
+        Args: {
+          p_campaign_id: string
+          p_end_date?: string
+          p_start_date: string
+          p_store_id: string
+          p_user_id: string
+          p_weekly_off_day: number
+        }
+        Returns: Json
+      }
+      admin_delete_ba: {
+        Args: { p_profile_id: string }
+        Returns: Json
+      }
       assert_active_ba: {
         Args: never
         Returns: {
@@ -1811,4 +1826,3 @@ export const Constants = {
     },
   },
 } as const
-

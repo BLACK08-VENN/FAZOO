@@ -90,6 +90,36 @@ export const accountStatusActionSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
+export const createBaInputSchema = z
+  .object({
+    full_name: z
+      .string()
+      .trim()
+      .min(3, 'Enter the BA full name as shown on their ID.')
+      .max(120)
+      .regex(/^[\p{L}\p{M}'.\- ]+$/u, 'Letters, spaces, hyphens and apostrophes only.'),
+    phone: z.string().trim().min(1, 'Mobile number is required.'),
+    campaign_id: z.string().uuid(),
+    store_id: z.string().uuid(),
+    weekly_off_day: weeklyOffDaySchema,
+    start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    end_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional()
+      .or(z.literal('')),
+  })
+  .refine(
+    (v) => !v.end_date || v.end_date === '' || v.start_date <= v.end_date,
+    { message: 'End date must be on or after start date.', path: ['end_date'] },
+  );
+export type CreateBaInput = z.infer<typeof createBaInputSchema>;
+
+export const deleteBaSchema = z.object({
+  profile_id: z.string().uuid(),
+});
+export type DeleteBaInput = z.infer<typeof deleteBaSchema>;
+
 export const createBrandSchema = z
   .object({
     name: z.string().trim().min(2).max(120),

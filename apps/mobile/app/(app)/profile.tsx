@@ -52,6 +52,9 @@ export default function Profile() {
             <Row label="Role" value={profile?.role ?? '—'} />
           </View>
 
+          <Text className="text-lg font-semibold text-ink mt-8 mb-2">Actions</Text>
+          <PrimaryButton label="Apply for leave" onPress={() => router.push('/leave')} />
+
           <Text className="text-lg font-semibold text-ink mt-8 mb-2">Change password</Text>
           <TextInput
             secureTextEntry
@@ -68,8 +71,16 @@ export default function Profile() {
             busy={busy}
             disabled={!newPassword}
           />
-          {error ? <Text role="alert" className="text-bad font-medium">{error}</Text> : null}
-          {message ? <Text role="status" className="text-ok font-medium">{message}</Text> : null}
+          {error ? (
+            <Text role="alert" className="text-bad font-medium">
+              {error}
+            </Text>
+          ) : null}
+          {message ? (
+            <Text role="status" className="text-ok font-medium">
+              {message}
+            </Text>
+          ) : null}
 
           <View className="mt-10">
             <PrimaryButton
