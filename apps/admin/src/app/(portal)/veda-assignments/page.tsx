@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireStaff } from '@/lib/auth';
 import { PageHeader } from '@/components/page';
+import { BrandPicker } from '@/components/brand-picker';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,25 +19,30 @@ interface AssignmentRow {
   veda_schools: { name: string; region: string | null } | null;
 }
 
-export default async function VedaAssignmentsPage() {
+interface BrandOption {
+  id: string;
+  name: string;
+}
+
+export default async function BrandAssignmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ org?: string }>;
+}) {
   const { client, profile } = await requireStaff();
+  const { org } = await searchParams;
 
-  const { data: org } = await client
+  const { data: brandsRaw } = await client
     .from('organizations')
-    .select('kind')
-    .eq('id', profile.organization_id)
-    .single();
+    .select('id, name')
+    .order('name');
+  const brands = (brandsRaw ?? []) as BrandOption[];
 
-  if (org?.kind !== 'schools') {
-    return (
-      <>
-        <PageHeader title="Veda Assignments" description="School visit scheduling." />
-        <p className="text-sm text-muted">
-          Veda Assignments is only available for organizations of kind “schools”.
-        </p>
-      </>
-    );
-  }
+  const selectedOrg = (() => {
+    if (org && brands.some((b) => b.id === org)) return org;
+    if (brands.some((b) => b.id === profile.organization_id)) return profile.organization_id;
+    return brands[0]?.id;
+  })();
 
   const [{ data: raw }, { data: bas }, { data: schools }] = await Promise.all([
     client
@@ -46,6 +52,7 @@ export default async function VedaAssignmentsPage() {
          profiles!veda_assignments_brand_ambassador_id_fkey ( full_name ),
          veda_schools!veda_assignments_school_id_fkey ( name, region )`,
       )
+      .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000')
       .order('start_date', { ascending: false })
       .limit(200),
     client
@@ -53,8 +60,14 @@ export default async function VedaAssignmentsPage() {
       .select('id, full_name')
       .eq('role', 'brand_ambassador')
       .eq('account_status', 'approved')
+      .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000')
       .order('full_name'),
-    client.from('veda_schools').select('id, name, region').eq('status', 'active').order('name'),
+    client
+      .from('veda_schools')
+      .select('id, name, region')
+      .eq('status', 'active')
+      .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000')
+      .order('name'),
   ]);
 
   const rows = (raw ?? []) as unknown as AssignmentRow[];
@@ -62,9 +75,11 @@ export default async function VedaAssignmentsPage() {
   return (
     <>
       <PageHeader
-        title="Veda Assignments"
+        title="Brand Assignments"
         description="Which BA visits which school, with weekly off-days."
-      />
+      >
+        <BrandPicker action="/veda-assignments" brands={brands} current={selectedOrg} />
+      </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <TableWrap>
@@ -80,7 +95,9 @@ export default async function VedaAssignmentsPage() {
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <EmptyRow colSpan={5}>No school assignments yet.</EmptyRow>
+                <EmptyRow colSpan={5}>
+                  No school-visit assignments for this brand yet.
+                </EmptyRow>
               ) : (
                 rows.map((a) => (
                   <tr key={a.id}>

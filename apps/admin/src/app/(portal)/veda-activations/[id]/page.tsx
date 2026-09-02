@@ -87,7 +87,7 @@ export default async function VedaActivationDetailPage({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-ink">
-            Veda activation — {session.profiles?.full_name ?? 'Unknown BA'}
+            Brand activation — {session.profiles?.full_name ?? 'Unknown BA'}
           </h1>
           <p className="mt-1 text-sm text-muted">
             {session.session_date} · {session.veda_schools?.name ?? ''}

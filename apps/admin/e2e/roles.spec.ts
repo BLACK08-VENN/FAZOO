@@ -66,8 +66,8 @@ test.describe('role isolation: organization admin (Lenovo)', () => {
     await signIn(page, ORG_ADMIN_ID, ORG_ADMIN_PASSWORD, 'admin', /overview/);
     await expect(page.getByText('BA-days', { exact: true })).toBeVisible();
     await page.goto('/veda-activations');
-    await expect(page.getByRole('heading', { name: 'Veda Activations' })).toBeVisible();
-    await expect(page.getByText(/retail brand workspace/)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Brand Activations' })).toBeVisible();
+    await expect(page.getByText('Select brand')).toBeVisible();
   });
 
   test('org admin CSV export is allowed', async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe('role isolation: super admin', () => {
 
   test('super admin browses Veda and audit pages', async ({ page }) => {
     await page.goto('/veda-activations');
-    await expect(page.getByRole('heading', { name: 'Veda Activations' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Brand Activations' })).toBeVisible();
     await page.goto('/audit-logs');
     await expect(page.getByRole('heading', { name: 'Audit Logs' })).toBeVisible();
   });

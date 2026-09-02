@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireStaff } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
+import { BrandPicker } from '@/components/brand-picker';
 import { Badge } from '@/components/ui/badge';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 
@@ -17,26 +18,30 @@ interface ActivationRow {
   veda_session_distributions: Array<{ quantity: number }> | null;
 }
 
-export default async function VedaActivationsPage() {
+interface BrandOption {
+  id: string;
+  name: string;
+}
+
+export default async function BrandActivationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ org?: string }>;
+}) {
   const { client, profile } = await requireStaff();
+  const { org } = await searchParams;
 
-  const { data: org } = await client
+  const { data: brandsRaw } = await client
     .from('organizations')
-    .select('kind')
-    .eq('id', profile.organization_id)
-    .single();
+    .select('id, name')
+    .order('name');
+  const brands = (brandsRaw ?? []) as BrandOption[];
 
-  if (org?.kind !== 'schools') {
-    return (
-      <>
-        <PageHeader title="Veda Activations" description="School visit tracking." />
-        <p className="text-sm text-muted">
-          Veda Activations is only available for organizations of kind “schools”.
-          This account is a retail brand workspace.
-        </p>
-      </>
-    );
-  }
+  const selectedOrg = (() => {
+    if (org && brands.some((b) => b.id === org)) return org;
+    if (brands.some((b) => b.id === profile.organization_id)) return profile.organization_id;
+    return brands[0]?.id;
+  })();
 
   const { data: raw } = await client
     .from('veda_sessions')
@@ -47,6 +52,7 @@ export default async function VedaActivationsPage() {
        veda_schools!veda_sessions_school_id_fkey ( id, name, region ),
        veda_session_distributions ( quantity )`,
     )
+    .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000')
     .order('session_date', { ascending: false })
     .limit(500);
 
@@ -60,12 +66,17 @@ export default async function VedaActivationsPage() {
   return (
     <>
       <PageHeader
-        title="Veda Activations"
+        title="Brand Activations"
         description="School visits, stationery distributions and proof-of-visit photos."
       >
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <BrandPicker action="/veda-activations" brands={brands} current={selectedOrg} />
           <Link
-            href="/veda-assignments"
+            href={
+              selectedOrg
+                ? `/veda-assignments?org=${encodeURIComponent(selectedOrg)}`
+                : '/veda-assignments'
+            }
             className="inline-flex h-10 items-center rounded-lg border border-primary/30 bg-white px-4 text-sm font-medium text-primary hover:bg-lavender"
           >
             Assign a visit
@@ -101,7 +112,7 @@ export default async function VedaActivationsPage() {
           <tbody>
             {rows.length === 0 ? (
               <EmptyRow colSpan={6}>
-                No activations yet. Assign a school visit to get started.
+                No activations for this brand yet. Assign a school visit to get started.
               </EmptyRow>
             ) : (
               rows.map((r) => {
