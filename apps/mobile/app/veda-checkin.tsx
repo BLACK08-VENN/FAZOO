@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { distanceMetres } from '@fazoo/config';
-import type { VedaTodayResult } from '@fazoo/types';
+import type { AssignmentToday, VedaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
 import { capturePhoto, persistPhoto, photoPath, type CapturedPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
@@ -31,31 +31,54 @@ export default function VedaCheckIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadVisit(): Promise<VedaTodayResult['assignment']> {
+  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
+  const [assignment, setAssignment] = useState<{
+    id: string;
+    assignment: AssignmentToday;
+    geofence: number;
+  } | null>(null);
+
+  async function loadVisit(): Promise<typeof assignment> {
     const { data, error: todayError } = await supabase.rpc('veda_today');
     if (!todayError && data) {
       const today = data as unknown as VedaTodayResult;
       await writeCachedVedaToday(today);
-      return today.assignment;
+      const match =
+        today.assignments.find((item) => item.assignment.id === assignmentParam) ??
+        today.assignments[0];
+      if (!match) return null;
+      return {
+        id: match.assignment.id,
+        assignment: match.assignment,
+        geofence: match.assignment.geofence_radius_metres ?? 200,
+      };
     }
-    return (await readCachedVedaToday())?.assignment ?? null;
+    const cached = await readCachedVedaToday();
+    const match =
+      cached?.assignments.find((item) => item.assignment.id === assignmentParam) ??
+      cached?.assignments[0];
+    return match
+      ? {
+          id: match.assignment.id,
+          assignment: match.assignment,
+          geofence: match.assignment.geofence_radius_metres ?? 200,
+        }
+      : null;
   }
-  const [assignment, setAssignment] =
-    useState<Awaited<ReturnType<typeof loadVisit>>>(null);
 
   useEffect(() => {
     void loadVisit().then(setAssignment);
-  }, []);
+  }, [assignmentParam]);
 
-  const radius = assignment?.geofence_radius_metres ?? 200;
+  const radius = assignment?.geofence ?? 200;
   const distance =
-    fix && assignment && assignment.school_latitude && assignment.school_longitude
+    fix && assignment && assignment.assignment.school_latitude && assignment.assignment.school_longitude
       ? Math.round(
           distanceMetres(
             fix.latitude,
             fix.longitude,
-            assignment.school_latitude,
-            assignment.school_longitude,
+            assignment.assignment.school_latitude,
+            assignment.assignment.school_longitude,
           ),
         )
       : null;
@@ -113,6 +136,7 @@ export default function VedaCheckIn() {
         p_learner_count: Math.max(0, Number(learnerCount) || 0),
         p_notes: notes.trim() || null,
         p_client_request_id: requestId,
+        p_assignment_id: assignment.id,
       };
       await enqueue('veda_checkin', payload, requestId, [
         {
@@ -163,9 +187,9 @@ export default function VedaCheckIn() {
         <View>
           <View className="rounded-2xl bg-white p-5">
             <Text className="font-semibold text-charcoal">
-              {assignment?.school_name ?? 'Loading…'}
+              {assignment?.assignment.school_name ?? 'Loading…'}
             </Text>
-            <Text className="text-muted">{assignment?.school_region}</Text>
+            <Text className="text-muted">{assignment?.assignment.school_region}</Text>
             <Text className="mt-3 text-sm text-charcoal">Allowed radius: {radius} m</Text>
             {locating ? (
               <ActivityIndicator color="#7B2FBE" className="mt-4" />

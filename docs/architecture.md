@@ -108,9 +108,10 @@ Checkout outside the radius follows the per-organization setting
 
 ### 2.7 Weekly off-day
 
-Stored per assignment (`weekly_off_day smallint`, 0 = Sunday … 6 = Saturday).
-Check-in on the off-day is rejected by RPC; dashboards distinguish
-weekly off from absence and sick leave.
+Stored per assignment as an *array* (`weekly_off_day smallint[]`, 0 = Sunday
+… 6 = Saturday) so a BA can rest several days each week. Check-in on any
+off-day is rejected by RPC; dashboards distinguish weekly off from absence
+and sick leave.
 
 ## 3. Data model summary
 
@@ -128,7 +129,8 @@ organizations ─┬─ profiles (1:1 auth.users)
 
 Key constraints:
 
-* One active assignment per BA (partial unique index).
+* A BA may hold **several** active assignments **concurrently**; attendance is
+  recorded per assignment (`ba_today()`/`veda_today()` return `assignments[]`).
 * One non-cancelled daily log per BA + campaign + Lagos calendar date
   (partial unique index).
 * Sales entries are individual rows referencing `skus` — queryable, indexable,

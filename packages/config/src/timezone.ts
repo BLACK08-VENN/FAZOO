@@ -67,8 +67,19 @@ export const WEEKDAY_NAMES = [
   'Saturday',
 ] as const;
 
-export function weeklyOffDayName(day: number): string {
-  return WEEKDAY_NAMES[day] ?? 'Unknown';
+export function weeklyOffDayName(day: number): string;
+
+/** Human weekday names for a set of 0–6 off-days, e.g. ['Mon', 'Wed']. */
+export function weeklyOffDayName(days: number[]): string;
+
+export function weeklyOffDayName(days: number | number[]): string {
+  if (Array.isArray(days)) {
+    if (days.length === 0) return 'None';
+    return days
+      .map((d) => WEEKDAY_NAMES[d]?.slice(0, 3) ?? '?')
+      .join(', ');
+  }
+  return WEEKDAY_NAMES[days] ?? 'Unknown';
 }
 
 /** Locale-aware display for Veda (Africa/Nairobi) wall-clock times. */

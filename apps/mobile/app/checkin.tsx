@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { distanceMetres } from '@fazoo/config';
-import type { BaTodayResult } from '@fazoo/types';
+import type { AssignmentToday, BaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
 import { capturePhoto, persistPhoto, photoPath, type CapturedPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
@@ -30,31 +30,54 @@ export default function CheckIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadAssignment(): Promise<BaTodayResult['assignment']> {
+  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
+  const [assignment, setAssignment] = useState<{
+    id: string;
+    assignment: AssignmentToday;
+    geofence: number;
+  } | null>(null);
+
+  async function loadAssignment(): Promise<typeof assignment> {
     const { data, error: todayError } = await supabase.rpc('ba_today');
     if (!todayError && data) {
       const today = data as unknown as BaTodayResult;
       await writeCachedToday(today);
-      return today.assignment;
+      const match =
+        today.assignments.find((item) => item.assignment.id === assignmentParam) ??
+        today.assignments[0];
+      if (!match) return null;
+      return {
+        id: match.assignment.id,
+        assignment: match.assignment,
+        geofence: match.assignment.geofence_radius_metres ?? 200,
+      };
     }
-    return (await readCachedToday())?.assignment ?? null;
+    const cached = await readCachedToday();
+    const match =
+      cached?.assignments.find((item) => item.assignment.id === assignmentParam) ??
+      cached?.assignments[0];
+    return match
+      ? {
+          id: match.assignment.id,
+          assignment: match.assignment,
+          geofence: match.assignment.geofence_radius_metres ?? 200,
+        }
+      : null;
   }
-  const [assignment, setAssignment] =
-    useState<Awaited<ReturnType<typeof loadAssignment>>>(null);
 
   useEffect(() => {
     void loadAssignment().then(setAssignment);
-  }, []);
+  }, [assignmentParam]);
 
-  const radius = assignment?.geofence_radius_metres ?? 200;
+  const radius = assignment?.geofence ?? 200;
   const distance =
     fix && assignment
       ? Math.round(
           distanceMetres(
             fix.latitude,
             fix.longitude,
-            assignment.store_latitude,
-            assignment.store_longitude,
+            assignment.assignment.store_latitude ?? 0,
+            assignment.assignment.store_longitude ?? 0,
           ),
         )
       : null;
@@ -104,6 +127,7 @@ export default function CheckIn() {
         persistPhoto(selfie, requestId, 'selfie'),
       ]);
       const payload = {
+        p_assignment_id: assignment.id,
         p_latitude: fix.latitude,
         p_longitude: fix.longitude,
         p_accuracy_metres: fix.accuracy,
@@ -161,9 +185,9 @@ export default function CheckIn() {
         <View>
           <View className="rounded-2xl bg-white p-5">
             <Text className="font-semibold text-charcoal">
-              {assignment?.store_name ?? 'Loading…'}
+              {assignment?.assignment.store_name ?? 'Loading…'}
             </Text>
-            <Text className="text-muted">{assignment?.store_address}</Text>
+            <Text className="text-muted">{assignment?.assignment.store_address}</Text>
             <Text className="mt-3 text-sm text-charcoal">Allowed radius: {radius} m</Text>
             {locating ? (
               <ActivityIndicator color="#7B2FBE" className="mt-4" />

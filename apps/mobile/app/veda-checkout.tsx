@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Switch, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { distanceMetres } from '@fazoo/config';
 import type { VedaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
@@ -18,6 +18,7 @@ import { readCachedVedaToday, writeCachedVedaToday } from '@/lib/cache';
  * rejection is surfaced immediately — it must be retried while at the school.
  */
 export default function VedaCheckout() {
+  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
   const [today, setToday] = useState<VedaTodayResult | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [fix, setFix] = useState<Fix | null>(null);
@@ -41,8 +42,16 @@ export default function VedaCheckout() {
     })();
   }, [today]);
 
-  const assignment = today?.assignment ?? null;
-  const session = today?.session ?? null;
+  const selected =
+    today?.assignments.find((item) => item.assignment.id === assignmentParam) ??
+    today?.assignments[0] ??
+    null;
+  const assignment = selected?.assignment ?? null;
+  const session = selected?.session ?? null;
+  const totalItems = (selected?.distributions ?? []).reduce(
+    (sum, d) => sum + d.quantity,
+    0,
+  );
 
   async function locate() {
     setError(null);
@@ -100,7 +109,6 @@ export default function VedaCheckout() {
         )
       : null;
   const insideGeofence = distance !== null && distance <= radius;
-  const totalItems = (today?.distributions ?? []).reduce((sum, d) => sum + d.quantity, 0);
 
   return (
     <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
@@ -116,13 +124,13 @@ export default function VedaCheckout() {
           <Text className="text-muted">Stationery distributed</Text>
           <Text className="font-bold tabular-nums text-primary">{totalItems} units</Text>
         </View>
-        {(today?.distributions ?? []).map((d) => (
+        {(selected?.distributions ?? []).map((d) => (
           <View key={d.id} className="flex-row justify-between py-1 mt-1">
             <Text className="text-charcoal">{d.item_name}</Text>
             <Text className="tabular-nums">×{d.quantity}</Text>
           </View>
         ))}
-        {(today?.distributions ?? []).length === 0 ? (
+        {(selected?.distributions ?? []).length === 0 ? (
           <Text className="text-muted mt-2">No stationery was recorded.</Text>
         ) : null}
       </View>

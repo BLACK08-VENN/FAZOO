@@ -94,7 +94,7 @@ export type Database = {
           status: Database["public"]["Enums"]["assignment_status"]
           store_id: string
           updated_at: string
-          weekly_off_day: number
+          weekly_off_day: number[]
         }
         Insert: {
           brand_ambassador_id: string
@@ -107,7 +107,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["assignment_status"]
           store_id: string
           updated_at?: string
-          weekly_off_day: number
+          weekly_off_day: number[]
         }
         Update: {
           brand_ambassador_id?: string
@@ -120,7 +120,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["assignment_status"]
           store_id?: string
           updated_at?: string
-          weekly_off_day?: number
+          weekly_off_day?: number[]
         }
         Relationships: [
           {
@@ -916,7 +916,7 @@ export type Database = {
           start_date: string
           status: Database["public"]["Enums"]["assignment_status"]
           updated_at: string
-          weekly_off_day: number | null
+          weekly_off_day: number[] | null
         }
         Insert: {
           brand_ambassador_id: string
@@ -928,7 +928,7 @@ export type Database = {
           start_date: string
           status?: Database["public"]["Enums"]["assignment_status"]
           updated_at?: string
-          weekly_off_day?: number | null
+          weekly_off_day?: number[] | null
         }
         Update: {
           brand_ambassador_id?: string
@@ -940,7 +940,7 @@ export type Database = {
           start_date?: string
           status?: Database["public"]["Enums"]["assignment_status"]
           updated_at?: string
-          weekly_off_day?: number | null
+          weekly_off_day?: number[] | null
         }
         Relationships: [
           {
@@ -1285,18 +1285,16 @@ export type Database = {
           p_start_date: string
           p_status?: Database["public"]["Enums"]["assignment_status"]
           p_store_id: string
-          p_weekly_off_day: number
+          p_weekly_off_day: number[]
         }
         Returns: string
       }
       admin_create_ba: {
         Args: {
-          p_campaign_id: string
           p_end_date?: string
           p_start_date: string
-          p_store_id: string
           p_user_id: string
-          p_weekly_off_day: number
+          p_weekly_off_day: number[]
         }
         Returns: Json
       }
@@ -1328,6 +1326,7 @@ export type Database = {
       ba_checkin: {
         Args: {
           p_accuracy_metres?: number
+          p_assignment_id: string
           p_client_request_id: string
           p_latitude: number
           p_longitude: number
@@ -1342,19 +1341,24 @@ export type Database = {
           p_accuracy_metres?: number
           p_checkout_photo_path?: string
           p_client_request_id: string
+          p_daily_log_id?: string
           p_latitude: number
           p_longitude: number
-          p_stock_photo_path: string
-          p_uniform_selfie_path: string
+          p_stock_photo_path?: string
+          p_uniform_selfie_path?: string
         }
         Returns: Json
       }
       ba_delete_sale: {
-        Args: { p_client_request_id: string; p_sales_entry_id: string }
+        Args: {
+          p_client_request_id: string
+          p_daily_log_id?: string
+          p_sales_entry_id: string
+        }
         Returns: Json
       }
       ba_mark_sick_leave: {
-        Args: { p_client_request_id?: string; p_note?: string }
+        Args: { p_assignment_id?: string; p_client_request_id?: string; p_note?: string }
         Returns: Json
       }
       ba_my_campaigns: { Args: never; Returns: Json }
@@ -1362,6 +1366,7 @@ export type Database = {
       ba_record_sale: {
         Args: {
           p_client_request_id: string
+          p_daily_log_id?: string
           p_quantity: number
           p_recorded_at_hint?: string
           p_sku_id: string
@@ -1390,6 +1395,7 @@ export type Database = {
       }
       ba_submit_leave_request: {
         Args: {
+          p_assignment_id: string
           p_client_request_id: string
           p_end_date: string
           p_expected_return_date: string
@@ -1428,6 +1434,7 @@ export type Database = {
       ba_update_sale: {
         Args: {
           p_client_request_id: string
+          p_daily_log_id?: string
           p_quantity: number
           p_sales_entry_id: string
         }
@@ -1458,7 +1465,7 @@ export type Database = {
           p_store_name?: string
           p_store_radius?: number
           p_timezone?: string
-          p_weekly_off_day?: number
+          p_weekly_off_day?: number[]
         }
         Returns: Json
       }
@@ -1531,7 +1538,7 @@ export type Database = {
           p_school_id: string
           p_start_date?: string
           p_status?: Database["public"]["Enums"]["assignment_status"]
-          p_weekly_off_day?: number
+          p_weekly_off_day?: number[]
         }
         Returns: string
       }
@@ -1558,6 +1565,7 @@ export type Database = {
       veda_checkin: {
         Args: {
           p_accuracy_metres?: number
+          p_assignment_id: string
           p_client_request_id: string
           p_latitude: number
           p_learner_count?: number

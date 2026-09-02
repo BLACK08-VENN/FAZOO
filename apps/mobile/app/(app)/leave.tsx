@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { leaveRequestSchema, type LeaveRequestInput } from '@fazoo/validation';
+import type { BaTodayResult } from '@fazoo/types';
 import { PrimaryButton } from '@/components/primary-button';
 import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
@@ -116,6 +117,10 @@ function Field({
 export default function LeavePage() {
   const [form, setForm] = useState<LeaveFormState>(initialForm);
   const [requests, setRequests] = useState<LeaveRow[]>([]);
+  const [assignments, setAssignments] = useState<
+    BaTodayResult['assignments'][number]['assignment'][]
+  >([]);
+  const [assignmentId, setAssignmentId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -132,9 +137,18 @@ export default function LeavePage() {
     setRefreshing(false);
   }, []);
 
+  const loadAssignments = useCallback(async () => {
+    const { data } = await supabase.rpc('ba_today');
+    const today = data as unknown as BaTodayResult | null;
+    const list = today?.assignments.map((item) => item.assignment) ?? [];
+    setAssignments(list);
+    setAssignmentId((current) => current ?? list[0]?.id ?? null);
+  }, []);
+
   useEffect(() => {
     void loadRequests();
-  }, [loadRequests]);
+    void loadAssignments();
+  }, [loadRequests, loadAssignments]);
 
   function toggleDocument(value: LeaveRequestInput['supporting_document_types'][number]) {
     setForm((current) => {
@@ -167,10 +181,15 @@ export default function LeavePage() {
       });
       return;
     }
+    if (!assignmentId) {
+      setMessage({ tone: 'bad', text: 'Choose which assignment the leave is for.' });
+      return;
+    }
     setBusy(true);
     setMessage(null);
     const requestId = newRequestId();
     const payload = {
+      p_assignment_id: assignmentId,
       p_leave_type: result.data.leave_type,
       p_start_date: result.data.start_date,
       p_end_date: result.data.end_date,
@@ -227,6 +246,31 @@ export default function LeavePage() {
         <Text className="mt-2 leading-5 text-white/70">
           Your verified profile, phone number and current store are attached automatically.
         </Text>
+      </View>
+
+      <View className="mb-5 rounded-2xl bg-white p-5">
+        <Text className="mb-2 text-lg font-bold text-ink">0. Which assignment?</Text>
+        {assignments.length === 0 ? (
+          <Text className="text-muted">
+            You have no active assignments — leave is linked to a store or school.
+          </Text>
+        ) : (
+          <View className="flex-row flex-wrap">
+            {assignments.map((a) => {
+              const label = a.campaign_name
+                ? `${a.store_name || a.school_name || ''} · ${a.campaign_name}`
+                : a.store_name || a.school_name || 'Assignment';
+              return (
+                <Choice
+                  key={a.id}
+                  label={label}
+                  selected={assignmentId === a.id}
+                  onPress={() => setAssignmentId(a.id)}
+                />
+              );
+            })}
+          </View>
+        )}
       </View>
 
       <View className="mb-5 rounded-2xl bg-white p-5">

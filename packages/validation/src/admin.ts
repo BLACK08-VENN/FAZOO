@@ -49,12 +49,17 @@ export const weeklyOffDaySchema = z
   .min(0)
   .max(6);
 
+/** 0..3 distinct weekly off-days (0=Sun … 6=Sat), deduplicated server-side. */
+export const weeklyOffDaysSchema = z
+  .array(weeklyOffDaySchema)
+  .max(4, 'Select at most 4 weekly off-days.');
+
 export const assignmentInputSchema = z
   .object({
     brand_ambassador_id: z.string().uuid(),
     campaign_id: z.string().uuid(),
     store_id: z.string().uuid(),
-    weekly_off_day: weeklyOffDaySchema,
+    weekly_off_day: z.array(z.number().int().min(0).max(6)).max(4),
     start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     end_date: z
       .string()
@@ -99,9 +104,10 @@ export const createBaInputSchema = z
       .max(120)
       .regex(/^[\p{L}\p{M}'.\- ]+$/u, 'Letters, spaces, hyphens and apostrophes only.'),
     phone: z.string().trim().min(1, 'Mobile number is required.'),
-    campaign_id: z.string().uuid(),
-    store_id: z.string().uuid(),
-    weekly_off_day: weeklyOffDaySchema,
+    weekly_off_day: z
+      .array(weeklyOffDaySchema)
+      .max(4, 'Select at most 4 weekly off-days.')
+      .default([]),
     start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     end_date: z
       .string()
@@ -149,7 +155,10 @@ export const createBrandSchema = z
     store_lat: z.string().trim().optional().or(z.literal('')),
     store_lng: z.string().trim().optional().or(z.literal('')),
     store_radius: z.coerce.number().int().min(20).max(2000).optional(),
-    weekly_off_day: z.coerce.number().int().min(0).max(6).default(0),
+    weekly_off_day: z
+      .array(z.coerce.number().int().min(0).max(6))
+      .max(4)
+      .default([0]),
     ba_ids: z.array(z.string()).default([]),
   })
   .refine(

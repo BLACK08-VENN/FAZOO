@@ -39,34 +39,44 @@ export interface BaSickLeaveInput {
   client_request_id: Uuid;
 }
 
+/** One active assignment's state within a `ba_today` / `veda_today` payload. */
+export interface AssignmentToday {
+  id: Uuid;
+  campaign_id?: Uuid;
+  campaign_name?: string;
+  store_id?: Uuid;
+  store_name?: string;
+  store_address?: string | null;
+  store_latitude?: number;
+  store_longitude?: number;
+  geofence_radius_metres?: number;
+  school_id?: Uuid;
+  school_name?: string;
+  school_region?: string | null;
+  school_latitude?: number;
+  school_longitude?: number;
+}
+
 /** What today looks like on the BA dashboard (result of `ba_today` RPC). */
 export interface BaTodayResult {
   attendance_date: IsoDate;
-  weekly_off_day: number;
-  is_weekly_off_today: boolean;
-  assignment: {
-    id: Uuid;
-    campaign_id: Uuid;
-    campaign_name: string;
-    store_id: Uuid;
-    store_name: string;
-    store_address: string | null;
-    store_latitude: number;
-    store_longitude: number;
-    geofence_radius_metres: number;
-  } | null;
-  log: DailyLog | null;
-  sales: Array<{
-    id: Uuid;
-    sku_id: Uuid;
-    sku_name: string;
-    sku_code: string;
-    quantity: number;
-    recorded_at: string;
-  }> | null;
-  total_units_today: number;
-  attendance_status: AttendanceStatus | null;
-  log_status: DailyLogStatus | null;
+  assignments: Array<{
+    assignment: AssignmentToday;
+    weekly_off_day: number[];
+    is_weekly_off_today: boolean;
+    log: DailyLog | null;
+    sales: Array<{
+      id: Uuid;
+      sku_id: Uuid;
+      sku_name: string;
+      sku_code: string;
+      quantity: number;
+      recorded_at: string;
+    }> | null;
+    total_units_today: number;
+    attendance_status: AttendanceStatus | null;
+    log_status: DailyLogStatus | null;
+  }>;
 }
 
 /** Payload for the `veda_checkin` RPC. Coordinates are hints; the server
@@ -107,41 +117,35 @@ export interface VedaCheckoutInput {
 /** Result of the `veda_today` RPC — the BA's school-visit dashboard. */
 export interface VedaTodayResult {
   attendance_date: IsoDate;
-  weekly_off_day: number | null;
-  is_weekly_off_today: boolean;
-  assignment: {
-    id: Uuid;
-    school_id: Uuid;
-    school_name: string;
-    school_region: string | null;
-    school_latitude: number;
-    school_longitude: number;
-    geofence_radius_metres: number;
-  } | null;
-  session: {
-    id: Uuid;
-    session_date: IsoDate;
+  assignments: Array<{
+    assignment: AssignmentToday;
+    weekly_off_day: number[] | null;
+    is_weekly_off_today: boolean;
+    session: {
+      id: Uuid;
+      session_date: IsoDate;
+      learner_count: number;
+      status: DailyLogStatus;
+      checkin_at: string | null;
+      checkout_at: string | null;
+      checkin_latitude: number | null;
+      checkin_longitude: number | null;
+      checkin_distance_metres: number | null;
+      notes: string | null;
+    } | null;
+    distributions: Array<{
+      id: Uuid;
+      stationery_item_id: Uuid;
+      item_name: string;
+      item_code: string | null;
+      quantity: number;
+    }>;
+    session_status: DailyLogStatus | null;
     learner_count: number;
-    status: DailyLogStatus;
-    checkin_at: string | null;
-    checkout_at: string | null;
-    checkin_latitude: number | null;
-    checkin_longitude: number | null;
-    checkin_distance_metres: number | null;
-    notes: string | null;
-  } | null;
-  distributions: Array<{
-    id: Uuid;
-    stationery_item_id: Uuid;
-    item_name: string;
-    item_code: string | null;
-    quantity: number;
   }>;
   stationery_items: Array<{
     id: Uuid;
     name: string;
     code: string | null;
   }>;
-  session_status: DailyLogStatus | null;
-  learner_count: number;
 }

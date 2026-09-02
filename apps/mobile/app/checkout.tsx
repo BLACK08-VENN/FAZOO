@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Image, ScrollView, Switch, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import type { BaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
 import { capturePhoto, persistPhoto, photoPath, type CapturedPhoto } from '@/lib/photos';
@@ -9,7 +9,7 @@ import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { readCachedProfile } from '@/lib/cache';
+import { readCachedProfile, readCachedToday } from '@/lib/cache';
 
 /**
  * Guided completion flow: the log can only be closed after the BA captures
@@ -17,7 +17,10 @@ import { readCachedProfile } from '@/lib/cache';
  * (or queued for offline sync) together with the checkout RPC call.
  */
 export default function Checkout() {
-  const [today, setToday] = useState<BaTodayResult | null>(null);
+  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
+  const [selected, setSelected] = useState<
+    BaTodayResult['assignments'][number] | null
+  >(null);
   const [step, setStep] = useState(1);
   const [confirmed, setConfirmed] = useState(false);
   const [stock, setStock] = useState<CapturedPhoto | null>(null);
@@ -26,13 +29,20 @@ export default function Checkout() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
     void (async () => {
-      if (!today) {
-        const { data } = await supabase.rpc('ba_today');
-        setToday((data as unknown as BaTodayResult) ?? null);
-      }
+      if (selected) return;
+      const { data } = await supabase.rpc('ba_today');
+      const today = (data as unknown as BaTodayResult | null) ?? (await readCachedToday());
+      const match =
+        today?.assignments.find((item) => item.assignment.id === assignmentParam) ??
+        today?.assignments[0];
+      if (active) setSelected(match ?? null);
     })();
-  }, [today]);
+    return () => {
+      active = false;
+    };
+  }, [assignmentParam, selected]);
 
   async function snap(slot: 'stock' | 'selfie') {
     try {
@@ -46,7 +56,7 @@ export default function Checkout() {
   }
 
   async function submit() {
-    if (!stock || !selfie) return;
+    if (!stock || !selfie || !selected) return;
     setBusy(true);
     setError(null);
 
@@ -70,6 +80,7 @@ export default function Checkout() {
         p_latitude: fix.latitude,
         p_longitude: fix.longitude,
         p_accuracy_metres: fix.accuracy ?? undefined,
+        p_daily_log_id: selected.log?.id,
         p_stock_photo_path: stockPath,
         p_uniform_selfie_path: selfiePath,
         p_client_request_id: requestId,
@@ -125,18 +136,26 @@ export default function Checkout() {
 
       {step === 1 && (
         <View>
+          {selected ? (
+            <Text className="text-sm text-charcoal mb-2">
+              {selected.assignment.store_name || selected.assignment.campaign_name}
+              {selected.assignment.campaign_name
+                ? ` · ${selected.assignment.campaign_name}`
+                : ''}
+            </Text>
+          ) : null}
           <View className="rounded-2xl bg-white p-5">
             <Text className="text-4xl font-bold tabular-nums text-primary">
-              {today?.total_units_today ?? 0}
+              {selected?.total_units_today ?? 0}
               <Text className="text-base font-normal text-muted"> units today</Text>
             </Text>
-            {(today?.sales ?? []).map((s) => (
+            {(selected?.sales ?? []).map((s) => (
               <View key={s.id} className="flex-row justify-between py-1 mt-1">
                 <Text className="text-charcoal">{s.sku_name}</Text>
                 <Text className="tabular-nums">×{s.quantity}</Text>
               </View>
             ))}
-            {(today?.sales ?? []).length === 0 ? (
+            {(selected?.sales ?? []).length === 0 ? (
               <Text className="text-muted mt-2">No sales were recorded.</Text>
             ) : null}
           </View>

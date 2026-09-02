@@ -71,26 +71,13 @@ function RetailToday() {
     );
   }
 
-  const assignment = data?.assignment ?? null;
-  const log = data?.log ?? null;
+  const assignments = data?.assignments ?? [];
 
   return (
     <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
       {/* Header */}
       <Text className="text-xs text-muted">Today · {lagosDate()} (Nigeria)</Text>
-      {assignment ? (
-        <>
-          <Text className="text-xl font-bold text-ink mt-1">{data?.attendance_date}</Text>
-          <Text className="text-charcoal mt-1">
-            {assignment.store_name} · {assignment.campaign_name}
-          </Text>
-          <Text className="text-muted">
-            Weekly off: {weeklyOffDayName(data?.weekly_off_day ?? 0)}
-          </Text>
-        </>
-      ) : (
-        <Text className="text-xl font-bold text-ink mt-1">No active assignment</Text>
-      )}
+      <Text className="text-xl font-bold text-ink mt-1">{data?.attendance_date}</Text>
 
       {online === false ? (
         <StatusPill tone="warn" label={`Offline · ${counts.pending} waiting to sync`} />
@@ -119,69 +106,105 @@ function RetailToday() {
         <StatusPill tone="ok" label="All synced" />
       )}
 
-      {/* Attendance status */}
-      {log ? (
-        <View className="mt-4">
-          <StatusPill
-            tone={log.attendance_status === 'present' ? 'ok' : 'warn'}
-            label={log.attendance_status.replace('_', ' ')}
-          />
+      {assignments.length === 0 ? (
+        <View className="mt-6">
+          <Text className="text-center text-muted mt-4">
+            Contact your supervisor — you&apos;ll see your assignments here once you&apos;re
+            signed up.
+          </Text>
         </View>
-      ) : null}
+      ) : (
+        <View className="mt-2 space-y-4">
+          {assignments.map((item) => {
+            const a = item.assignment;
+            const loc = a.store_name || a.school_name || '';
+            const campaign = a.campaign_name;
+            const title = campaign ? `${loc} · ${campaign}` : loc;
+            return (
+              <View key={a.id} className="rounded-2xl bg-white p-5 shadow-sm">
+                <Text className="text-base font-bold text-ink">{title}</Text>
+                <Text className="text-xs uppercase tracking-wide text-muted mt-1">
+                  Weekly off: {weeklyOffDayName(item.weekly_off_day)}
+                </Text>
 
-      {/* Sales summary */}
-      <View className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
-        <Text className="text-xs uppercase tracking-wide text-muted">Units sold today</Text>
-        <Text className="text-4xl font-bold tabular-nums text-primary mt-1">
-          {data?.total_units_today ?? 0}
-        </Text>
-        {(data?.sales ?? []).length > 0 ? (
-          <View className="mt-3 space-y-1">
-            {(data?.sales ?? []).map((s) => (
-              <View key={s.id} className="flex-row justify-between">
-                <Text className="text-charcoal">{s.sku_name}</Text>
-                <Text className="font-medium tabular-nums">{s.quantity}</Text>
+                {item.log ? (
+                  <StatusPill
+                    tone={item.log.attendance_status === 'present' ? 'ok' : 'warn'}
+                    label={`${item.log.attendance_status.replace('_', ' ')} · ${item.log.status.replace('_', ' ')}`}
+                  />
+                ) : null}
+
+                <View className="mt-3 rounded-xl bg-lavender p-3">
+                  <Text className="text-xs uppercase tracking-wide text-muted">
+                    Units sold today
+                  </Text>
+                  <Text className="text-3xl font-bold tabular-nums text-primary mt-1">
+                    {item.total_units_today ?? 0}
+                  </Text>
+                  {(item.sales ?? []).length > 0 ? (
+                    <View className="mt-2 space-y-1">
+                      {(item.sales ?? []).map((s) => (
+                        <View key={s.id} className="flex-row justify-between">
+                          <Text className="text-charcoal">{s.sku_name}</Text>
+                          <Text className="font-medium tabular-nums">{s.quantity}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text className="text-muted mt-1">No sales recorded yet.</Text>
+                  )}
+                </View>
+
+                <View className="mt-4 space-y-2">
+                  {item.is_weekly_off_today ? (
+                    <StatusPill
+                      tone="purple"
+                      label={`Today is your weekly off (${weeklyOffDayName(item.weekly_off_day)})`}
+                    />
+                  ) : !item.log ? (
+                    <>
+                      <PrimaryButton
+                        label="Check In"
+                        onPress={() =>
+                          router.push({ pathname: '/checkin', params: { assignment: a.id } })
+                        }
+                      />
+                      <PrimaryButton
+                        label="Mark Sick Leave"
+                        variant="ghost"
+                        onPress={() =>
+                          router.push({ pathname: '/sick-leave', params: { assignment: a.id } })
+                        }
+                      />
+                    </>
+                  ) : item.log.status === 'open' && item.log.attendance_status === 'present' ? (
+                    <>
+                      <PrimaryButton
+                        label="Record Sale"
+                        onPress={() =>
+                          router.push({ pathname: '/sales', params: { assignment: a.id } })
+                        }
+                      />
+                      <PrimaryButton
+                        label="Check Out"
+                        onPress={() =>
+                          router.push({ pathname: '/checkout', params: { assignment: a.id } })
+                        }
+                      />
+                    </>
+                  ) : item.log.status === 'completed' && item.log.attendance_status === 'sick_leave' ? (
+                    <StatusPill tone="warn" label="Sick leave recorded for today — get well soon." />
+                  ) : (
+                    <StatusPill tone="ok" label="Day complete. Well done!" />
+                  )}
+                </View>
               </View>
-            ))}
-          </View>
-        ) : (
-          <Text className="text-muted mt-2">No sales recorded yet.</Text>
-        )}
-      </View>
+            );
+          })}
+        </View>
+      )}
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
-
-      {/* Next actions */}
-      <View className="mt-8 space-y-2">
-        {!assignment ? (
-          <Text className="text-center text-muted">
-            Contact your supervisor — you&apos;ll see your actions here once assigned.
-          </Text>
-        ) : data?.is_weekly_off_today ? (
-          <StatusPill
-            tone="purple"
-            label={`Today is your weekly off (${weeklyOffDayName(data?.weekly_off_day ?? 0)})`}
-          />
-        ) : !log ? (
-          <>
-            <PrimaryButton label="Check In" onPress={() => router.push('/checkin')} />
-            <PrimaryButton
-              label="Mark Sick Leave"
-              variant="ghost"
-              onPress={() => router.push('/sick-leave')}
-            />
-          </>
-        ) : log.status === 'open' && log.attendance_status === 'present' ? (
-          <>
-            <PrimaryButton label="Record Sale" onPress={() => router.push('/sales')} />
-            <PrimaryButton label="Check Out" onPress={() => router.push('/checkout')} />
-          </>
-        ) : log.status === 'completed' && log.attendance_status === 'sick_leave' ? (
-          <StatusPill tone="warn" label="Sick leave recorded for today — get well soon." />
-        ) : (
-          <StatusPill tone="ok" label="Day complete. Well done!" />
-        )}
-      </View>
 
       <Text className="text-center text-xs text-muted mt-10">Fazoo · v0.1</Text>
     </ScrollView>

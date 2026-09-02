@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
   // Enrichments ------------------------------------------------------------
   const skuByLog = new Map<string, string>();
   const photosByLog = new Map<string, { stock: string; selfie: string }>();
-  const offDayByBa = new Map<string, number>();
+  const offDayByBa = new Map<string, number[]>();
   const coordById = new Map<
     string,
     {
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
           r.store_id,
           r.store_name,
           offDayByBa.has(r.ba_id)
-            ? weeklyOffDayName(offDayByBa.get(r.ba_id) as number)
+            ? weeklyOffDayName(offDayByBa.get(r.ba_id) as number[])
             : '',
           r.attendance_status,
           r.checkin_at ? lagosDateTime(r.checkin_at) : '',

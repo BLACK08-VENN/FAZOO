@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import type { VedaTodayResult } from '@fazoo/types';
 import { supabase } from '@/lib/supabase';
 import { enqueue, newRequestId } from '@/lib/offline/db';
@@ -69,6 +69,7 @@ function StepButton({
  * and can never be double-applied.
  */
 export default function VedaActivation() {
+  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
   const [data, setData] = useState<VedaTodayResult | null>(null);
   const [edited, setEdited] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
@@ -92,14 +93,16 @@ export default function VedaActivation() {
   }
 
   useEffect(() => {
-    void (async () => {
-      await refresh();
-    })();
+    void refresh();
   }, []);
 
-  const session = data?.session ?? null;
+  const selected =
+    data?.assignments.find((item) => item.assignment.id === assignmentParam) ??
+    data?.assignments[0] ??
+    null;
+  const session = selected?.session ?? null;
   const stationeryItems = data?.stationery_items ?? [];
-  const distributions = data?.distributions ?? [];
+  const distributions = selected?.distributions ?? [];
   const originalByItem = new Map(distributions.map((d) => [d.stationery_item_id, d.quantity]));
 
   // Seed the editor once the current distributions arrive.
@@ -163,7 +166,7 @@ export default function VedaActivation() {
     );
   }
 
-  const school = data.assignment;
+  const school = selected?.assignment ?? null;
 
   return (
     <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
@@ -173,7 +176,7 @@ export default function VedaActivation() {
           <Text className="text-2xl font-bold text-ink">{school?.school_name ?? 'No school'}</Text>
           <Text className="text-muted">{school?.school_region}</Text>
         </View>
-        {data.is_weekly_off_today ? (
+        {selected?.is_weekly_off_today ? (
           <StatusPill tone="warn" label="Weekly off" />
         ) : session?.status === 'completed' ? (
           <StatusPill tone="ok" label="Complete" />
@@ -216,7 +219,15 @@ export default function VedaActivation() {
             label={`Checked in · ${session.learner_count} learners`}
           />
           <View className="mt-4">
-            <PrimaryButton label="Check Out" onPress={() => router.push('/veda-checkout')} />
+            <PrimaryButton
+              label="Check Out"
+              onPress={() =>
+                router.push({
+                  pathname: '/veda-checkout',
+                  params: { assignment: school?.id },
+                })
+              }
+            />
             <PrimaryButton label="Back to Today" variant="ghost" onPress={() => router.back()} />
           </View>
         </>
@@ -244,7 +255,12 @@ export default function VedaActivation() {
           <StatusPill tone="warn" label="This visit hasn't been checked in yet." />
           <PrimaryButton
             label="Check In"
-            onPress={() => router.replace('/veda-checkin')}
+            onPress={() =>
+              router.replace({
+                pathname: '/veda-checkin',
+                params: { assignment: school?.id },
+              })
+            }
           />
         </View>
       )}

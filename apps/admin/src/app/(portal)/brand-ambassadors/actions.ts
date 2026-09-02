@@ -52,12 +52,14 @@ export async function addBaAction(_prev: AddBaState, formData: FormData): Promis
   }
 
   const endRaw = String(formData.get('end_date') ?? '');
+  const offDays = formData
+    .getAll('weekly_off_day')
+    .map((d) => Number(d))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
   const parsed = createBaInputSchema.safeParse({
     full_name: formData.get('full_name'),
     phone: formData.get('phone'),
-    campaign_id: formData.get('campaign_id'),
-    store_id: formData.get('store_id'),
-    weekly_off_day: Number(formData.get('weekly_off_day') ?? 0),
+    weekly_off_day: offDays,
     start_date: formData.get('start_date'),
     end_date: endRaw && endRaw !== '' ? endRaw : undefined,
   });
@@ -75,7 +77,8 @@ export async function addBaAction(_prev: AddBaState, formData: FormData): Promis
 
   // 1. Create the auth identity (never possible in SQL). handle_new_user()
   //    drops a temp profile from the metadata; admin_create_ba re-points it to
-  //    the acting admin's org and provisions the membership + assignment.
+  //    the acting admin's org and provisions the membership (the BA is then
+  //    assignable to one or more campaigns/stores via admin_upsert_assignment).
   const password = generatePassword();
   let baUserId: string;
   try {
@@ -102,12 +105,10 @@ export async function addBaAction(_prev: AddBaState, formData: FormData): Promis
     return { error: e instanceof Error ? e.message : 'Could not create the BA account.' };
   }
 
-  // 2. Provision the membership + assignment via the audited RPC.
+  // 2. Provision the membership (no assignment yet) via the audited RPC.
   const { error } = await client.rpc('admin_create_ba', {
     p_user_id: baUserId,
-    p_campaign_id: v.campaign_id,
-    p_store_id: v.store_id,
-    p_weekly_off_day: v.weekly_off_day,
+    p_weekly_off_day: offDays,
     p_start_date: v.start_date,
     p_end_date: v.end_date && v.end_date !== '' ? v.end_date : undefined,
   });

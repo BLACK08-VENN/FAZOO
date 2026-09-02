@@ -76,7 +76,7 @@ export interface BrandAmbassadorAssignment {
   brand_ambassador_id: Uuid;
   campaign_id: Uuid;
   store_id: Uuid;
-  weekly_off_day: number;
+  weekly_off_day: number[];
   start_date: IsoDate;
   end_date: IsoDate | null;
   status: AssignmentStatus;

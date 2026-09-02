@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
@@ -8,6 +8,7 @@ import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 
 export default function SickLeave() {
+  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +20,7 @@ export default function SickLeave() {
     const payload = {
       p_note: note.trim() || undefined,
       p_client_request_id: requestId,
+      p_assignment_id: assignmentParam,
     };
     try {
       const { error: rpcError } = await supabase.rpc('ba_mark_sick_leave', payload);

@@ -14,7 +14,7 @@ interface AssignmentRow {
   start_date: string;
   end_date: string | null;
   status: string;
-  weekly_off_day: number;
+  weekly_off_day: number[];
   profiles: { full_name: string } | null;
   veda_schools: { name: string; region: string | null } | null;
 }
@@ -130,18 +130,21 @@ export default async function BrandAssignmentsPage({
             <form
               action={async (formData: FormData) => {
                 'use server';
-                const offDayRaw = Number(formData.get('weekly_off_day'));
+                const offDays = formData
+                  .getAll('weekly_off_day')
+                  .map((d) => Number(d))
+                  .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
                 const startDate = String(formData.get('start_date') ?? '');
                 const schoolId = String(formData.get('school_id') ?? '');
                 const baId = String(formData.get('ba_id') ?? '');
-                if (!schoolId || !baId || !startDate || !Number.isInteger(offDayRaw)) return;
+                if (!schoolId || !baId || !startDate) return;
 
                 const { client: c, profile: actor } = await requireStaff();
                 if (actor.role === 'supervisor') return;
                 await c.rpc('veda_admin_upsert_assignment', {
                   p_brand_ambassador_id: baId,
                   p_school_id: schoolId,
-                  p_weekly_off_day: offDayRaw,
+                  p_weekly_off_day: offDays,
                   p_start_date: startDate,
                   p_status: 'active',
                 });
@@ -168,14 +171,25 @@ export default async function BrandAssignmentsPage({
                   ))}
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="va-off">Weekly off-day</Label>
-                <Select id="va-off" name="weekly_off_day" defaultValue="0">
+              <fieldset>
+                <legend className="text-sm font-medium text-ink">Weekly off-days</legend>
+                <div className="mt-1 grid grid-cols-2 gap-2">
                   {WEEKDAY_NAMES.map((d, i) => (
-                    <option key={d} value={i}>{weeklyOffDayName(i)}</option>
+                    <label
+                      key={d}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-charcoal has-[:checked]:border-primary has-[:checked]:bg-lavender"
+                    >
+                      <input
+                        type="checkbox"
+                        name="weekly_off_day"
+                        value={i}
+                        className="size-4 accent-primary"
+                      />
+                      {d.slice(0, 3)}
+                    </label>
                   ))}
-                </Select>
-              </div>
+                </div>
+              </fieldset>
               <div>
                 <Label htmlFor="va-start">Effective from</Label>
                 <Input id="va-start" name="start_date" type="date" required />

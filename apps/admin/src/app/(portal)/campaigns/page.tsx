@@ -5,8 +5,8 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TableWrap, Table, Td, Th } from '@/components/ui/table';
-import { campaignInputSchema, weeklyOffDaySchema, assignmentInputSchema } from '@fazoo/validation';
-import { weeklyOffDayName, WEEKDAY_NAMES } from '@fazoo/config';
+import { campaignInputSchema, assignmentInputSchema } from '@fazoo/validation';
+import { WEEKDAY_NAMES } from '@fazoo/config';
 
 export default async function CampaignsPage() {
   const { client } = await requireStaff();
@@ -89,26 +89,27 @@ export default async function CampaignsPage() {
               <form
                 action={async (formData: FormData) => {
                   'use server';
-                  const offDayRaw = Number(formData.get('weekly_off_day'));
+                  const offDays = formData
+                    .getAll('weekly_off_day')
+                    .map((d) => Number(d))
+                    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
                   const parsed = assignmentInputSchema.safeParse({
                     brand_ambassador_id: formData.get('ba_id'),
                     campaign_id: formData.get('campaign_id'),
                     store_id: formData.get('store_id'),
-                    weekly_off_day: offDayRaw,
+                    weekly_off_day: offDays,
                     start_date: formData.get('start_date'),
                     status: 'active',
                   });
-                  const dayCheck = weeklyOffDaySchema.safeParse(offDayRaw);
-                  if (!parsed.success || !dayCheck.success) return;
+                  if (!parsed.success) return;
 
-                  // RPC closes any previous active assignment and audits.
                   const { client: c, profile: actor } = await requireStaff();
                   if (actor.role === 'supervisor') return;
                   await c.rpc('admin_upsert_assignment', {
                     p_brand_ambassador_id: parsed.data.brand_ambassador_id,
                     p_campaign_id: parsed.data.campaign_id,
                     p_store_id: parsed.data.store_id,
-                    p_weekly_off_day: offDayRaw,
+                    p_weekly_off_day: offDays,
                     p_start_date: parsed.data.start_date,
                   });
                   revalidatePath('/campaigns');
@@ -139,14 +140,25 @@ export default async function CampaignsPage() {
                     ))}
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="a-off">Weekly off-day</Label>
-                  <Select id="a-off" name="weekly_off_day" defaultValue="0">
+                <fieldset>
+                  <legend className="text-sm font-medium text-ink">Weekly off-days</legend>
+                  <div className="mt-1 grid grid-cols-2 gap-2">
                     {WEEKDAY_NAMES.map((d, i) => (
-                      <option key={d} value={i}>{weeklyOffDayName(i)}</option>
+                      <label
+                        key={d}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-charcoal has-[:checked]:border-primary has-[:checked]:bg-lavender"
+                      >
+                        <input
+                          type="checkbox"
+                          name="weekly_off_day"
+                          value={i}
+                          className="size-4 accent-primary"
+                        />
+                        {d.slice(0, 3)}
+                      </label>
                     ))}
-                  </Select>
-                </div>
+                  </div>
+                </fieldset>
                 <div>
                   <Label htmlFor="a-start">Effective from</Label>
                   <Input id="a-start" name="start_date" type="date" required />

@@ -1,39 +1,48 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import type { BaTodayResult } from '@fazoo/types';
 import { saleEntrySchema } from '@fazoo/validation';
 import { supabase } from '@/lib/supabase';
 import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { classifySyncError } from '@/lib/offline/errors';
+import { readCachedToday } from '@/lib/cache';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 
 export default function Sales() {
+  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
+  const [selected, setSelected] = useState<
+    BaTodayResult['assignments'][number] | null
+  >(null);
   const [skus, setSkus] = useState<Array<{ id: string; name: string; code: string }>>([]);
   const [skuId, setSkuId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [today, setToday] = useState<BaTodayResult | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editQuantity, setEditQuantity] = useState('');
 
   const load = useCallback(async () => {
     const { data: t } = await supabase.rpc('ba_today');
-    const result = t as unknown as BaTodayResult;
-    setToday(result);
-    if (result?.assignment) {
+    const result = (t as unknown as BaTodayResult | null) ?? (await readCachedToday());
+    const match =
+      result?.assignments.find((item) => item.assignment.id === assignmentParam) ??
+      result?.assignments[0];
+    setSelected(match ?? null);
+    if (match?.assignment.campaign_id) {
       const { data: skuRows } = await supabase
         .from('skus')
         .select('id, name, code')
-        .eq('campaign_id', result.assignment.campaign_id)
+        .eq('campaign_id', match.assignment.campaign_id)
         .eq('status', 'active')
         .order('name');
       setSkus((skuRows as Array<{ id: string; name: string; code: string }> | null) ?? []);
+    } else {
+      setSkus([]);
     }
-  }, []);
+  }, [assignmentParam]);
 
   useEffect(() => {
     void load();
@@ -57,6 +66,7 @@ export default function Sales() {
       p_quantity: parsed.data.quantity,
       p_client_request_id: requestId,
       p_recorded_at_hint: new Date().toISOString(),
+      p_daily_log_id: selected?.log?.id,
     };
     try {
       const { error: rpcError } = await supabase.rpc('ba_record_sale', payload);
@@ -84,7 +94,11 @@ export default function Sales() {
     const requestId = newRequestId();
     await enqueue(
       'update_sale',
-      { p_sales_entry_id: editingId, p_quantity: value, p_client_request_id: requestId },
+      {
+        p_sales_entry_id: editingId,
+        p_quantity: value,
+        p_client_request_id: requestId,
+      },
       requestId,
     );
     setEditingId(null);
@@ -111,12 +125,22 @@ export default function Sales() {
     await load();
   }
 
+  const logOpen = selected?.log?.status === 'open';
+
   return (
     <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
       <Text className="text-xs text-muted">Record a sale</Text>
-      <Text className="text-2xl font-bold text-ink mb-4">
-        Today: {today?.total_units_today ?? 0} units
+      <Text className="text-2xl font-bold text-ink mb-1">
+        Today: {selected?.total_units_today ?? 0} units
       </Text>
+      {selected ? (
+        <Text className="text-sm text-muted mb-4">
+          {selected.assignment.store_name || selected.assignment.campaign_name}
+          {selected.assignment.campaign_name
+            ? ` · ${selected.assignment.campaign_name}`
+            : ''}
+        </Text>
+      ) : null}
 
       {skus.length === 0 ? (
         <StatusPill tone="warn" label="No active SKUs on your campaign." />
@@ -156,16 +180,16 @@ export default function Sales() {
       )}
 
       {/* Line items recorded today */}
-      {(today?.sales ?? []).length > 0 ? (
+      {(selected?.sales ?? []).length > 0 ? (
         <View className="mt-6 rounded-2xl bg-white p-4">
           <Text className="font-semibold mb-2">Recorded today</Text>
-          {(today?.sales ?? []).map((s) => (
+          {(selected?.sales ?? []).map((s) => (
             <View key={s.id} className="py-2 border-b border-ink/5">
               <View className="flex-row justify-between items-center">
                 <Text>{s.sku_name}</Text>
                 <Text className="tabular-nums">×{s.quantity}</Text>
               </View>
-              {today?.log?.status === 'open' ? (
+              {logOpen ? (
                 editingId === s.id ? (
                   <View className="flex-row items-center mt-2">
                     <TextInput

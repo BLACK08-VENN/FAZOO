@@ -125,8 +125,8 @@ on conflict do nothing;
 insert into public.brand_ambassador_assignments
   (organization_id, brand_ambassador_id, campaign_id, store_id, weekly_off_day, start_date, status)
 values
-  ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000010'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, '44444444-4444-4444-8444-444444444401'::uuid, 0, current_date - 30, 'active'),
-  ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000011'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, '44444444-4444-4444-8444-444444444402'::uuid, 2, current_date - 30, 'active');
+  ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000010'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, '44444444-4444-4444-8444-444444444401'::uuid, '{0,6}'::smallint[], current_date - 30, 'active'),
+  ('11111111-1111-4111-8111-111111111111'::uuid, '22222222-2222-4222-8222-000000000011'::uuid, '33333333-3333-4333-8333-333333333301'::uuid, '44444444-4444-4444-8444-444444444402'::uuid, '{2}'::smallint[], current_date - 30, 'active');
 
 -- ── supervisor scope: sees the Ikeja store ───────────────────────────────────
 insert into public.supervisor_scopes (organization_id, supervisor_id, store_id)

@@ -2,26 +2,21 @@
 
 import { useActionState } from 'react';
 import { addBaAction, type AddBaState } from './actions';
-import { weeklyOffDayName, WEEKDAY_NAMES } from '@fazoo/config';
+import { WEEKDAY_NAMES } from '@fazoo/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
-import { Input, Label, Select } from '@/components/ui/input';
+import { Input, Label } from '@/components/ui/input';
 
 const initialState: AddBaState = { error: null };
 
-export type BaLookup = {
-  campaigns: { id: string; name: string }[];
-  stores: { id: string; name: string }[];
-};
-
-export function AddBaForm({ campaigns, stores }: BaLookup) {
+export function AddBaForm() {
   const [state, formAction, pending] = useActionState(addBaAction, initialState);
 
   return (
     <Card>
       <CardHeader
         title="Add a Brand Ambassador"
-        description="Creates a login and assigns them to a campaign + store."
+        description="Creates a login. Assign the BA to campaigns and stores afterwards."
       />
       <CardBody className="space-y-3">
         {state.created ? (
@@ -62,38 +57,28 @@ export function AddBaForm({ campaigns, stores }: BaLookup) {
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="ba-campaign">Campaign</Label>
-              <Select id="ba-campaign" name="campaign_id" required>
-                <option value="">Select campaign…</option>
-                {campaigns.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="ba-store">Store</Label>
-              <Select id="ba-store" name="store_id" required>
-                <option value="">Select store…</option>
-                {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="ba-off">Weekly off-day</Label>
-              <Select id="ba-off" name="weekly_off_day" defaultValue="0">
+            <fieldset>
+              <legend className="text-sm font-medium text-ink">Weekly off-days</legend>
+              <p className="mb-2 mt-0.5 text-xs text-muted">
+                Select one or more days the BA is off each week.
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {WEEKDAY_NAMES.map((d, i) => (
-                  <option key={d} value={i}>
-                    {weeklyOffDayName(i)}
-                  </option>
+                  <label
+                    key={d}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-charcoal has-[:checked]:border-primary has-[:checked]:bg-lavender"
+                  >
+                    <input
+                      type="checkbox"
+                      name="weekly_off_day"
+                      value={i}
+                      className="size-4 accent-primary"
+                    />
+                    {d.slice(0, 3)}
+                  </label>
                 ))}
-              </Select>
-            </div>
+              </div>
+            </fieldset>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="ba-start">Effective from</Label>

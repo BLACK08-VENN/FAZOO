@@ -28,7 +28,7 @@ export interface VedaAssignment {
   organization_id: Uuid;
   brand_ambassador_id: Uuid;
   school_id: Uuid;
-  weekly_off_day: number | null;
+  weekly_off_day: number[] | null;
   start_date: IsoDate;
   end_date: IsoDate | null;
   status: AssignmentStatus;

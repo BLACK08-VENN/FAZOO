@@ -12,17 +12,14 @@ export default async function BrandAmbassadorsPage() {
   const { client, profile } = await requireStaff();
   const elevated = isElevated(profile.role);
 
-  const [{ data: bas }, { data: pendingRaw }, { data: campaigns }, { data: stores }] =
-    await Promise.all([
-      client
-        .from('profiles')
-        .select('id, full_name, phone, role, account_status, organization_id')
-        .eq('role', 'brand_ambassador')
-        .order('full_name'),
-      client.rpc('admin_list_pending_memberships'),
-      client.from('campaigns').select('id, name').eq('status', 'active').order('name'),
-      client.from('stores').select('id, name').eq('status', 'active').order('name'),
-    ]);
+  const [{ data: bas }, { data: pendingRaw }] = await Promise.all([
+    client
+      .from('profiles')
+      .select('id, full_name, phone, role, account_status, organization_id')
+      .eq('role', 'brand_ambassador')
+      .order('full_name'),
+    client.rpc('admin_list_pending_memberships'),
+  ]);
 
   const pending = (pendingRaw as PendingMembership[] | null) ?? [];
 
@@ -109,12 +106,9 @@ export default async function BrandAmbassadorsPage() {
         </Table>
       </TableWrap>
 
-      {elevated && (campaigns?.length ?? 0) > 0 && (stores?.length ?? 0) > 0 ? (
+      {elevated ? (
         <div className="mt-8">
-          <AddBaForm
-            campaigns={(campaigns ?? []).map((c) => ({ id: c.id, name: c.name }))}
-            stores={(stores ?? []).map((s) => ({ id: s.id, name: s.name }))}
-          />
+          <AddBaForm />
         </div>
       ) : null}
     </>

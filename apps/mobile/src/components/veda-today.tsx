@@ -57,27 +57,12 @@ export default function VedaToday() {
     );
   }
 
-  const assignment = data?.assignment ?? null;
-  const session = data?.session ?? null;
-  const totalItems = (data?.distributions ?? []).reduce((sum, d) => sum + d.quantity, 0);
+  const assignments = data?.assignments ?? [];
 
   return (
     <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
       {/* Header */}
       <Text className="text-xs text-muted">Today · {data?.attendance_date} (Kenya)</Text>
-      {assignment ? (
-        <>
-          <Text className="text-xl font-bold text-ink mt-1">{assignment.school_name}</Text>
-          <Text className="text-charcoal mt-1">{assignment.school_region}</Text>
-          {data?.weekly_off_day !== null && data?.weekly_off_day !== undefined ? (
-            <Text className="text-muted">
-              Weekly off: {weeklyOffDayName(data.weekly_off_day)}
-            </Text>
-          ) : null}
-        </>
-      ) : (
-        <Text className="text-xl font-bold text-ink mt-1">No active school visit</Text>
-      )}
 
       {online === false ? (
         <StatusPill tone="warn" label={`Offline · ${counts.pending} waiting to sync`} />
@@ -108,51 +93,95 @@ export default function VedaToday() {
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
-      {/* Distribution summary */}
-      <View className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
-        <Text className="text-xs uppercase tracking-wide text-muted">
-          Stationery distributed today
+      {assignments.length === 0 ? (
+        <Text className="text-center text-muted mt-6">
+          Contact your supervisor — you&apos;ll see your school visits here once assigned.
         </Text>
-        <Text className="text-4xl font-bold tabular-nums text-primary mt-1">
-          {totalItems}
-          <Text className="text-base font-normal text-muted"> units</Text>
-        </Text>
-        {(data?.distributions ?? []).length > 0 ? (
-          <View className="mt-3 space-y-1">
-            {(data?.distributions ?? []).map((d) => (
-              <View key={d.id} className="flex-row justify-between">
-                <Text className="text-charcoal">{d.item_name}</Text>
-                <Text className="font-medium tabular-nums">×{d.quantity}</Text>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <Text className="text-muted mt-2">No distribution recorded yet.</Text>
-        )}
-      </View>
+      ) : (
+        <View className="mt-2 space-y-4">
+          {assignments.map((item) => {
+            const a = item.assignment;
+            const totalItems = (item.distributions ?? []).reduce(
+              (sum, d) => sum + d.quantity,
+              0,
+            );
+            return (
+              <View key={a.id} className="rounded-2xl bg-white p-5 shadow-sm">
+                <Text className="text-base font-bold text-ink">{a.school_name}</Text>
+                {a.school_region ? (
+                  <Text className="text-sm text-muted mt-0.5">{a.school_region}</Text>
+                ) : null}
+                {item.weekly_off_day && item.weekly_off_day.length > 0 ? (
+                  <Text className="text-xs uppercase tracking-wide text-muted mt-1">
+                    Weekly off: {weeklyOffDayName(item.weekly_off_day)}
+                  </Text>
+                ) : null}
 
-      {/* Next actions */}
-      <View className="mt-8 space-y-2">
-        {!assignment ? (
-          <Text className="text-center text-muted">
-            Contact your supervisor — you&apos;ll see your school visit here once assigned.
-          </Text>
-        ) : data?.is_weekly_off_today ? (
-          <StatusPill tone="warn" label="Today is your weekly off — enjoy the day!" />
-        ) : !session ? (
-          <PrimaryButton label="Check In" onPress={() => router.push('/veda-checkin')} />
-        ) : session.status === 'open' ? (
-          <>
-            <PrimaryButton
-              label="Manage Stationery"
-              onPress={() => router.push('/veda-activation')}
-            />
-            <PrimaryButton label="Check Out" onPress={() => router.push('/veda-checkout')} />
-          </>
-        ) : (
-          <StatusPill tone="ok" label="Visit complete. Well done!" />
-        )}
-      </View>
+                <View className="mt-3 rounded-xl bg-lavender p-3">
+                  <Text className="text-xs uppercase tracking-wide text-muted">
+                    Stationery distributed today
+                  </Text>
+                  <Text className="text-3xl font-bold tabular-nums text-primary mt-1">
+                    {totalItems}
+                    <Text className="text-base font-normal text-muted"> units</Text>
+                  </Text>
+                  {(item.distributions ?? []).length > 0 ? (
+                    <View className="mt-2 space-y-1">
+                      {(item.distributions ?? []).map((d) => (
+                        <View key={d.id} className="flex-row justify-between">
+                          <Text className="text-charcoal">{d.item_name}</Text>
+                          <Text className="font-medium tabular-nums">×{d.quantity}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text className="text-muted mt-1">No distribution recorded yet.</Text>
+                  )}
+                </View>
+
+                <View className="mt-4 space-y-2">
+                  {item.is_weekly_off_today ? (
+                    <StatusPill tone="warn" label="Today is your weekly off — enjoy the day!" />
+                  ) : !item.session ? (
+                    <PrimaryButton
+                      label="Check In"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/veda-checkin',
+                          params: { assignment: a.id },
+                        })
+                      }
+                    />
+                  ) : item.session.status === 'open' ? (
+                    <>
+                      <PrimaryButton
+                        label="Manage Stationery"
+                        onPress={() =>
+                          router.push({
+                            pathname: '/veda-activation',
+                            params: { assignment: a.id },
+                          })
+                        }
+                      />
+                      <PrimaryButton
+                        label="Check Out"
+                        onPress={() =>
+                          router.push({
+                            pathname: '/veda-checkout',
+                            params: { assignment: a.id },
+                          })
+                        }
+                      />
+                    </>
+                  ) : (
+                    <StatusPill tone="ok" label="Visit complete. Well done!" />
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       <Text className="text-center text-xs text-muted mt-10">Fazoo · v0.1</Text>
     </ScrollView>
