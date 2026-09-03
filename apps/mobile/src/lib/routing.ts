@@ -5,12 +5,15 @@ const PROTECTED = [
   '/sales',
   '/history',
   '/profile',
+  '/campaigns',
+  '/campaign-logs',
   '/checkin',
   '/checkout',
   '/sick-leave',
   '/veda-checkin',
   '/veda-checkout',
   '/veda-activation',
+  '/veda-new-log',
 ] as const;
 const GUEST_ONLY = ['/', '/sign-in', '/register', '/forgot-password'] as const;
 

@@ -52,6 +52,12 @@ export default function Profile() {
             <Row label="Role" value={profile?.role ?? '—'} />
           </View>
 
+          <Text className="text-lg font-semibold text-ink mt-8 mb-2">My Logs</Text>
+          <PrimaryButton
+            label="View or add logs"
+            onPress={() => router.push('/campaigns')}
+          />
+
           <Text className="text-lg font-semibold text-ink mt-8 mb-2">Actions</Text>
           <PrimaryButton label="Apply for leave" onPress={() => router.push('/leave')} />
 
