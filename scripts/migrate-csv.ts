@@ -585,11 +585,17 @@ async function importVeda() {
   // schools CSV, or derived from a session title when a session references a
   // school not listed in the CSV) so no session is dropped for want of a venue.
   const schoolIdByLegacy = new Map<string, string>();
-  async function ensureVedaSchool(legacyId: string, name: string, region?: string): Promise<string> {
+  async function ensureVedaSchool(
+    legacyId: string,
+    name: string,
+    region?: string,
+    address?: string,
+    skipGeocoding = false,
+  ): Promise<string> {
     const existing = schoolIdByLegacy.get(legacyId);
     if (existing) return existing;
     const key = `${name}${region ? `, ${region}` : ''}, Kenya`;
-    const g = await geocode(key, geoCache, rate);
+    const g = skipGeocoding ? null : await geocode(key, geoCache, rate);
     const { data, error } = await client
       .from('veda_schools')
       .upsert(
@@ -597,6 +603,7 @@ async function importVeda() {
           organization_id: orgId,
           legacy_id: Number(legacyId),
           name,
+          address: address || null,
           region: region || null,
           latitude: g?.lat ?? null,
           longitude: g?.lon ?? null,
@@ -612,9 +619,60 @@ async function importVeda() {
     return data.id as string;
   }
 
-  const schoolsRaw = readCsv<{ id: string; title: string; region: string }>('veda-schools.csv');
+  const schoolsFile = process.argv.find((a) => a.startsWith('--veda-schools-file='))?.split('=')[1]
+    ?? 'veda-schools.csv';
+  const skipSchoolGeocoding = process.argv.includes('--skip-school-geocoding');
+  const schoolsRaw = readCsv<{ id: string; title: string; region: string; address?: string }>(schoolsFile);
+
+  // A current school register can be loaded without sessions or geocoding.
+  // Batch it to avoid thousands of sequential network round trips.
+  if (process.argv.includes('--only=schools') && skipSchoolGeocoding) {
+    const records = schoolsRaw.map((s) => ({
+      organization_id: orgId,
+      legacy_id: Number(str(s.id)),
+      name: str(s.title),
+      address: str(s.address) || null,
+      region: str(s.region) || null,
+      latitude: null,
+      longitude: null,
+      status: 'active' as const,
+    }));
+    const batchSize = 500;
+    for (let offset = 0; offset < records.length; offset += batchSize) {
+      const batch = records.slice(offset, offset + batchSize);
+      const { error } = await client
+        .from('veda_schools')
+        .upsert(batch, { onConflict: 'organization_id,legacy_id' });
+      if (error) throw new Error(`Veda school batch ${offset / batchSize + 1}: ${error.message}`);
+      log.ok(`schools: ${Math.min(offset + batch.length, records.length)}/${records.length}`);
+    }
+    const { count, error: countError } = await client
+      .from('veda_schools')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .gte('legacy_id', 1000001)
+      .lte('legacy_id', 1000000 + records.length);
+    if (countError) throw new Error(`Veda school verification: ${countError.message}`);
+    if (count !== records.length) {
+      throw new Error(`Veda school verification: expected ${records.length}, found ${count ?? 0}`);
+    }
+    log.ok(`Veda: ${records.length} schools imported`);
+    return;
+  }
+
   for (const s of schoolsRaw) {
-    await ensureVedaSchool(str(s.id), str(s.title), str(s.region));
+    await ensureVedaSchool(
+      str(s.id),
+      str(s.title),
+      str(s.region),
+      str(s.address),
+      skipSchoolGeocoding,
+    );
+  }
+
+  if (process.argv.includes('--only=schools')) {
+    log.ok(`Veda: ${schoolIdByLegacy.size} schools imported`);
+    return;
   }
 
   // BA registry by legacy id from the BA csv (email → user), sessions reference ba_id.
@@ -695,8 +753,8 @@ async function main() {
   const only = process.argv.find((a) => a.startsWith('--only='))?.split('=')[1]?.toLowerCase();
   const vedaBasFile = process.argv.find((a) => a.startsWith('--veda-bas-file='))?.split('=')[1];
   if (!['lenovo', 'veda', 'all'].includes(brand)) throw new Error(`--brand must be lenovo|veda|all`);
-  if (only && only !== 'bas') throw new Error(`--only must be bas`);
-  if (only === 'bas' && brand !== 'veda') throw new Error(`--only=bas requires --brand=veda`);
+  if (only && !['bas', 'schools'].includes(only)) throw new Error(`--only must be bas|schools`);
+  if (only && brand !== 'veda') throw new Error(`--only=${only} requires --brand=veda`);
 
   const env = loadEnv();
   client = createClient(env.url, env.serviceKey, {

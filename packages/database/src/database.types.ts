@@ -968,6 +968,7 @@ export type Database = {
       }
       veda_schools: {
         Row: {
+          address: string | null
           created_at: string
           geofence_radius_metres: number
           id: string
@@ -981,6 +982,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           created_at?: string
           geofence_radius_metres?: number
           id?: string
@@ -994,6 +996,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           created_at?: string
           geofence_radius_metres?: number
           id?: string

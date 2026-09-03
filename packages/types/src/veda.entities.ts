@@ -13,6 +13,7 @@ export interface VedaSchool {
   organization_id: Uuid;
   legacy_id: number | null;
   name: string;
+  address: string | null;
   region: string | null;
   latitude: number | null;
   longitude: number | null;
