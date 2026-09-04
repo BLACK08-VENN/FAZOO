@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Platform, Pressable, RefreshControl, Switch, Text, View } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { leaveRequestSchema, type LeaveRequestInput } from '@fazoo/validation';
 import type { BaTodayResult } from '@fazoo/types';
 import { PrimaryButton } from '@/components/primary-button';
 import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { supabase } from '@/lib/supabase';
+import { Screen, Card, HeroCard, SectionLabel, MultilineField, GlassCard, EmptyState } from '@/components/ui';
 
 type LeaveRow = {
   id: string;
@@ -25,9 +20,7 @@ type LeaveRow = {
   created_at: string;
 };
 
-type LeaveFormState = Omit<LeaveRequestInput, 'policy_acknowledged'> & {
-  policy_acknowledged: boolean;
-};
+type LeaveFormState = Omit<LeaveRequestInput, 'policy_acknowledged'> & { policy_acknowledged: boolean };
 
 const LEAVE_TYPES: { value: LeaveRequestInput['leave_type']; label: string }[] = [
   { value: 'annual_leave', label: 'Annual' },
@@ -58,58 +51,46 @@ const initialForm: LeaveFormState = {
   policy_acknowledged: true,
 };
 
-function Choice({
-  selected,
-  label,
-  onPress,
-}: {
-  selected: boolean;
-  label: string;
-  onPress: () => void;
-}) {
+function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      className={`rounded-full border px-4 py-2 mr-2 mb-2 ${
-        selected ? 'border-primary bg-primary' : 'border-ink/15 bg-white'
-      }`}
-    >
-      <Text className={selected ? 'font-semibold text-white' : 'font-medium text-charcoal'}>
-        {label}
-      </Text>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} className={`mb-2 mr-2 rounded-full border px-4 py-2 ${selected ? 'border-white/20 bg-white/18' : 'border-white/12 bg-white/8'}`}>
+      <Text className={`font-medium ${selected ? 'text-white' : 'text-white/72'}`}>{label}</Text>
     </Pressable>
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  multiline = false,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder: string;
-  multiline?: boolean;
-}) {
+function toDate(value: string): Date {
+  if (!value) return new Date();
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return new Date();
+  return new Date(y, m - 1, d);
+}
+
+function toISO(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function DateField({ label, value, onChange, minimumDate, icon = 'calendar' }: { label: string; value: string; onChange: (value: string) => void; minimumDate?: Date; icon?: keyof typeof Ionicons.glyphMap }) {
+  const [show, setShow] = useState(false);
+  function onEvent(_event: DateTimePickerEvent, selected?: Date) {
+    if (Platform.OS === 'android') setShow(false);
+    if (selected) onChange(toISO(selected));
+  }
   return (
     <View className="mb-4">
-      <Text className="mb-1.5 text-sm font-semibold text-charcoal">{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#8B8492"
-        multiline={multiline}
-        maxLength={multiline ? 2000 : 10}
-        autoCapitalize="none"
-        className={`rounded-xl border border-ink/10 bg-white px-4 text-charcoal ${multiline ? 'min-h-28 py-3' : 'h-13'}`}
-      />
+      <Text className="mb-2 text-sm font-medium text-white/82">{label}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value || 'not set'}`} onPress={() => setShow((open) => !open)} className="h-14 flex-row items-center justify-between rounded-2xl border border-white/12 bg-white/10 px-4">
+        <Text className={value ? 'text-white' : 'text-white/52'}>{value || 'Pick a date'}</Text>
+        <Ionicons name={icon} size={18} color="#D8DDFF" />
+      </Pressable>
+      {show ? (
+        <View className="mt-2 overflow-hidden rounded-2xl border border-white/12 bg-white">
+          <DateTimePicker value={toDate(value)} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} minimumDate={minimumDate} onChange={onEvent} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -117,9 +98,7 @@ function Field({
 export default function LeavePage() {
   const [form, setForm] = useState<LeaveFormState>(initialForm);
   const [requests, setRequests] = useState<LeaveRow[]>([]);
-  const [assignments, setAssignments] = useState<
-    BaTodayResult['assignments'][number]['assignment'][]
-  >([]);
+  const [assignments, setAssignments] = useState<BaTodayResult['assignments'][number]['assignment'][]>([]);
   const [assignmentId, setAssignmentId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -127,11 +106,7 @@ export default function LeavePage() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
 
   const loadRequests = useCallback(async () => {
-    const { data } = await supabase
-      .from('leave_requests')
-      .select('id, leave_type, start_date, end_date, status, review_note, created_at')
-      .order('created_at', { ascending: false })
-      .limit(10);
+    const { data } = await supabase.from('leave_requests').select('id, leave_type, start_date, end_date, status, review_note, created_at').order('created_at', { ascending: false }).limit(10);
     setRequests((data as LeaveRow[] | null) ?? []);
     setLoading(false);
     setRefreshing(false);
@@ -145,40 +120,22 @@ export default function LeavePage() {
     setAssignmentId((current) => current ?? list[0]?.id ?? null);
   }, []);
 
-  useEffect(() => {
-    void loadRequests();
-    void loadAssignments();
-  }, [loadRequests, loadAssignments]);
+  useEffect(() => { void loadRequests(); void loadAssignments(); }, [loadRequests, loadAssignments]);
 
   function toggleDocument(value: LeaveRequestInput['supporting_document_types'][number]) {
     setForm((current) => {
       if (value === 'not_applicable') {
-        return {
-          ...current,
-          supporting_document_types: current.supporting_document_types.includes(value)
-            ? []
-            : [value],
-        };
+        return { ...current, supporting_document_types: current.supporting_document_types.includes(value) ? [] : [value] };
       }
-      const withoutNA = current.supporting_document_types.filter(
-        (item) => item !== 'not_applicable',
-      );
-      return {
-        ...current,
-        supporting_document_types: withoutNA.includes(value)
-          ? withoutNA.filter((item) => item !== value)
-          : [...withoutNA, value],
-      };
+      const withoutNA = current.supporting_document_types.filter((item) => item !== 'not_applicable');
+      return { ...current, supporting_document_types: withoutNA.includes(value) ? withoutNA.filter((item) => item !== value) : [...withoutNA, value] };
     });
   }
 
   async function submit() {
     const result = leaveRequestSchema.safeParse(form);
     if (!result.success) {
-      setMessage({
-        tone: 'bad',
-        text: result.error.issues[0]?.message ?? 'Check the form and try again.',
-      });
+      setMessage({ tone: 'bad', text: result.error.issues[0]?.message ?? 'Check the form and try again.' });
       return;
     }
     if (!assignmentId) {
@@ -212,10 +169,7 @@ export default function LeavePage() {
       if (/network|fetch/i.test(text)) {
         await enqueue('leave_request', payload, requestId);
         setForm(initialForm);
-        setMessage({
-          tone: 'ok',
-          text: 'Saved offline. It will send automatically when you reconnect.',
-        });
+        setMessage({ tone: 'ok', text: 'Saved offline. It will send automatically when you reconnect.' });
         setTimeout(() => void flushQueue(), 0);
       } else setMessage({ tone: 'bad', text });
     } finally {
@@ -224,197 +178,84 @@ export default function LeavePage() {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-lavender"
-      contentContainerClassName="px-5 pb-12 pt-8"
-      keyboardShouldPersistTaps="handled"
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            void loadRequests();
-          }}
-        />
-      }
-    >
-      <View className="mb-5 overflow-hidden rounded-3xl bg-ink p-6">
-        <Text className="text-xs font-semibold uppercase tracking-widest text-bright">
-          Time away
-        </Text>
-        <Text className="mt-2 text-3xl font-bold text-white">Leave request</Text>
-        <Text className="mt-2 leading-5 text-white/70">
-          Your verified profile, phone number and current store are attached automatically.
-        </Text>
-      </View>
+    <Screen bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadRequests(); }} />}>
+      <HeroCard eyebrow="Time away" title="Leave request" subtitle="Your verified profile and assignment determine how this request is reviewed. Complete the details carefully." icon="calendar-clear" />
 
-      <View className="mb-5 rounded-2xl bg-white p-5">
-        <Text className="mb-2 text-lg font-bold text-ink">0. Which assignment?</Text>
-        {assignments.length === 0 ? (
-          <Text className="text-muted">
-            You have no active assignments — leave is linked to a store or school.
-          </Text>
-        ) : (
+      <SectionLabel>Assignment</SectionLabel>
+      {assignments.length === 0 ? (
+        <EmptyState title="No active assignments" body="Leave requests are linked to a store or school assignment." />
+      ) : (
+        <GlassCard>
           <View className="flex-row flex-wrap">
             {assignments.map((a) => {
-              const label = a.campaign_name
-                ? `${a.store_name || a.school_name || ''} · ${a.campaign_name}`
-                : a.store_name || a.school_name || 'Assignment';
-              return (
-                <Choice
-                  key={a.id}
-                  label={label}
-                  selected={assignmentId === a.id}
-                  onPress={() => setAssignmentId(a.id)}
-                />
-              );
+              const label = a.campaign_name ? `${a.store_name || a.school_name || ''} · ${a.campaign_name}` : a.store_name || a.school_name || 'Assignment';
+              return <Choice key={a.id} label={label} selected={assignmentId === a.id} onPress={() => setAssignmentId(a.id)} />;
             })}
           </View>
-        )}
-      </View>
+        </GlassCard>
+      )}
 
-      <View className="mb-5 rounded-2xl bg-white p-5">
-        <Text className="mb-3 text-lg font-bold text-ink">1. Leave details</Text>
-        <Text className="mb-2 text-sm font-semibold text-charcoal">Type of leave</Text>
-        <View className="mb-2 flex-row flex-wrap">
-          {LEAVE_TYPES.map((item) => (
-            <Choice
-              key={item.value}
-              label={item.label}
-              selected={form.leave_type === item.value}
-              onPress={() => setForm((v) => ({ ...v, leave_type: item.value }))}
-            />
-          ))}
+      <SectionLabel>1. Leave details</SectionLabel>
+      <Card className="mb-4">
+        <Text className="mb-2 text-lg font-bold text-ink">Type of leave</Text>
+        <View className="mb-2 flex-row flex-wrap rounded-3xl bg-slate-950 px-3 py-3">
+          {LEAVE_TYPES.map((item) => <Choice key={item.value} label={item.label} selected={form.leave_type === item.value} onPress={() => setForm((v) => ({ ...v, leave_type: item.value }))} />)}
         </View>
-        <Field
-          label="Start date"
-          placeholder="YYYY-MM-DD"
-          value={form.start_date}
-          onChangeText={(value) => setForm((v) => ({ ...v, start_date: value }))}
-        />
-        <Field
-          label="End date"
-          placeholder="YYYY-MM-DD"
-          value={form.end_date}
-          onChangeText={(value) => setForm((v) => ({ ...v, end_date: value }))}
-        />
-        <Field
-          label="Expected return date"
-          placeholder="YYYY-MM-DD"
-          value={form.expected_return_date}
-          onChangeText={(value) => setForm((v) => ({ ...v, expected_return_date: value }))}
-        />
-      </View>
+        <DateField label="Start date" value={form.start_date} minimumDate={new Date()} onChange={(value) => setForm((v) => ({ ...v, start_date: value }))} />
+        <DateField label="End date" value={form.end_date} minimumDate={toDate(form.start_date) || new Date()} onChange={(value) => setForm((v) => ({ ...v, end_date: value }))} />
+        <DateField label="Expected return date" value={form.expected_return_date} minimumDate={toDate(form.end_date) || new Date()} icon="return-up-back" onChange={(value) => setForm((v) => ({ ...v, expected_return_date: value }))} />
+      </Card>
 
-      <View className="mb-5 rounded-2xl bg-white p-5">
-        <Text className="mb-3 text-lg font-bold text-ink">2. Communication</Text>
-        <View className="mb-4 flex-row items-center justify-between">
-          <View className="mr-4 flex-1">
-            <Text className="font-semibold text-charcoal">Supervisor informed</Text>
-            <Text className="mt-1 text-sm text-muted">
-              Confirm you have discussed this request.
-            </Text>
+      <SectionLabel>2. Communication</SectionLabel>
+      <Card className="mb-4">
+        <View className="mb-4 flex-row items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+          <View className="flex-1">
+            <Text className="font-semibold text-slate-800">Supervisor informed</Text>
+            <Text className="mt-1 text-sm leading-6 text-slate-500">Confirm you have discussed this request.</Text>
           </View>
-          <Switch
-            value={form.supervisor_informed}
-            onValueChange={(value) => setForm((v) => ({ ...v, supervisor_informed: value }))}
-            trackColor={{ true: '#7B2FBE' }}
-          />
+          <Switch value={form.supervisor_informed} onValueChange={(value) => setForm((v) => ({ ...v, supervisor_informed: value }))} trackColor={{ true: '#5B6CFF' }} />
         </View>
         {!form.supervisor_informed ? (
-          <Field
-            multiline
-            label="Why have they not been informed?"
-            placeholder="Explain briefly"
-            value={form.supervisor_not_informed_reason ?? ''}
-            onChangeText={(value) =>
-              setForm((v) => ({ ...v, supervisor_not_informed_reason: value }))
-            }
-          />
+          <MultilineField label="Why have they not been informed?" placeholder="Explain briefly" value={form.supervisor_not_informed_reason ?? ''} onChangeText={(value) => setForm((v) => ({ ...v, supervisor_not_informed_reason: value }))} />
         ) : null}
-        <Field
-          multiline
-          label="Reason for leave"
-          placeholder="Provide the information the reviewing admin needs"
-          value={form.reason}
-          onChangeText={(value) => setForm((v) => ({ ...v, reason: value }))}
-        />
-      </View>
+        <MultilineField label="Reason for leave" placeholder="Provide the information the reviewing admin needs" value={form.reason} onChangeText={(value) => setForm((v) => ({ ...v, reason: value }))} />
+      </Card>
 
-      <View className="mb-5 rounded-2xl bg-white p-5">
-        <Text className="mb-1 text-lg font-bold text-ink">3. Supporting documents</Text>
-        <Text className="mb-3 text-sm text-muted">
-          Select the documents you can provide to your supervisor.
-        </Text>
+      <SectionLabel>3. Supporting documents</SectionLabel>
+      <GlassCard>
+        <Text className="mb-3 text-sm leading-6 text-white/72">Select the documents you can provide to your supervisor.</Text>
         <View className="flex-row flex-wrap">
-          {DOCUMENTS.map(([value, label]) => (
-            <Choice
-              key={value}
-              label={label}
-              selected={form.supporting_document_types.includes(value)}
-              onPress={() => toggleDocument(value)}
-            />
-          ))}
+          {DOCUMENTS.map(([value, label]) => <Choice key={value} label={label} selected={form.supporting_document_types.includes(value)} onPress={() => toggleDocument(value)} />)}
         </View>
-      </View>
+      </GlassCard>
 
-      <View className="mb-5 rounded-2xl border border-primary/15 bg-white p-5">
-        <Text className="font-semibold text-ink">Leave policy acknowledgement</Text>
-        <Text className="mt-2 text-sm leading-5 text-muted">
-          By sending this form, I confirm the details are accurate and understand the request is
-          not approved until an admin confirms it.
-        </Text>
-        <View className="mt-3 flex-row items-center justify-between">
-          <Text className="font-semibold text-deep">I acknowledge</Text>
-          <Switch
-            value={form.policy_acknowledged}
-            onValueChange={(value) => setForm((v) => ({ ...v, policy_acknowledged: value }))}
-            trackColor={{ true: '#7B2FBE' }}
-          />
+      <SectionLabel>Acknowledgement</SectionLabel>
+      <GlassCard>
+        <Text className="text-sm leading-6 text-white/76">By sending this form, I confirm the details are accurate and understand the request is not approved until an admin confirms it.</Text>
+        <View className="mt-4 flex-row items-center justify-between gap-4">
+          <Text className="font-semibold text-white">I acknowledge</Text>
+          <Switch value={form.policy_acknowledged} onValueChange={(value) => setForm((v) => ({ ...v, policy_acknowledged: value }))} trackColor={{ true: '#5B6CFF' }} />
         </View>
-      </View>
+      </GlassCard>
 
-      {message ? (
-        <View
-          accessibilityRole="alert"
-          className={`mb-3 rounded-xl p-3 ${message.tone === 'ok' ? 'bg-ok/10' : 'bg-bad/10'}`}
-        >
-          <Text className={`font-medium ${message.tone === 'ok' ? 'text-ok' : 'text-bad'}`}>
-            {message.text}
-          </Text>
-        </View>
-      ) : null}
-      <PrimaryButton label="Send leave request" busy={busy} onPress={() => void submit()} />
+      {message ? <Text accessibilityRole="alert" className={`mb-3 mt-4 text-sm font-medium ${message.tone === 'ok' ? 'text-emerald-200' : 'text-rose-200'}`}>{message.text}</Text> : null}
+      <PrimaryButton label="Send leave request" busy={busy} onPress={() => void submit()} icon="send" />
 
-      <Text className="mb-3 mt-8 text-xl font-bold text-ink">My requests</Text>
-      {loading ? <Text className="text-muted">Loading…</Text> : null}
-      {!loading && requests.length === 0 ? (
-        <Text className="text-muted">No leave requests yet.</Text>
-      ) : null}
+      <SectionLabel>My requests</SectionLabel>
+      {loading ? <Text className="text-white/70">Loading…</Text> : null}
+      {!loading && requests.length === 0 ? <EmptyState title="No leave requests yet" body="Your recent submissions will appear here." /> : null}
       {requests.map((request) => (
-        <View key={request.id} className="mb-3 rounded-2xl bg-white p-4">
-          <View className="flex-row items-start justify-between">
-            <View>
-              <Text className="font-bold capitalize text-charcoal">
-                {request.leave_type.replaceAll('_', ' ')}
-              </Text>
-              <Text className="mt-1 text-sm text-muted">
-                {request.start_date} — {request.end_date}
-              </Text>
+        <Card key={request.id} className="mb-4">
+          <View className="flex-row items-start justify-between gap-4">
+            <View className="flex-1">
+              <Text className="text-lg font-bold capitalize text-ink">{request.leave_type.replaceAll('_', ' ')}</Text>
+              <Text className="mt-1 text-sm text-slate-500">{request.start_date} — {request.end_date}</Text>
             </View>
-            <Text
-              className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${request.status === 'approved' ? 'bg-ok/10 text-ok' : request.status === 'denied' ? 'bg-bad/10 text-bad' : 'bg-warn/10 text-warn'}`}
-            >
-              {request.status}
-            </Text>
+            <Text className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${request.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : request.status === 'denied' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{request.status}</Text>
           </View>
-          {request.review_note ? (
-            <Text className="mt-3 border-t border-ink/5 pt-3 text-sm text-charcoal">
-              Admin note: {request.review_note}
-            </Text>
-          ) : null}
-        </View>
+          {request.review_note ? <Text className="mt-3 border-t border-slate-200 pt-3 text-sm leading-6 text-slate-600">Admin note: {request.review_note}</Text> : null}
+        </Card>
       ))}
-    </ScrollView>
+    </Screen>
   );
 }

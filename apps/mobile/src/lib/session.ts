@@ -19,33 +19,46 @@ export function useSessionProfile() {
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        if (!cancelled) setLoading(false);
+    async function refreshProfile() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        if (!cancelled) {
+          setProfile(null);
+          setLoading(false);
+        }
         return;
       }
-      await refresh(cancelled);
-    }
-
-    async function refresh(wasCancelled: boolean): Promise<void> {
-      const { data } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
         .select(
           'id, organization_id, full_name, phone, profile_photo_path, role, account_status',
         )
         .single();
-      const nextProfile = (data as SessionProfile | null) ?? (await readCachedProfile());
-      if (data) await writeCachedProfile(data as SessionProfile);
-      if (!wasCancelled && !cancelled) {
+      const nextProfile = (profileData as SessionProfile | null) ?? (await readCachedProfile());
+      if (profileData) await writeCachedProfile(profileData as SessionProfile);
+      if (!cancelled) {
         setProfile(nextProfile);
         setLoading(false);
       }
     }
 
-    void load();
+    void refreshProfile();
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        if (!cancelled) {
+          setProfile(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (!cancelled) setLoading(true);
+      void refreshProfile();
+    });
+
     return () => {
       cancelled = true;
+      listener.subscription.unsubscribe();
     };
   }, []);
 

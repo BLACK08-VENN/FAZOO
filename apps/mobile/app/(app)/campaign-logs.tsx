@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { formatLagosDisplay } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/primary-button';
+import { Screen, ScreenHeader, Card, EmptyState } from '@/components/ui';
 
 interface RetailLog {
   id: string;
@@ -32,16 +27,7 @@ interface VedaLog {
 }
 
 export default function CampaignLogs() {
-  const params = useLocalSearchParams<{
-    kind: string;
-    campaignId?: string;
-    campaignName?: string;
-    storeName?: string;
-    assignmentId?: string;
-    schoolId?: string;
-    schoolName?: string;
-  }>();
-
+  const params = useLocalSearchParams<{ kind: string; campaignId?: string; campaignName?: string; storeName?: string; assignmentId?: string; schoolId?: string; schoolName?: string; }>();
   const isVeda = params.kind === 'schools';
   const [logs, setLogs] = useState<(RetailLog | VedaLog)[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,11 +52,8 @@ export default function CampaignLogs() {
         .eq('school_id', params.schoolId)
         .order('session_date', { ascending: false })
         .limit(30);
-      if (err) {
-        setError('Could not load logs.');
-      } else {
-        setLogs((data as VedaLog[] | null) ?? []);
-      }
+      if (err) setError('Could not load logs.');
+      else setLogs((data as VedaLog[] | null) ?? []);
     } else if (params.campaignId) {
       const { data, error: err } = await supabase
         .from('daily_logs')
@@ -78,125 +61,90 @@ export default function CampaignLogs() {
         .eq('campaign_id', params.campaignId)
         .order('attendance_date', { ascending: false })
         .limit(30);
-      if (err) {
-        setError('Could not load logs.');
-      } else {
-        setLogs((data as RetailLog[] | null) ?? []);
-      }
+      if (err) setError('Could not load logs.');
+      else setLogs((data as RetailLog[] | null) ?? []);
     }
     setLoading(false);
     setRefreshing(false);
   }, [isVeda, params.schoolId, params.campaignId]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useEffect(() => { void load(); }, [load]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const headerTitle = isVeda ? params.schoolName : params.campaignName;
-  const headerSubtitle = isVeda ? null : params.storeName;
+  const headerSubtitle = isVeda ? 'Recent activity and visit notes' : params.storeName;
+  const canAddVedaLog = isVeda && Boolean(params.schoolId);
 
   return (
-    <ScrollView
-      className="flex-1 bg-lavender"
-      contentContainerClassName="px-5 py-8"
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            void load();
-          }}
-        />
-      }
-    >
-      <Text className="text-xs text-muted mb-1">Logs</Text>
-      <Text className="text-xl font-bold text-ink">{headerTitle}</Text>
-      {headerSubtitle ? (
-        <Text className="text-sm text-charcoal mb-4">{headerSubtitle}</Text>
-      ) : (
-        <View className="h-4" />
-      )}
+    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
+      <ScreenHeader eyebrow="Logs" title={headerTitle ?? ''} subtitle={headerSubtitle ?? undefined} />
 
-      {error ? (
-        <Text role="alert" className="text-bad font-medium mb-3">
-          {error}
-        </Text>
+      {error ? <Text role="alert" className="mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+
+      {canAddVedaLog ? (
+        <PrimaryButton
+          label="Add new log"
+          onPress={() => router.push({ pathname: '/veda-new-log', params: { assignmentId: params.assignmentId, schoolId: params.schoolId, schoolName: params.schoolName } })}
+          icon="add-circle"
+        />
       ) : null}
 
-      {isVeda ? (
-        <PrimaryButton
-          label="Add New Log"
-          onPress={() =>
-            router.push({
-              pathname: '/veda-new-log',
-              params: {
-                assignmentId: params.assignmentId,
-                schoolId: params.schoolId,
-                schoolName: params.schoolName,
-              },
-            })
-          }
-        />
+      {isVeda && !params.assignmentId ? (
+        <Text className="mb-3 text-sm leading-6 text-white/72">
+          No active assignment was found for this school, but you can still start a new school log from here.
+        </Text>
       ) : null}
 
       {loading ? (
-        <ActivityIndicator size="large" color="#7B2FBE" className="mt-6" />
+        <View className="mt-10 items-center justify-center">
+          <ActivityIndicator size="large" color="#D8DDFF" />
+        </View>
       ) : logs.length === 0 ? (
-        <Text className="text-muted text-center mt-6">
-          No logs yet for this {isVeda ? 'school' : 'campaign'}.
-        </Text>
+        <EmptyState title="No logs yet" body={`No logs yet for this ${isVeda ? 'school' : 'campaign'}.`} />
       ) : (
-        <View className="mt-4">
+        <View className="mt-2">
           {logs.map((log) => {
             if (isVeda) {
               const v = log as VedaLog;
               return (
-                <View key={v.id} className="rounded-xl bg-white px-4 py-3 mb-2">
-                  <View className="flex-row justify-between">
-                    <Text className="font-semibold text-charcoal">{v.session_date}</Text>
-                    <Text className="text-muted capitalize">{v.status}</Text>
+                <Card key={v.id} className="mb-3">
+                  <View className="flex-row items-start justify-between gap-4">
+                    <View className="flex-1">
+                      <Text className="text-lg font-bold text-ink">{v.session_date}</Text>
+                      <Text className="mt-1 text-sm leading-6 text-slate-600">
+                        Learners: {v.learner_count}
+                        {v.checkin_at ? ` · in ${formatLagosDisplay(v.checkin_at)}` : ''}
+                        {v.checkout_at ? ` · out ${formatLagosDisplay(v.checkout_at)}` : ''}
+                      </Text>
+                    </View>
+                    <Text className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{v.status}</Text>
                   </View>
-                  <Text className="text-sm text-charcoal mt-1">
-                    Learners: {v.learner_count}
-                    {v.checkin_at ? ` · in ${formatLagosDisplay(v.checkin_at)}` : ''}
-                    {v.checkout_at ? ` · out ${formatLagosDisplay(v.checkout_at)}` : ''}
-                  </Text>
-                  {v.notes ? (
-                    <Text className="text-sm text-muted mt-1">{v.notes}</Text>
-                  ) : null}
-                </View>
+                  {v.notes ? <Text className="mt-3 text-sm leading-6 text-slate-600">{v.notes}</Text> : null}
+                </Card>
               );
             }
             const r = log as RetailLog;
             return (
-              <View key={r.id} className="rounded-xl bg-white px-4 py-3 mb-2">
-                <View className="flex-row justify-between">
-                  <Text className="font-semibold text-charcoal">{r.attendance_date}</Text>
-                  <Text className="text-muted capitalize">{r.status}</Text>
+              <Card key={r.id} className="mb-3">
+                <View className="flex-row items-start justify-between gap-4">
+                  <View className="flex-1">
+                    <Text className="text-lg font-bold text-ink">{r.attendance_date}</Text>
+                    <Text className="mt-1 text-sm capitalize leading-6 text-slate-600">
+                      {r.attendance_status.replace('_', ' ')}
+                      {r.checkin_at ? ` · in ${formatLagosDisplay(r.checkin_at)}` : ''}
+                      {r.checkout_at ? ` · out ${formatLagosDisplay(r.checkout_at)}` : ''}
+                    </Text>
+                  </View>
+                  <Text className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{r.status}</Text>
                 </View>
-                <Text className="text-sm text-charcoal mt-1 capitalize">
-                  {r.attendance_status.replace('_', ' ')}
-                  {r.checkin_at ? ` · in ${formatLagosDisplay(r.checkin_at)}` : ''}
-                  {r.checkout_at ? ` · out ${formatLagosDisplay(r.checkout_at)}` : ''}
-                </Text>
-                {r.notes ? (
-                  <Text className="text-sm text-muted mt-1">{r.notes}</Text>
-                ) : null}
-              </View>
+                {r.notes ? <Text className="mt-3 text-sm leading-6 text-slate-600">{r.notes}</Text> : null}
+              </Card>
             );
           })}
         </View>
       )}
 
-      <View className="mt-6">
-        <PrimaryButton label="Back" variant="ghost" onPress={() => router.back()} />
-      </View>
-    </ScrollView>
+      <PrimaryButton label="Back" variant="ghost" onPress={() => router.back()} />
+    </Screen>
   );
 }

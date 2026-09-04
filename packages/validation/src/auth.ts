@@ -78,10 +78,7 @@ export const registrationSchema = z
     phone_confirm: z.string().trim().min(1, 'Confirm your mobile number.'),
     password,
     password_confirm: z.string().min(1, 'Confirm your password.'),
-    profile_photo: photoUpload.nullable().refine(
-      (value) => value !== null,
-      'A profile photograph is required.',
-    ),
+    profile_photo: photoUpload.nullable().optional(),
   })
   .check((ctx) => {
     if (ctx.value.phone !== ctx.value.phone_confirm) {

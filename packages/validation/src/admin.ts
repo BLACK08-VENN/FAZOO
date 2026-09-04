@@ -142,8 +142,8 @@ export const createBrandSchema = z
     admin_email: z.string().trim().email(),
     admin_phone: z.string().trim().min(4).max(20),
     // Campaign.
-    campaign_name: z.string().trim().min(2).max(120),
-    campaign_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    campaign_name: z.string().trim().max(120).optional().or(z.literal('')),
+    campaign_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
     campaign_end: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -163,10 +163,16 @@ export const createBrandSchema = z
   })
   .refine(
     (v) =>
+      !v.campaign_name ||
+      v.campaign_name === '' ||
       !v.campaign_end ||
       v.campaign_end === '' ||
-      v.campaign_start <= v.campaign_end,
+      (!!v.campaign_start && v.campaign_start <= v.campaign_end),
     { message: 'Campaign end must be on or after start.', path: ['campaign_end'] },
+  )
+  .refine(
+    (v) => !v.campaign_name || v.campaign_name === '' || !!v.campaign_start,
+    { message: 'Campaign start date is required when you enter a campaign name.', path: ['campaign_start'] },
   )
   .refine(
     (v) =>

@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
 import { useRouteGuard } from '@/lib/guard';
 import { useRecoveryLinks } from '@/lib/recovery';
+import { AppBackdrop } from '@/components/ui';
 import '../global.css';
 
 Sentry.init({
@@ -19,26 +21,28 @@ function RootLayout() {
 
   if (!ready) {
     return (
-      <View className="flex-1 items-center justify-center bg-ink">
-        <ActivityIndicator size="large" color="#C084FC" accessibilityLabel="Loading session" />
-      </View>
+      <AppBackdrop>
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#C084FC" accessibilityLabel="Loading session" />
+        </View>
+      </AppBackdrop>
     );
   }
 
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#F6F2FA' },
+          contentStyle: { backgroundColor: '#FFF4EA' },
         }}
       >
         <Stack.Screen name="(app)" />
         <Stack.Screen name="update-password" />
         <Stack.Screen name="brand-select" />
       </Stack>
-    </>
+    </SafeAreaProvider>
   );
 }
 

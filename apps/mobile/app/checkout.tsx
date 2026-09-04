@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, Switch, Text, View } from 'react-native';
+import { Image, Switch, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { BaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
@@ -10,17 +10,11 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { readCachedProfile, readCachedToday } from '@/lib/cache';
+import { Screen, ScreenHeader, Card, GlassCard } from '@/components/ui';
 
-/**
- * Guided completion flow: the log can only be closed after the BA captures
- * a fresh stock-on-shelf photo and a uniform selfie. These are uploaded
- * (or queued for offline sync) together with the checkout RPC call.
- */
 export default function Checkout() {
   const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
-  const [selected, setSelected] = useState<
-    BaTodayResult['assignments'][number] | null
-  >(null);
+  const [selected, setSelected] = useState<BaTodayResult['assignments'][number] | null>(null);
   const [step, setStep] = useState(1);
   const [confirmed, setConfirmed] = useState(false);
   const [stock, setStock] = useState<CapturedPhoto | null>(null);
@@ -34,14 +28,10 @@ export default function Checkout() {
       if (selected) return;
       const { data } = await supabase.rpc('ba_today');
       const today = (data as unknown as BaTodayResult | null) ?? (await readCachedToday());
-      const match =
-        today?.assignments.find((item) => item.assignment.id === assignmentParam) ??
-        today?.assignments[0];
+      const match = today?.assignments.find((item) => item.assignment.id === assignmentParam) ?? today?.assignments[0];
       if (active) setSelected(match ?? null);
     })();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [assignmentParam, selected]);
 
   async function snap(slot: 'stock' | 'selfie') {
@@ -59,23 +49,16 @@ export default function Checkout() {
     if (!stock || !selfie || !selected) return;
     setBusy(true);
     setError(null);
-
     const requestId = newRequestId();
     try {
       const fix: Fix = await getFix();
-      const { data: remoteProfile } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .single();
+      const { data: remoteProfile } = await supabase.from('profiles').select('id, organization_id').single();
       const cachedProfile = remoteProfile ? null : await readCachedProfile();
       const me = remoteProfile ?? cachedProfile;
       if (!me) throw new Error('Your profile could not be loaded. Sign in again and retry.');
       const stockPath = photoPath(me.organization_id, me.id, requestId, 'stock');
       const selfiePath = photoPath(me.organization_id, me.id, requestId, 'selfie');
-      const [localStock, localSelfie] = await Promise.all([
-        persistPhoto(stock, requestId, 'stock'),
-        persistPhoto(selfie, requestId, 'selfie'),
-      ]);
+      const [localStock, localSelfie] = await Promise.all([persistPhoto(stock, requestId, 'stock'), persistPhoto(selfie, requestId, 'selfie')]);
       const payload = {
         p_latitude: fix.latitude,
         p_longitude: fix.longitude,
@@ -90,22 +73,10 @@ export default function Checkout() {
         if (rpcError) throw new Error(rpcError.message);
       } catch (err) {
         const message = err instanceof Error ? err.message : '';
-        // A geofence rejection is authoritative and must be retried while at
-        // the store, so surface it immediately instead of queuing offline.
         if (/(geofence|m or less\.?$)/i.test(message)) throw err;
         await enqueue('checkout', payload, requestId, [
-          {
-            localUri: localStock,
-            bucket: 'daily-log-photos',
-            remotePath: stockPath,
-            mimeType: stock.mimeType,
-          },
-          {
-            localUri: localSelfie,
-            bucket: 'daily-log-photos',
-            remotePath: selfiePath,
-            mimeType: selfie.mimeType,
-          },
+          { localUri: localStock, bucket: 'daily-log-photos', remotePath: stockPath, mimeType: stock.mimeType },
+          { localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType },
         ]);
       }
       router.replace('/today');
@@ -117,135 +88,72 @@ export default function Checkout() {
     }
   }
 
-  const stepTitle = ['Summary & lock', 'Stock on shelf', 'Uniform selfie'][step - 1];
+  const stepTitle = ['Summary & lock', 'Stock on shelf', 'Uniform selfie'][step - 1] ?? 'Checkout';
 
   return (
-    <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
-      <View className="flex-row items-center mb-2" accessibilityRole="progressbar">
-        {[1, 2, 3].map((n) => (
-          <View
-            key={n}
-            className={`h-2 flex-1 rounded-full mx-1 ${n <= step ? 'bg-primary' : 'bg-ink/10'}`}
-          />
-        ))}
+    <Screen>
+      <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Review totals, capture fresh evidence, and lock the day." />
+      <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
+        {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-white' : 'bg-white/14'}`} />)}
       </View>
-      <Text className="text-xs text-muted">Step {step} of 3</Text>
-      <Text className="text-2xl font-bold text-ink mb-4">{stepTitle}</Text>
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
-      {step === 1 && (
-        <View>
-          {selected ? (
-            <Text className="text-sm text-charcoal mb-2">
-              {selected.assignment.store_name || selected.assignment.campaign_name}
-              {selected.assignment.campaign_name
-                ? ` · ${selected.assignment.campaign_name}`
-                : ''}
-            </Text>
-          ) : null}
-          <View className="rounded-2xl bg-white p-5">
-            <Text className="text-4xl font-bold tabular-nums text-primary">
-              {selected?.total_units_today ?? 0}
-              <Text className="text-base font-normal text-muted"> units today</Text>
-            </Text>
+      {step === 1 ? (
+        <>
+          {selected ? <Text className="mb-3 text-sm text-white/70">{selected.assignment.store_name || selected.assignment.campaign_name}{selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}</Text> : null}
+          <Card>
+            <Text className="text-4xl font-bold text-indigo-700">{selected?.total_units_today ?? 0}<Text className="text-base font-normal text-slate-500"> units today</Text></Text>
             {(selected?.sales ?? []).map((s) => (
-              <View key={s.id} className="flex-row justify-between py-1 mt-1">
-                <Text className="text-charcoal">{s.sku_name}</Text>
-                <Text className="tabular-nums">×{s.quantity}</Text>
+              <View key={s.id} className="mt-2 flex-row justify-between">
+                <Text className="text-slate-700">{s.sku_name}</Text>
+                <Text className="tabular-nums text-slate-700">×{s.quantity}</Text>
               </View>
             ))}
-            {(selected?.sales ?? []).length === 0 ? (
-              <Text className="text-muted mt-2">No sales were recorded.</Text>
-            ) : null}
-          </View>
-
-          <View className="mt-4 flex-row items-center justify-between rounded-xl bg-white px-4 py-3">
-            <Text className="text-charcoal flex-1 pr-3">
-              I understand today&apos;s sales become read-only after checkout.
-            </Text>
-            <Switch
-              value={confirmed}
-              onValueChange={setConfirmed}
-              accessibilityLabel="Confirm checkout lock"
-            />
-          </View>
-
+            {(selected?.sales ?? []).length === 0 ? <Text className="mt-2 text-slate-500">No sales were recorded.</Text> : null}
+          </Card>
+          <GlassCard className="mt-4">
+            <View className="flex-row items-center justify-between gap-4">
+              <Text className="flex-1 text-sm leading-6 text-white/80">I understand today's sales become read-only after checkout.</Text>
+              <Switch value={confirmed} onValueChange={setConfirmed} accessibilityLabel="Confirm checkout lock" />
+            </View>
+          </GlassCard>
           <PrimaryButton label="Continue" disabled={!confirmed} onPress={() => setStep(2)} />
           <PrimaryButton label="Not yet" variant="ghost" onPress={() => router.back()} />
-        </View>
-      )}
+        </>
+      ) : null}
 
-      {step === 2 && (
-        <View>
-          <Text className="text-charcoal mb-3">
-            Take a clear photo of the Lenovo stock currently on the shelf.
-          </Text>
-          <CaptureBox
-            photo={stock}
-            onSnap={() => void snap('stock')}
-            hint="Tap to take a stock photo"
-          />
-          <PrimaryButton
-            label="Retake"
-            variant="ghost"
-            disabled={!stock}
-            onPress={() => void snap('stock')}
-          />
+      {step === 2 ? (
+        <>
+          <Card>
+            <Text className="text-base leading-6 text-slate-600">Take a clear photo of the Lenovo product or stock evidence for this completed visit.</Text>
+            <CaptureBox photo={stock} onSnap={() => void snap('stock')} hint="Tap to take the product photo" />
+          </Card>
+          <PrimaryButton label="Retake" variant="ghost" disabled={!stock} onPress={() => void snap('stock')} />
           <PrimaryButton label="Continue" disabled={!stock} onPress={() => setStep(3)} />
           <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(1)} />
-        </View>
-      )}
+        </>
+      ) : null}
 
-      {step === 3 && (
-        <View>
-          <Text className="text-charcoal mb-3">
-            Take a clear selfie of yourself wearing your Lenovo uniform.
-          </Text>
-          <CaptureBox
-            photo={selfie}
-            onSnap={() => void snap('selfie')}
-            hint="Tap to take your selfie"
-          />
-          <PrimaryButton
-            label="Retake"
-            variant="ghost"
-            disabled={!selfie}
-            onPress={() => void snap('selfie')}
-          />
-          <PrimaryButton
-            label="Check Out"
-            onPress={() => void submit()}
-            busy={busy}
-            disabled={!selfie}
-          />
+      {step === 3 ? (
+        <>
+          <Card>
+            <Text className="text-base leading-6 text-slate-600">Take a clear selfie of yourself for this Lenovo checkout.</Text>
+            <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your selfie" />
+          </Card>
+          <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />
+          <PrimaryButton label="Check Out" onPress={() => void submit()} busy={busy} disabled={!selfie} icon="log-out" />
           <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(2)} />
-        </View>
-      )}
-    </ScrollView>
+        </>
+      ) : null}
+    </Screen>
   );
 }
 
-function CaptureBox({
-  photo,
-  onSnap,
-  hint,
-}: {
-  photo: CapturedPhoto | null;
-  onSnap: () => void;
-  hint: string;
-}) {
+function CaptureBox({ photo, onSnap, hint }: { photo: CapturedPhoto | null; onSnap: () => void; hint: string; }) {
   return (
     <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
-      {photo ? (
-        <Image
-          source={{ uri: photo.uri }}
-          className="h-full w-full rounded-xl"
-          resizeMode="cover"
-        />
-      ) : (
-        <Text className="text-white font-semibold">{hint}</Text>
-      )}
+      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-semibold text-white">{hint}</Text></View>}
     </PrimaryButton>
   );
 }

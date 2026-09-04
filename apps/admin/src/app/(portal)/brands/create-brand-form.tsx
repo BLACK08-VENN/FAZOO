@@ -1,11 +1,11 @@
 'use client';
 
 import { useActionState } from 'react';
-import { createBrandAction, type CreateBrandState } from './actions';
 import { weeklyOffDayName, WEEKDAY_NAMES } from '@fazoo/config';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
+import { createBrandAction, type CreateBrandState } from './actions';
 
 const initialState: CreateBrandState = { error: null };
 
@@ -23,7 +23,7 @@ export function CreateBrandForm({ bas }: { bas: BaOption[] }) {
             description="Share these details with the new brand admin. The password is shown only once."
           />
           <CardBody className="space-y-4 text-sm">
-            <ul className="space-y-1.5 list-disc pl-5">
+            <ul className="list-disc space-y-1.5 pl-5">
               <li>
                 Brand: <span className="font-medium">{state.created.organization_slug}</span>
               </li>
@@ -93,16 +93,16 @@ export function CreateBrandForm({ bas }: { bas: BaOption[] }) {
           </Card>
 
           <Card>
-            <CardHeader title="Campaign" description="First campaign for the new brand." />
+            <CardHeader title="Starter campaign" description="Optional. You can add one later if you prefer." />
             <CardBody className="space-y-3">
               <div>
                 <Label htmlFor="campaign_name">Campaign name</Label>
-                <Input id="campaign_name" name="campaign_name" required />
+                <Input id="campaign_name" name="campaign_name" placeholder="Leave blank to skip for now" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="campaign_start">Start</Label>
-                  <Input id="campaign_start" name="campaign_start" type="date" required />
+                  <Input id="campaign_start" name="campaign_start" type="date" />
                 </div>
                 <div>
                   <Label htmlFor="campaign_end">End</Label>
@@ -113,7 +113,7 @@ export function CreateBrandForm({ bas }: { bas: BaOption[] }) {
           </Card>
 
           <Card>
-            <CardHeader title="First store (optional)" description="Lets linked BAs get assignments immediately." />
+            <CardHeader title="First store" description="Optional. Only needed if you want immediate retail assignments." />
             <CardBody className="space-y-3">
               <div>
                 <Label htmlFor="store_name">Store name</Label>
@@ -142,7 +142,9 @@ export function CreateBrandForm({ bas }: { bas: BaOption[] }) {
                   <Label htmlFor="weekly_off_day">BA weekly off</Label>
                   <Select id="weekly_off_day" name="weekly_off_day" defaultValue="0">
                     {WEEKDAY_NAMES.map((d, i) => (
-                      <option key={d} value={i}>{weeklyOffDayName(i)}</option>
+                      <option key={d} value={i}>
+                        {weeklyOffDayName(i)}
+                      </option>
                     ))}
                   </Select>
                 </div>
@@ -151,7 +153,7 @@ export function CreateBrandForm({ bas }: { bas: BaOption[] }) {
           </Card>
 
           <Card className="lg:col-span-2">
-            <CardHeader title="Add BAs" description="Link existing approved Brand Ambassadors to the new brand." />
+            <CardHeader title="Link existing BAs" description="Optional. Skip this if you just want to create the brand first." />
             <CardBody className="space-y-3">
               {bas.length === 0 ? (
                 <p className="text-sm text-muted">No approved Brand Ambassadors are available in your scope.</p>

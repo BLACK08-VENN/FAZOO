@@ -77,7 +77,10 @@ export default async function BrandLayout({ children }: { children: React.ReactN
             <span className="ml-2 text-xs text-white/40">via Fazoo</span>
           </div>
           <form action={signOutAction}>
-            <button type="submit" className="text-xs font-medium text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white">
+            <button
+              type="submit"
+              className="min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
+            >
               Sign out
             </button>
           </form>

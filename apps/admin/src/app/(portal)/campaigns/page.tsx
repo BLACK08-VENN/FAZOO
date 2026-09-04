@@ -1,15 +1,16 @@
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/auth';
+import { WEEKDAY_NAMES } from '@fazoo/config';
+import { assignmentInputSchema, campaignInputSchema } from '@fazoo/validation';
 import { PageHeader } from '@/components/page';
+import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { TableWrap, Table, Td, Th } from '@/components/ui/table';
-import { campaignInputSchema, assignmentInputSchema } from '@fazoo/validation';
-import { WEEKDAY_NAMES } from '@fazoo/config';
+import { Table, TableWrap, Td, Th } from '@/components/ui/table';
+import { requireStaff } from '@/lib/auth';
 
 export default async function CampaignsPage() {
-  const { client } = await requireStaff();
+  const { client, profile } = await requireStaff();
+
   const [{ data: campaigns }, { data: bas }, { data: stores }] = await Promise.all([
     client.from('campaigns').select('*').order('start_date', { ascending: false }),
     client
@@ -23,20 +24,76 @@ export default async function CampaignsPage() {
 
   return (
     <>
-      <PageHeader title="Campaigns" description="Programs BAs are assigned to." />
+      <PageHeader
+        title="Campaigns"
+        description="Create campaigns quickly, assign BAs, and remove campaigns you no longer need."
+      />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <TableWrap>
           <Table>
             <thead>
-              <tr><Th>Name</Th><Th>Period</Th><Th>Status</Th></tr>
+              <tr>
+                <Th>Name</Th>
+                <Th>Period</Th>
+                <Th>Status</Th>
+                <Th>Passcode</Th>
+                <Th>Actions</Th>
+              </tr>
             </thead>
             <tbody>
-              {(campaigns ?? []).map((c) => (
-                <tr key={c.id}>
-                  <Td className="font-medium">{c.name}</Td>
-                  <Td className="text-xs">{c.start_date} → {c.end_date ?? 'open'}</Td>
-                  <Td>{c.status}</Td>
+              {(campaigns ?? []).map((campaign) => (
+                <tr key={campaign.id}>
+                  <Td className="font-medium">{campaign.name}</Td>
+                  <Td className="text-xs">
+                    {campaign.start_date} → {campaign.end_date ?? 'open'}
+                  </Td>
+                  <Td>{campaign.status}</Td>
+                  <Td>
+                    <form
+                      action={async (formData: FormData) => {
+                        'use server';
+                        const nextCode = String(formData.get('access_code') ?? '').trim();
+                        const { client: scoped } = await requireStaff();
+                        await scoped
+                          .from('campaigns')
+                          .update({ access_code: nextCode || null })
+                          .eq('id', campaign.id);
+                        revalidatePath('/campaigns');
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <Input
+                        name="access_code"
+                        defaultValue={campaign.access_code ?? ''}
+                        placeholder="none"
+                        className="h-9 w-32 text-xs"
+                        aria-label={`Passcode for ${campaign.name}`}
+                      />
+                      <Button type="submit" variant="outline" className="h-9 px-3 text-xs">
+                        {campaign.access_code ? 'Update' : 'Set'}
+                      </Button>
+                    </form>
+                  </Td>
+                  <Td>
+                    {profile.role !== 'supervisor' ? (
+                      <form
+                        action={async () => {
+                          'use server';
+                          const { client: scoped } = await requireStaff();
+                          await scoped.rpc(
+                            'admin_delete_campaign' as never,
+                            { p_campaign_id: campaign.id } as never,
+                          );
+                          revalidatePath('/campaigns');
+                        }}
+                      >
+                        <Button type="submit" variant="destructive" className="h-9 px-3 text-xs">
+                          Delete
+                        </Button>
+                      </form>
+                    ) : null}
+                  </Td>
                 </tr>
               ))}
             </tbody>
@@ -45,7 +102,7 @@ export default async function CampaignsPage() {
 
         <div className="space-y-6">
           <Card>
-            <CardHeader title="Add a campaign" />
+            <CardHeader title="Quick campaign" description="Only the essentials are required." />
             <CardBody>
               <form
                 action={async (formData: FormData) => {
@@ -58,33 +115,46 @@ export default async function CampaignsPage() {
                     status: 'active',
                   });
                   if (!parsed.success) return;
-                  const { client: c, profile } = await requireStaff();
-                  await c.from('campaigns').insert({ ...parsed.data, organization_id: profile.organization_id });
+
+                  const { client: scoped } = await requireStaff();
+                  await scoped.from('campaigns').insert({
+                    ...parsed.data,
+                    organization_id: profile.organization_id,
+                  });
                   revalidatePath('/campaigns');
                 }}
                 className="space-y-3"
               >
                 <div>
-                  <Label htmlFor="c-name">Name</Label>
-                  <Input id="c-name" name="name" required />
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" name="name" placeholder="Back to school activation" required />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Input id="description" name="description" placeholder="Optional notes" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="c-start">Start</Label>
-                    <Input id="c-start" name="start_date" type="date" required />
+                    <Label htmlFor="start_date">Start</Label>
+                    <Input id="start_date" name="start_date" type="date" required />
                   </div>
                   <div>
-                    <Label htmlFor="c-end">End</Label>
-                    <Input id="c-end" name="end_date" type="date" />
+                    <Label htmlFor="end_date">End</Label>
+                    <Input id="end_date" name="end_date" type="date" />
                   </div>
                 </div>
-                <Button type="submit" className="w-full">Create campaign</Button>
+                <Button type="submit" className="w-full">
+                  Create campaign
+                </Button>
               </form>
             </CardBody>
           </Card>
 
           <Card>
-            <CardHeader title="Assign a BA" description="Sets store + weekly off-day." />
+            <CardHeader
+              title="Quick BA assignment"
+              description="Assign one ambassador to one campaign/store in one step."
+            />
             <CardBody>
               <form
                 action={async (formData: FormData) => {
@@ -103,9 +173,9 @@ export default async function CampaignsPage() {
                   });
                   if (!parsed.success) return;
 
-                  const { client: c, profile: actor } = await requireStaff();
+                  const { client: scoped, profile: actor } = await requireStaff();
                   if (actor.role === 'supervisor') return;
-                  await c.rpc('admin_upsert_assignment', {
+                  await scoped.rpc('admin_upsert_assignment', {
                     p_brand_ambassador_id: parsed.data.brand_ambassador_id,
                     p_campaign_id: parsed.data.campaign_id,
                     p_store_id: parsed.data.store_id,
@@ -119,42 +189,50 @@ export default async function CampaignsPage() {
                 <div>
                   <Label htmlFor="a-ba">Brand Ambassador</Label>
                   <Select id="a-ba" name="ba_id" required>
-                    {(bas ?? []).map((b) => (
-                      <option key={b.id} value={b.id}>{b.full_name}</option>
+                    {(bas ?? []).map((ba) => (
+                      <option key={ba.id} value={ba.id}>
+                        {ba.full_name}
+                      </option>
                     ))}
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="a-campaign">Campaign</Label>
                   <Select id="a-campaign" name="campaign_id" required>
-                    {(campaigns ?? []).filter((c) => c.status === 'active').map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
+                    {(campaigns ?? [])
+                      .filter((campaign) => campaign.status === 'active')
+                      .map((campaign) => (
+                        <option key={campaign.id} value={campaign.id}>
+                          {campaign.name}
+                        </option>
+                      ))}
                   </Select>
                 </div>
                 <div>
                   <Label htmlFor="a-store">Store</Label>
                   <Select id="a-store" name="store_id" required>
-                    {(stores ?? []).map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                    {(stores ?? []).map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
                     ))}
                   </Select>
                 </div>
                 <fieldset>
                   <legend className="text-sm font-medium text-ink">Weekly off-days</legend>
                   <div className="mt-1 grid grid-cols-2 gap-2">
-                    {WEEKDAY_NAMES.map((d, i) => (
+                    {WEEKDAY_NAMES.map((day, index) => (
                       <label
-                        key={d}
+                        key={day}
                         className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-charcoal has-[:checked]:border-primary has-[:checked]:bg-lavender"
                       >
                         <input
                           type="checkbox"
                           name="weekly_off_day"
-                          value={i}
+                          value={index}
                           className="size-4 accent-primary"
                         />
-                        {d.slice(0, 3)}
+                        {day.slice(0, 3)}
                       </label>
                     ))}
                   </div>
@@ -163,7 +241,9 @@ export default async function CampaignsPage() {
                   <Label htmlFor="a-start">Effective from</Label>
                   <Input id="a-start" name="start_date" type="date" required />
                 </div>
-                <Button type="submit" className="w-full">Assign BA</Button>
+                <Button type="submit" className="w-full">
+                  Assign BA
+                </Button>
               </form>
             </CardBody>
           </Card>

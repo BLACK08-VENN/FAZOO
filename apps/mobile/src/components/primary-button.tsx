@@ -1,4 +1,9 @@
+import type { ReactNode } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+
+type ButtonVariant = 'primary' | 'ghost' | 'danger' | 'secondary';
 
 export function PrimaryButton({
   label,
@@ -9,22 +14,30 @@ export function PrimaryButton({
   accessibilityLabel,
   accessibilityHint,
   children,
+  icon,
 }: {
   label?: string;
   onPress: () => void;
   disabled?: boolean;
   busy?: boolean;
-  variant?: 'primary' | 'ghost' | 'danger';
+  variant?: ButtonVariant;
   accessibilityLabel?: string;
   accessibilityHint?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
+  icon?: keyof typeof Ionicons.glyphMap;
 }) {
-  const styles =
+  const shellClass =
     variant === 'ghost'
-      ? 'bg-transparent border border-ink/15'
+      ? 'border border-white/28 bg-white/14'
       : variant === 'danger'
-        ? 'bg-bad'
-        : 'bg-primary';
+        ? 'border border-rose-200/26 bg-rose-500/56'
+        : variant === 'secondary'
+          ? 'border border-white/26 bg-white/16'
+          : 'border border-white/26 bg-transparent';
+
+  const textClass =
+    variant === 'ghost' || variant === 'secondary' ? 'text-[#1F130C]' : 'text-white';
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -33,23 +46,48 @@ export function PrimaryButton({
       accessibilityHint={accessibilityHint}
       accessibilityRole="button"
       accessibilityState={{ busy, disabled }}
-      className={`h-14 rounded-xl items-center justify-center px-6 my-1.5 ${styles} ${
-        disabled ? 'opacity-40' : ''
-      }`}
+      className={`my-1.5 overflow-hidden rounded-2xl ${shellClass} ${disabled ? 'opacity-45' : ''}`}
+      activeOpacity={0.85}
     >
-      {busy ? (
-        <ActivityIndicator color="#fff" accessibilityLabel="Loading" />
-      ) : children ? (
-        <View className="w-full h-full items-center justify-center overflow-hidden rounded-xl">
-          {children}
-        </View>
-      ) : (
-        <Text
-          className={`font-semibold text-lg ${variant === 'ghost' ? 'text-charcoal' : 'text-white'}`}
+      {variant === 'primary' ? (
+        <LinearGradient
+          colors={['rgba(255,255,255,0.32)', 'rgba(124,92,255,0.88)', 'rgba(53,198,255,0.78)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="min-h-16 flex-row items-center justify-center px-6"
         >
-          {label}
-        </Text>
+          <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} />
+        </LinearGradient>
+      ) : (
+        <View className="min-h-16 flex-row items-center justify-center px-6 bg-white/8">
+          <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} />
+        </View>
       )}
     </TouchableOpacity>
+  );
+}
+
+function Content({
+  busy,
+  label,
+  children,
+  icon,
+  textClass,
+}: {
+  busy?: boolean;
+  label?: string;
+  children?: ReactNode;
+  icon?: keyof typeof Ionicons.glyphMap;
+  textClass: string;
+}) {
+  if (busy) return <ActivityIndicator color="#fff" accessibilityLabel="Loading" />;
+  if (children) {
+    return <View className="h-full w-full items-center justify-center overflow-hidden rounded-2xl">{children}</View>;
+  }
+  return (
+    <View className="flex-row items-center justify-center gap-2">
+      {icon ? <Ionicons name={icon} size={20} color={textClass.includes('[#1F130C]') ? '#1F130C' : '#fff'} /> : null}
+      <Text className={`text-[17px] font-semibold ${textClass}`}>{label}</Text>
+    </View>
   );
 }

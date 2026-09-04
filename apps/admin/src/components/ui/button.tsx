@@ -13,7 +13,7 @@ const buttonVariants = cva(
         ghost: 'text-ink hover:bg-lavender',
       },
       size: {
-        sm: 'h-8 px-3',
+        sm: 'h-10 px-3 sm:h-8',
         md: 'h-10 px-4',
         lg: 'h-11 px-6',
       },
@@ -23,8 +23,7 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+  extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {}
 
 export function Button({ className, variant, size, ...props }: ButtonProps) {
   return <button className={cn(buttonVariants({ variant, size }), className)} {...props} />;

@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
 import * as Sentry from '@sentry/react-native';
+import { PrimaryButton } from '@/components/primary-button';
+import { HeroCard, Screen, GlassCard } from '@/components/ui';
+import { Text } from 'react-native';
 
 export default function AppError({
   error,
@@ -16,23 +18,19 @@ export default function AppError({
   }, [error]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-lavender px-6">
-      <View className="items-center rounded-2xl bg-white p-8">
-        <View className="mb-4 h-12 w-12 items-center justify-center rounded-full bg-red-100">
-          <Text className="text-xl font-bold text-red-500">!</Text>
-        </View>
-        <Text className="text-lg font-semibold text-gray-900">Something went wrong</Text>
-        <Text className="mt-2 text-center text-sm text-gray-500">
-          This screen encountered an error. Please try again.
+    <Screen scroll={false}>
+      <HeroCard
+        eyebrow="This screen hit a problem"
+        title="Something went wrong"
+        subtitle="This area encountered an error. Please try again."
+        icon="warning"
+      />
+      <GlassCard>
+        <Text className="text-sm leading-6 text-white/72">
+          Your session is still active. Retry this screen first; if the issue continues, sign out and back in.
         </Text>
-        <TouchableOpacity
-          onPress={reset}
-          className="mt-6 rounded-xl bg-purple-600 px-6 py-3"
-          accessibilityLabel="Try again"
-        >
-          <Text className="text-sm font-medium text-white">Try again</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </GlassCard>
+      <PrimaryButton label="Try again" onPress={reset} icon="refresh" />
+    </Screen>
   );
 }

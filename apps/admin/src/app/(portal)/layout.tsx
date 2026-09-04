@@ -1,9 +1,26 @@
 import Link from 'next/link';
-import { BarChart3 } from 'lucide-react';
+import {
+  Boxes,
+  Building2,
+  CalendarRange,
+  GraduationCap,
+  MapPin,
+  Store,
+  Users,
+} from 'lucide-react';
 import { requireStaff } from '@/lib/auth';
+import { MobileNav } from '@/components/mobile-nav';
 import { signOutAction } from './actions';
 
-const NAV = [{ href: '/overview', label: 'Overview', icon: BarChart3 }] as const;
+const NAV = [
+  { href: '/brand-ambassadors', label: 'Brand ambassadors', icon: Users },
+  { href: '/campaigns', label: 'Campaigns', icon: Store },
+  { href: '/stores', label: 'Stores', icon: MapPin },
+  { href: '/skus', label: 'SKUs', icon: Boxes },
+  { href: '/veda-activations', label: 'Brand activations', icon: GraduationCap },
+  { href: '/veda-assignments', label: 'Brand assignments', icon: CalendarRange },
+  { href: '/brands', label: 'Add brand', icon: Building2 },
+] as const;
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireStaff();
@@ -19,7 +36,7 @@ export default async function PortalLayout({ children }: { children: React.React
             Fazoo<span className="text-bright">.</span>
           </span>
         </div>
-        <nav aria-label="Primary" className="flex-1 space-y-1">
+        <nav aria-label="Primary" className="min-h-0 flex-1 space-y-1 overflow-y-auto">
           {NAV.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
@@ -49,35 +66,31 @@ export default async function PortalLayout({ children }: { children: React.React
 
       {/* Mobile top bar */}
       <div className="flex w-full flex-col">
-        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 lg:hidden">
-          <span className="text-lg font-bold text-white">Fazoo.</span>
+        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-14 items-center justify-between border-b px-4 lg:hidden">
+          <div className="min-w-0">
+            <span className="text-lg font-bold text-white">
+              Fazoo<span className="text-bright">.</span>
+            </span>
+            <p className="truncate text-[11px] capitalize text-white/55">
+              {profile.role.replace('_', ' ')}
+            </p>
+          </div>
           <form action={signOutAction}>
             <button
               type="submit"
-              className="text-xs font-medium text-white/80 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
+              className="min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
             >
               Sign out
             </button>
           </form>
         </header>
-        <nav
-          aria-label="Primary mobile"
-          className="fazoo-glass-dark no-print sticky top-[52px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-2 lg:hidden"
-          role="navigation"
+        <main
+          className="min-w-0 flex-1 px-4 pb-28 pt-5 sm:p-6 sm:pb-28 lg:p-8"
+          id="main-content"
         >
-          {NAV.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-white/75 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8" id="main-content">
           {children}
         </main>
+        <MobileNav />
       </div>
     </div>
   );

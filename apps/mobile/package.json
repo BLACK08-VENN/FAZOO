@@ -12,11 +12,13 @@
     "lint": "eslint app src"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "@fazoo/config": "workspace:*",
     "@fazoo/database": "workspace:*",
     "@fazoo/types": "workspace:*",
     "@fazoo/validation": "workspace:*",
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/datetimepicker": "^9.2.0",
     "@react-native-community/netinfo": "^11.5.2",
     "@sentry/react-native": "^7.13.0",
     "@supabase/supabase-js": "^2.112.3",
@@ -25,6 +27,7 @@
     "expo-crypto": "~57.0.2",
     "expo-file-system": "~57.0.5",
     "expo-image-picker": "~57.0.13",
+    "expo-linear-gradient": "^57.0.1",
     "expo-linking": "~57.0.7",
     "expo-location": "~57.0.13",
     "expo-router": "~57.0.16",

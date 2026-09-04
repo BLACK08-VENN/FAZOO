@@ -121,23 +121,26 @@ export async function createBrandAction(
     storeLng = Number(v.store_lng);
   }
 
-  const { data, error } = await client.rpc('create_brand', {
-    p_name: v.name,
-    p_slug: v.slug,
-    p_timezone: v.timezone || 'Africa/Lagos',
-    p_access_code: v.access_code && v.access_code !== '' ? v.access_code : undefined,
-    p_brand_admin_user_id: brandAdminId,
-    p_campaign_name: v.campaign_name,
-    p_campaign_start: v.campaign_start,
-    p_campaign_end: v.campaign_end && v.campaign_end !== '' ? v.campaign_end : undefined,
-    p_store_name: v.store_name && v.store_name !== '' ? v.store_name : undefined,
-    p_store_address: v.store_address && v.store_address !== '' ? v.store_address : undefined,
-    p_store_lat: storeLat,
-    p_store_lng: storeLng,
-    p_store_radius: v.store_radius ?? 200,
-    p_ba_user_ids: v.ba_ids,
-    p_weekly_off_day: v.weekly_off_day,
-  });
+  const { data, error } = await client.rpc(
+    'create_brand',
+    {
+      p_name: v.name,
+      p_slug: v.slug,
+      p_timezone: v.timezone || 'Africa/Lagos',
+      p_access_code: v.access_code && v.access_code !== '' ? v.access_code : undefined,
+      p_brand_admin_user_id: brandAdminId,
+      p_campaign_name: v.campaign_name && v.campaign_name !== '' ? v.campaign_name : '',
+      p_campaign_start: v.campaign_start && v.campaign_start !== '' ? v.campaign_start : null,
+      p_campaign_end: v.campaign_end && v.campaign_end !== '' ? v.campaign_end : undefined,
+      p_store_name: v.store_name && v.store_name !== '' ? v.store_name : undefined,
+      p_store_address: v.store_address && v.store_address !== '' ? v.store_address : undefined,
+      p_store_lat: storeLat,
+      p_store_lng: storeLng,
+      p_store_radius: v.store_radius ?? 200,
+      p_ba_user_ids: v.ba_ids,
+      p_weekly_off_day: v.weekly_off_day,
+    } as never,
+  );
 
   if (error || !data) {
     await serviceSupabase().auth.admin.deleteUser(brandAdminId);

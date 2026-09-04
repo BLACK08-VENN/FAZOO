@@ -56,6 +56,15 @@ body {
   backdrop-filter: blur(20px) saturate(125%);
 }
 
+.fazoo-mobile-nav {
+  background: rgb(255 255 255 / 0.94);
+  border-color: rgb(11 11 15 / 0.09);
+  box-shadow: 0 -12px 40px rgb(45 20 58 / 0.1);
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .fazoo-glass-dark {
     background: #0b0b0f;

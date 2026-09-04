@@ -20,7 +20,7 @@ export default async function BrandsPage() {
 
   return (
     <>
-      <PageHeader title="Add brand" description="Create a brand, a first campaign and link BAs in one step." />
+      <PageHeader title="Add brand" description="Create a brand and its admin quickly. You can add campaigns, schools, stores, and BAs after setup." />
       <CreateBrandForm bas={baOptions} />
     </>
   );

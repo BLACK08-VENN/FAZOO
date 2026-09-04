@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import * as Linking from 'expo-linking';
-import { Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { normalizeInternationalPhone, phoneToAuthEmail } from '@fazoo/validation';
-import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/primary-button';
+import { Field, Screen, ScreenHeader, GlassCard } from '@/components/ui';
+import { supabase } from '@/lib/supabase';
 
 export default function ForgotPassword() {
   const [sent, setSent] = useState(false);
@@ -12,9 +13,6 @@ export default function ForgotPassword() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Password reset strategy (docs/roles-and-permissions.md):
-  //  • Self-service SMS/OTP once the phone provider is enabled, or
-  //  • administrator-triggered secure reset link.
   async function requestReset() {
     setError(null);
     const normalized = normalizeInternationalPhone(phone);
@@ -36,32 +34,43 @@ export default function ForgotPassword() {
   }
 
   return (
-    <View className="flex-1 bg-lavender px-6 justify-center">
-      <Text className="text-2xl font-bold text-ink mb-2">Forgot password</Text>
-      <Text className="text-muted mb-6">
-        Enter your mobile number. If self-service reset is available you&apos;ll receive
-        instructions; otherwise your supervisor can trigger a secure reset for you.
-      </Text>
-      {sent ? (
-        <Text role="status" className="text-ok font-medium">
-          Request received. Contact your supervisor to complete the reset if no message arrives.
-        </Text>
-      ) : null}
-      {error ? (
-        <Text role="alert" className="text-bad font-medium mb-3">
-          {error}
-        </Text>
-      ) : null}
-      <TextInput
-        placeholder="+234 803 123 4567"
-        placeholderTextColor="#9a94a5"
-        keyboardType="phone-pad"
-        className="h-14 rounded-xl bg-white px-4 text-lg mb-4"
-        value={phone}
-        onChangeText={setPhone}
-      />
-      <PrimaryButton label="Request reset" onPress={() => void requestReset()} busy={busy} />
-      <PrimaryButton label="Back to sign in" variant="ghost" onPress={() => router.back()} />
-    </View>
+    <Screen scroll={false}>
+      <View className="flex-1 justify-center">
+        <ScreenHeader
+          eyebrow="Account recovery"
+          title="Reset your password"
+          subtitle="Request a secure reset path. If self-service messaging is unavailable, your supervisor can complete the handoff."
+        />
+
+        <GlassCard>
+          {sent ? (
+            <View className="rounded-2xl border border-emerald-300/30 bg-emerald-400/12 px-4 py-4">
+              <Text role="status" className="font-medium text-white">
+                Request received. Contact your supervisor to complete the reset if no message arrives.
+              </Text>
+            </View>
+          ) : null}
+
+          {error ? (
+            <View className="mb-3 rounded-2xl border border-rose-300/30 bg-rose-400/12 px-4 py-4">
+              <Text role="alert" className="font-medium text-white">
+                {error}
+              </Text>
+            </View>
+          ) : null}
+
+          <Field
+            label="Mobile number"
+            placeholder="+234 803 123 4567"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+          />
+
+          <PrimaryButton label="Request reset" icon="mail-open" onPress={() => void requestReset()} busy={busy} />
+          <PrimaryButton label="Back to sign in" variant="ghost" onPress={() => router.back()} />
+        </GlassCard>
+      </View>
+    </Screen>
   );
 }

@@ -23,7 +23,13 @@ export function LogFiltersForm({
   current: Record<string, string | undefined>;
 }) {
   return (
-    <form method="get" action={action} role="search" aria-label="Filter daily logs" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+    <form
+      method="get"
+      action={action}
+      role="search"
+      aria-label="Filter daily logs"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-7"
+    >
       <div>
         <Label htmlFor="f-preset">Range</Label>
         <Select id="f-preset" name="preset" defaultValue={current.preset ?? '30d'}>
@@ -46,7 +52,9 @@ export function LogFiltersForm({
         <Select id="f-campaign" name="campaign_id" defaultValue={current.campaign_id ?? ''}>
           <option value="">All</option>
           {campaigns.map((c) => (
-            <option key={c.id} value={c.id}>{c.label}</option>
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
           ))}
         </Select>
       </div>
@@ -55,7 +63,9 @@ export function LogFiltersForm({
         <Select id="f-ba" name="ba_id" defaultValue={current.ba_id ?? ''}>
           <option value="">All</option>
           {bas.map((b) => (
-            <option key={b.id} value={b.id}>{b.label}</option>
+            <option key={b.id} value={b.id}>
+              {b.label}
+            </option>
           ))}
         </Select>
       </div>
@@ -64,14 +74,20 @@ export function LogFiltersForm({
         <Select id="f-store" name="store_id" defaultValue={current.store_id ?? ''}>
           <option value="">All</option>
           {stores.map((s) => (
-            <option key={s.id} value={s.id}>{s.label}</option>
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
           ))}
         </Select>
       </div>
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <Label htmlFor="f-status">Status</Label>
-          <Select id="f-status" name="attendance_status" defaultValue={current.attendance_status ?? ''}>
+          <Select
+            id="f-status"
+            name="attendance_status"
+            defaultValue={current.attendance_status ?? ''}
+          >
             <option value="">All</option>
             <option value="present">Present</option>
             <option value="sick_leave">Sick leave</option>

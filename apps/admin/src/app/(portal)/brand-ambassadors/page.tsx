@@ -12,13 +12,18 @@ export default async function BrandAmbassadorsPage() {
   const { client, profile } = await requireStaff();
   const elevated = isElevated(profile.role);
 
-  const [{ data: bas }, { data: pendingRaw }] = await Promise.all([
+  const [{ data: bas }, { data: pendingRaw }, { data: schools }] = await Promise.all([
     client
       .from('profiles')
       .select('id, full_name, phone, role, account_status, organization_id')
       .eq('role', 'brand_ambassador')
       .order('full_name'),
     client.rpc('admin_list_pending_memberships'),
+    client
+      .from('veda_schools')
+      .select('id, name, region')
+      .eq('status', 'active')
+      .order('name'),
   ]);
 
   const pending = (pendingRaw as PendingMembership[] | null) ?? [];
@@ -61,7 +66,7 @@ export default async function BrandAmbassadorsPage() {
                       {elevated ? (
                         <Td>
                           <div className="flex justify-end gap-2">
-                            <ApproveButtons profileId={p.user_id} />
+                             <ApproveButtons profileId={p.user_id} schools={(schools ?? []) as SchoolOption[]} />
                           </div>
                         </Td>
                       ) : null}
@@ -124,13 +129,31 @@ interface PendingMembership {
   account_status: string;
 }
 
-function ApproveButtons({ profileId }: { profileId: string }) {
+interface SchoolOption {
+  id: string;
+  name: string;
+  region: string | null;
+}
+
+function ApproveButtons({ profileId, schools }: { profileId: string; schools: SchoolOption[] }) {
   async function act(formData: FormData) {
     'use server';
     const action = String(formData.get('action'));
     const id = String(formData.get('profile_id'));
     const { client: c } = await requireStaff();
     await c.rpc('admin_set_account_status', { p_profile_id: id, p_action: action });
+
+    const schoolId = String(formData.get('school_id') ?? '');
+    if (action === 'approve' && schoolId) {
+      await c.rpc('veda_admin_upsert_assignment', {
+        p_brand_ambassador_id: id,
+        p_school_id: schoolId,
+        p_weekly_off_day: [],
+        p_status: 'active',
+      });
+      revalidatePath('/veda-assignments');
+    }
+
     revalidatePath('/brand-ambassadors');
   }
   return (
@@ -138,6 +161,21 @@ function ApproveButtons({ profileId }: { profileId: string }) {
       <form action={act}>
         <input type="hidden" name="profile_id" value={profileId} />
         <input type="hidden" name="action" value="approve" />
+        {schools.length > 0 ? (
+          <select
+            name="school_id"
+            className="mr-2 rounded-lg border border-ink/10 bg-white px-2 py-1 text-xs"
+            defaultValue=""
+          >
+            <option value="">Approve only</option>
+            {schools.map((school) => (
+              <option key={school.id} value={school.id}>
+                {school.name}
+                {school.region ? ` — ${school.region}` : ''}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <Button size="sm">Approve</Button>
       </form>
       <form action={act}>

@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { PASSWORD_MIN_LENGTH } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import { signOut, useSessionProfile } from '@/lib/session';
 import { PrimaryButton } from '@/components/primary-button';
+import { Card, Field, HeroCard, MetricTile, Screen, SectionLabel } from '@/components/ui';
 
 export default function Profile() {
   const { profile, loading } = useSessionProfile();
@@ -34,83 +36,94 @@ export default function Profile() {
   function confirmSignOut() {
     Alert.alert('Sign out?', 'You can sign back in with your mobile number.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            await signOut();
+            router.replace('/sign-in');
+          })();
+        },
+      },
     ]);
   }
 
   return (
-    <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
-      <Text className="text-xs text-muted">Profile</Text>
-      {loading ? (
-        <Text className="text-muted mt-2">Loading…</Text>
-      ) : (
+    <Screen bottomInset={false}>
+      <HeroCard
+        eyebrow="Profile"
+        title={loading ? 'Loading…' : (profile?.full_name ?? '')}
+        subtitle={profile?.phone ?? 'Your account and preferences'}
+        icon="person-circle"
+      />
+      {loading ? null : (
         <>
-          <Text className="text-2xl font-bold text-ink">{profile?.full_name}</Text>
-          <Text className="text-charcoal">{profile?.phone}</Text>
-          <View className="rounded-xl bg-white px-4 py-3 mt-4">
-            <Row label="Status" value={profile?.account_status ?? '—'} />
-            <Row label="Role" value={profile?.role ?? '—'} />
-          </View>
+          <Card className="mt-3">
+            <View className="flex-row gap-3">
+              <MetricTile label="Status" value={profile?.account_status ?? '—'} />
+              <MetricTile label="Role" value={profile?.role ?? '—'} />
+            </View>
+          </Card>
 
-          <Text className="text-lg font-semibold text-ink mt-8 mb-2">My Logs</Text>
+          <SectionLabel>My Logs</SectionLabel>
           <PrimaryButton
             label="View or add logs"
+            icon="albums"
             onPress={() => router.push('/campaigns')}
           />
 
-          <Text className="text-lg font-semibold text-ink mt-8 mb-2">Actions</Text>
-          <PrimaryButton label="Apply for leave" onPress={() => router.push('/leave')} />
+          <SectionLabel>Actions</SectionLabel>
+          <PrimaryButton label="Apply for leave" icon="medical" onPress={() => router.push('/leave')} />
 
-          <Text className="text-lg font-semibold text-ink mt-8 mb-2">Change password</Text>
-          <TextInput
-            secureTextEntry
-            autoComplete="password-new"
-            placeholder={`New password (min ${PASSWORD_MIN_LENGTH} characters)`}
-            placeholderTextColor="#9a94a5"
-            className="h-14 rounded-xl bg-white px-4 text-lg mb-3"
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-          <PrimaryButton
-            label="Update password"
-            onPress={() => void changePassword()}
-            busy={busy}
-            disabled={!newPassword}
-          />
-          {error ? (
-            <Text role="alert" className="text-bad font-medium">
-              {error}
-            </Text>
-          ) : null}
-          {message ? (
-            <Text role="status" className="text-ok font-medium">
-              {message}
-            </Text>
-          ) : null}
+          <SectionLabel>Change password</SectionLabel>
+          <Card>
+            <Field
+              label="New password"
+              secureTextEntry
+              autoComplete="password-new"
+              placeholder={`Minimum ${PASSWORD_MIN_LENGTH} characters`}
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+            <PrimaryButton
+              label="Update password"
+              icon="key"
+              onPress={() => void changePassword()}
+              busy={busy}
+              disabled={!newPassword}
+            />
+            {error ? (
+              <Text role="alert" className="mt-2 font-medium text-white">
+                {error}
+              </Text>
+            ) : null}
+            {message ? (
+              <Text role="status" className="mt-2 font-medium text-emerald-200">
+                {message}
+              </Text>
+            ) : null}
+          </Card>
 
-          <View className="mt-10">
+          <View className="mt-8">
             <PrimaryButton
               label="Switch brand"
               variant="ghost"
+              icon="swap-horizontal"
               onPress={() => router.replace('/brand-select')}
             />
             <View className="h-3" />
-            <PrimaryButton label="Sign out" variant="ghost" onPress={confirmSignOut} />
+            <PrimaryButton label="Sign out" variant="secondary" icon="log-out" onPress={confirmSignOut} />
           </View>
-          <Text className="text-center text-xs text-muted mt-6">
+
+          <View className="mt-6 flex-row items-center justify-center gap-2">
+            <Ionicons name="cloud-done" size={14} color="#D8DDFF" />
+            <Text className="text-center text-xs text-white/58">
             Fazoo field app · your data syncs securely when online
-          </Text>
+            </Text>
+          </View>
         </>
       )}
-    </ScrollView>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row justify-between py-1">
-      <Text className="text-muted capitalize">{label}</Text>
-      <Text className="font-medium text-charcoal capitalize">{value}</Text>
-    </View>
+    </Screen>
   );
 }

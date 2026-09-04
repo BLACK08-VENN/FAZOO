@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Alert, Text, TextInput, View } from 'react-native';
+import { Alert, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
+import { HeroCard, Screen, SectionLabel, MultilineField, GlassCard } from '@/components/ui';
 
 export default function SickLeave() {
   const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
@@ -53,18 +54,25 @@ export default function SickLeave() {
   }
 
   return (
-    <View className="flex-1 bg-lavender px-6 pt-16">
-      <Text className="text-2xl font-bold text-ink">Mark sick leave</Text>
-      <Text className="text-muted mt-2 mb-6">
-        Records sick leave for today (Nigerian date). Check-in will be disabled
-        for the rest of the day and your supervisor will see it.
-      </Text>
+    <Screen>
+      <HeroCard
+        eyebrow="Attendance status"
+        title="Mark sick leave"
+        subtitle="Let your supervisor know you are unavailable today. This blocks check-in for the rest of the day."
+        icon="medkit"
+      />
 
-      <TextInput
-        placeholder="Optional note for your supervisor"
-        placeholderTextColor="#9a94a5"
-        multiline
-        className="rounded-xl bg-white p-4 min-h-24 mb-4"
+      <SectionLabel>Details</SectionLabel>
+      <GlassCard>
+        <Text className="text-base leading-6 text-white/78">
+          Sick leave is recorded against today’s server-verified attendance date and becomes visible to your supervisor immediately or on next sync.
+        </Text>
+      </GlassCard>
+
+      <SectionLabel>Optional note</SectionLabel>
+      <MultilineField
+        label="Message to your supervisor"
+        placeholder="Add any context that will help your supervisor respond quickly"
         value={note}
         onChangeText={setNote}
         maxLength={500}
@@ -72,8 +80,8 @@ export default function SickLeave() {
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
-      <PrimaryButton label="Confirm sick leave" variant="danger" onPress={confirmDialog} busy={busy} />
+      <PrimaryButton label="Confirm sick leave" variant="danger" onPress={confirmDialog} busy={busy} icon="warning" />
       <PrimaryButton label="Cancel" variant="ghost" onPress={() => router.back()} />
-    </View>
+    </Screen>
   );
 }

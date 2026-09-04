@@ -76,7 +76,7 @@ export default async function BrandAssignmentsPage({
     <>
       <PageHeader
         title="Brand Assignments"
-        description="Which BA visits which school, with weekly off-days."
+        description="Assign schools to BAs quickly so they appear immediately in the VEDA mobile app."
       >
         <BrandPicker action="/veda-assignments" brands={brands} current={selectedOrg} />
       </PageHeader>
@@ -125,7 +125,7 @@ export default async function BrandAssignmentsPage({
         </TableWrap>
 
         <Card>
-          <CardHeader title="Assign a school visit" />
+          <CardHeader title="Quick school assignment" description="Choose a BA and school to make it available in VEDA immediately." />
           <CardBody>
             <form
               action={async (formData: FormData) => {

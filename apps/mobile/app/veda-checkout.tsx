@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { distanceMetres } from '@fazoo/config';
 import type { VedaTodayResult } from '@fazoo/types';
@@ -10,13 +10,8 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { readCachedVedaToday, writeCachedVedaToday } from '@/lib/cache';
+import { Screen, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
 
-/**
- * Completes today's activation: confirms the totals, verifies presence at the
- * school (server re-checks the geofence), then closes the visit. Closes online
- * when possible; queues the checkout for offline sync otherwise. A geofence
- * rejection is surfaced immediately — it must be retried while at the school.
- */
 export default function VedaCheckout() {
   const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
   const [today, setToday] = useState<VedaTodayResult | null>(null);
@@ -42,43 +37,23 @@ export default function VedaCheckout() {
     })();
   }, [today]);
 
-  const selected =
-    today?.assignments.find((item) => item.assignment.id === assignmentParam) ??
-    today?.assignments[0] ??
-    null;
+  const selected = today?.assignments.find((item) => item.assignment.id === assignmentParam) ?? today?.assignments[0] ?? null;
   const assignment = selected?.assignment ?? null;
   const session = selected?.session ?? null;
-  const totalItems = (selected?.distributions ?? []).reduce(
-    (sum, d) => sum + d.quantity,
-    0,
-  );
+  const totalItems = (selected?.distributions ?? []).reduce((sum, d) => sum + d.quantity, 0);
 
   async function locate() {
     setError(null);
     setLocating(true);
-    try {
-      setFix(await getFix());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Location failed.');
-    } finally {
-      setLocating(false);
-    }
+    try { setFix(await getFix()); } catch (err) { setError(err instanceof Error ? err.message : 'Location failed.'); } finally { setLocating(false); }
   }
 
   async function submit() {
     if (!fix || !session || !assignment) return;
     setBusy(true);
     setError(null);
-
     const requestId = newRequestId();
-    const payload = {
-      p_session_id: session.id,
-      p_latitude: fix.latitude,
-      p_longitude: fix.longitude,
-      p_accuracy_metres: fix.accuracy ?? undefined,
-      p_notes: notes.trim() || undefined,
-      p_client_request_id: requestId,
-    };
+    const payload = { p_session_id: session.id, p_latitude: fix.latitude, p_longitude: fix.longitude, p_accuracy_metres: fix.accuracy ?? undefined, p_notes: notes.trim() || undefined, p_client_request_id: requestId };
     try {
       try {
         const { error: rpcError } = await supabase.rpc('veda_checkout', payload);
@@ -97,98 +72,39 @@ export default function VedaCheckout() {
   }
 
   const radius = assignment?.geofence_radius_metres ?? 200;
-  const distance =
-    fix && assignment && assignment.school_latitude && assignment.school_longitude
-      ? Math.round(
-          distanceMetres(
-            fix.latitude,
-            fix.longitude,
-            assignment.school_latitude,
-            assignment.school_longitude,
-          ),
-        )
-      : null;
+  const distance = fix && assignment && assignment.school_latitude && assignment.school_longitude ? Math.round(distanceMetres(fix.latitude, fix.longitude, assignment.school_latitude, assignment.school_longitude)) : null;
   const insideGeofence = distance !== null && distance <= radius;
 
   return (
-    <ScrollView className="flex-1 bg-lavender" contentContainerClassName="px-5 py-8">
-      <Text className="text-xs text-muted">Check out</Text>
-      <Text className="text-2xl font-bold text-ink mb-4">Complete today&apos;s visit</Text>
-
+    <Screen>
+      <ScreenHeader eyebrow="Check out" title="Complete today's visit" subtitle="Confirm totals, verify presence at the school, and close the session." />
       {error ? <StatusPill tone="bad" label={error} /> : null}
-
-      <View className="rounded-2xl bg-white p-5">
-        <Text className="font-semibold text-charcoal">{assignment?.school_name ?? 'Loading…'}</Text>
-        <Text className="text-muted">{assignment?.school_region}</Text>
+      <Card>
+        <Text className="text-lg font-bold text-ink">{assignment?.school_name ?? 'Loading…'}</Text>
+        <Text className="text-sm text-slate-500">{assignment?.school_region}</Text>
         <View className="mt-4 flex-row justify-between">
-          <Text className="text-muted">Stationery distributed</Text>
-          <Text className="font-bold tabular-nums text-primary">{totalItems} units</Text>
+          <Text className="text-slate-500">Stationery distributed</Text>
+          <Text className="font-bold tabular-nums text-indigo-700">{totalItems} units</Text>
         </View>
-        {(selected?.distributions ?? []).map((d) => (
-          <View key={d.id} className="flex-row justify-between py-1 mt-1">
-            <Text className="text-charcoal">{d.item_name}</Text>
-            <Text className="tabular-nums">×{d.quantity}</Text>
-          </View>
-        ))}
-        {(selected?.distributions ?? []).length === 0 ? (
-          <Text className="text-muted mt-2">No stationery was recorded.</Text>
-        ) : null}
-      </View>
-
-      <View className="mt-4 rounded-2xl bg-white p-5">
-        <Text className="mb-3 font-medium text-charcoal">Verify you are still at the school</Text>
-        {locating ? (
-          <Text className="text-muted text-sm">Getting your location…</Text>
-        ) : distance !== null ? (
-          <StatusPill
-            tone={insideGeofence ? 'ok' : 'bad'}
-            label={
-              insideGeofence
-                ? `You are about ${distance} m from the school — within the ${radius} m zone`
-                : `You are ${distance} m away — move closer than ${radius} m to check out`
-            }
-          />
-        ) : (
-          <Text className="text-muted text-sm">
-            We&apos;ll verify your location against the school before closing the visit.
-          </Text>
-        )}
+        {(selected?.distributions ?? []).map((d) => <View key={d.id} className="mt-2 flex-row justify-between"><Text className="text-slate-700">{d.item_name}</Text><Text className="tabular-nums text-slate-700">×{d.quantity}</Text></View>)}
+        {(selected?.distributions ?? []).length === 0 ? <Text className="mt-2 text-slate-500">No stationery was recorded.</Text> : null}
+      </Card>
+      <GlassCard className="mt-4">
+        <Text className="mb-3 font-medium text-white">Verify you are still at the school</Text>
+        {locating ? <Text className="text-sm text-white/68">Getting your location…</Text> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the school — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check out`} /> : <Text className="text-sm text-white/68">We'll verify your location against the school before closing the visit.</Text>}
         <View className="mt-3">
-          <PrimaryButton
-            label={fix ? 'Refresh location' : 'Get my location'}
-            onPress={() => void locate()}
-            busy={locating}
-          />
+          <PrimaryButton label={fix ? 'Refresh location' : 'Get my location'} onPress={() => void locate()} busy={locating} icon="locate" />
         </View>
-      </View>
-
-      <TextInput
-        placeholder="Notes (optional)"
-        placeholderTextColor="#9a94a5"
-        multiline
-        className="rounded-xl bg-white p-4 min-h-20 mt-4 mb-3"
-        value={notes}
-        onChangeText={setNotes}
-      />
-
-      <View className="flex-row items-center justify-between rounded-xl bg-white px-4 py-3">
-        <Text className="text-charcoal flex-1 pr-3">
-          I confirm today&apos;s distribution totals are final.
-        </Text>
-        <Switch
-          value={confirmed}
-          onValueChange={setConfirmed}
-          accessibilityLabel="Confirm visit completion"
-        />
-      </View>
-
-      <PrimaryButton
-        label="Check Out"
-        onPress={() => void submit()}
-        busy={busy}
-        disabled={!confirmed || !fix || !insideGeofence || !session}
-      />
+      </GlassCard>
+      <Field label="Notes" placeholder="Notes (optional)" multiline value={notes} onChangeText={setNotes} />
+      <GlassCard>
+        <View className="flex-row items-center justify-between gap-4">
+          <Text className="flex-1 text-sm leading-6 text-white/80">I confirm today's distribution totals are final.</Text>
+          <Switch value={confirmed} onValueChange={setConfirmed} accessibilityLabel="Confirm visit completion" />
+        </View>
+      </GlassCard>
+      <PrimaryButton label="Check Out" onPress={() => void submit()} busy={busy} disabled={!confirmed || !fix || !insideGeofence || !session} icon="log-out" />
       <PrimaryButton label="Not yet" variant="ghost" onPress={() => router.back()} />
-    </ScrollView>
+    </Screen>
   );
 }

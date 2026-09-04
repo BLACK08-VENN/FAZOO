@@ -40,10 +40,9 @@ describe('registrationSchema', () => {
     ).toThrow();
   });
 
-  it('requires the profile photograph', () => {
-    expect(() =>
-      registrationSchema.parse({ ...validBase, profile_photo: null }),
-    ).toThrow(/photograph/i);
+  it('allows signup without a profile photograph', () => {
+    const parsed = registrationSchema.parse({ ...validBase, profile_photo: null });
+    expect(parsed.profile_photo).toBeNull();
   });
 
   it('rejects oversized photographs', () => {

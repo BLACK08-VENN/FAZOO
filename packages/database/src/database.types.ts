@@ -155,6 +155,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          access_code: string | null
           created_at: string
           description: string | null
           end_date: string | null
@@ -166,6 +167,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_code?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_code?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -1364,6 +1367,8 @@ export type Database = {
         Args: { p_assignment_id?: string; p_client_request_id?: string; p_note?: string }
         Returns: Json
       }
+      ba_list_campaigns: { Args: never; Returns: Json }
+      ba_list_veda_schools: { Args: never; Returns: Json }
       ba_my_campaigns: { Args: never; Returns: Json }
       ba_my_history: { Args: { p_limit?: number }; Returns: Json }
       ba_record_sale: {
@@ -1434,6 +1439,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ba_unlock_campaign: { Args: { p_campaign_id: string; p_code: string }; Returns: undefined }
+      ba_unlock_veda_school: { Args: { p_school_id: string; p_code: string }; Returns: undefined }
       ba_update_sale: {
         Args: {
           p_client_request_id: string

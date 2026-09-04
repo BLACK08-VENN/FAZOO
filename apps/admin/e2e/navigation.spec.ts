@@ -12,19 +12,22 @@ test.describe('navigation', () => {
 
   test('sidebar navigation links exist', async ({ page }) => {
     await page.goto('/overview');
-    const links = [
-      'Overview',
-      'Daily Logs',
-      'Leave Requests',
-      'Sales',
-      'Brand Ambassadors',
-      'Stores',
-      'SKUs',
-      'Campaigns',
-      'Reports',
-      'Settings',
-      'Audit Logs',
-    ];
+    const isMobile = (page.viewportSize()?.width ?? 1280) < 1024;
+    const links = isMobile
+      ? ['Overview', 'Logs', 'Team', 'Reports']
+      : [
+          'Overview',
+          'Daily logs',
+          'Leave requests',
+          'Sales',
+          'Brand ambassadors',
+          'Stores',
+          'SKUs',
+          'Campaigns',
+          'Reports',
+          'Settings',
+          'Audit logs',
+        ];
     for (const label of links) {
       await expect((await primaryNav(page)).getByText(label)).toBeVisible();
     }
@@ -33,20 +36,27 @@ test.describe('navigation', () => {
   test('can navigate to each page via sidebar', async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto('/overview');
+    const isMobile = (page.viewportSize()?.width ?? 1280) < 1024;
     const routes: { label: string; href: string; heading: string }[] = [
-      { label: 'Daily Logs', href: '/daily-logs', heading: 'Daily Logs' },
-      { label: 'Leave Requests', href: '/leave-requests', heading: 'Leave Requests' },
+      { label: 'Daily logs', href: '/daily-logs', heading: 'Daily Logs' },
+      { label: 'Leave requests', href: '/leave-requests', heading: 'Leave Requests' },
       { label: 'Sales', href: '/sales', heading: 'Sales by store' },
-      { label: 'Brand Ambassadors', href: '/brand-ambassadors', heading: 'Brand Ambassadors' },
+      { label: 'Brand ambassadors', href: '/brand-ambassadors', heading: 'Brand Ambassadors' },
       { label: 'Stores', href: '/stores', heading: 'Stores' },
       { label: 'SKUs', href: '/skus', heading: 'SKUs' },
       { label: 'Campaigns', href: '/campaigns', heading: 'Campaigns' },
       { label: 'Reports', href: '/reports', heading: 'Reports' },
       { label: 'Settings', href: '/settings', heading: 'Settings' },
-      { label: 'Audit Logs', href: '/audit-logs', heading: 'Audit Logs' },
+      { label: 'Audit logs', href: '/audit-logs', heading: 'Audit Logs' },
       { label: 'Overview', href: '/overview', heading: 'Overview' },
     ];
-    for (const { label, href, heading } of routes) {
+    const mobileRoutes = [
+      { label: 'Logs', href: '/daily-logs', heading: 'Daily Logs' },
+      { label: 'Team', href: '/brand-ambassadors', heading: 'Brand Ambassadors' },
+      { label: 'Reports', href: '/reports', heading: 'Reports' },
+      { label: 'Overview', href: '/overview', heading: 'Overview' },
+    ];
+    for (const { label, href, heading } of isMobile ? mobileRoutes : routes) {
       await (await primaryNav(page)).getByText(label).click();
       await expect(page.getByRole('heading', { name: heading })).toBeVisible({
         timeout: 15_000,
