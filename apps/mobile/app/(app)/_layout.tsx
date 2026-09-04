@@ -2,8 +2,8 @@ import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ACTIVE = '#1F130C';
-const INACTIVE = 'rgba(74, 52, 38, 0.72)';
+const ACTIVE = '#FFFFFF';
+const INACTIVE = 'rgba(167, 183, 235, 0.72)';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -29,8 +29,8 @@ export default function AppLayout() {
           left: 16,
           right: 16,
           bottom: 16,
-          backgroundColor: 'rgba(255, 248, 241, 0.96)',
-          borderTopColor: 'rgba(58,36,20,0.10)',
+          backgroundColor: 'rgba(18, 15, 44, 0.94)',
+          borderTopColor: 'rgba(255,255,255,0.12)',
           borderTopWidth: 1,
           borderRadius: 28,
           height: 82,
@@ -72,7 +72,7 @@ export default function AppLayout() {
           tabBarIcon: ({ focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(255,255,255,0.14)' : 'transparent',
+                backgroundColor: focused ? 'rgba(124,92,255,0.24)' : 'transparent',
                 borderRadius: 16,
                 paddingHorizontal: 12,
                 paddingVertical: 7,
@@ -90,7 +90,7 @@ export default function AppLayout() {
           tabBarIcon: ({ focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(255,255,255,0.14)' : 'transparent',
+                backgroundColor: focused ? 'rgba(52,209,255,0.18)' : 'transparent',
                 borderRadius: 16,
                 paddingHorizontal: 12,
                 paddingVertical: 7,

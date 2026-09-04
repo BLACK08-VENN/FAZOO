@@ -75,25 +75,16 @@ export const registrationSchema = z
       .max(120)
       .regex(/^[\p{L}\p{M}'.\- ]+$/u, 'Letters, spaces, hyphens and apostrophes only.'),
     phone: internationalPhone,
-    phone_confirm: z.string().trim().min(1, 'Confirm your mobile number.'),
     password,
     password_confirm: z.string().min(1, 'Confirm your password.'),
     profile_photo: photoUpload.nullable().optional(),
   })
   .check((ctx) => {
-    if (ctx.value.phone !== ctx.value.phone_confirm) {
-      ctx.issues.push({
-        code: 'custom',
-        path: ['phone_confirm'],
-        input: ctx.value.phone_confirm,
-        message: 'Mobile numbers must match.',
-      });
-    }
     if (ctx.value.password !== ctx.value.password_confirm) {
       ctx.issues.push({
         code: 'custom',
         path: ['password_confirm'],
-        input: ctx.value.phone_confirm,
+        input: ctx.value.password_confirm,
         message: 'Passwords do not match.',
       });
     }

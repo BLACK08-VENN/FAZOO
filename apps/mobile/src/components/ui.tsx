@@ -1,7 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
   ScrollView,
   Text,
   TextInput,
@@ -14,7 +13,6 @@ import type { RefreshControlProps } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import appBackground from '../../assets/snow-covered-mountain-daytime.jpg';
 import { PrimaryButton } from './primary-button';
 
 const H_PADDING = 20;
@@ -22,44 +20,36 @@ const V_PADDING = 20;
 
 export function AppBackdrop({
   children,
-  imageOpacity = 0.3,
   overlayOpacity = 0.24,
 }: {
   children: ReactNode;
-  imageOpacity?: number;
   overlayOpacity?: number;
 }) {
   return (
-    <View className="flex-1 bg-[#FFF4EA]">
-      <ImageBackground
-        source={appBackground}
-        resizeMode="cover"
-        imageStyle={{ opacity: imageOpacity }}
-        className="absolute inset-0"
-      />
-      <View className="absolute inset-0 bg-[#140B06]" style={{ opacity: overlayOpacity }} />
+    <View className="flex-1 bg-[#09071A]">
+      <View className="absolute inset-0 bg-[#05030F]" style={{ opacity: overlayOpacity }} />
       <LinearGradient
-        colors={['rgba(255,255,255,0.26)', 'rgba(255,244,234,0.20)', 'rgba(255,231,209,0.14)', 'rgba(255,244,234,0.10)']}
+        colors={['rgba(130,94,255,0.18)', 'rgba(56,25,126,0.12)', 'rgba(7,7,28,0.10)', 'rgba(7,7,28,0.02)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="absolute inset-0"
       />
       <LinearGradient
-        colors={['rgba(255,255,255,0.10)', 'rgba(86,41,14,0.12)', 'rgba(35,16,8,0.24)']}
+        colors={['rgba(52,209,255,0.10)', 'rgba(32,20,89,0.20)', 'rgba(5,3,15,0.42)']}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         className="absolute inset-0"
       />
       <LinearGradient
-        colors={['rgba(255,255,255,0.34)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+        colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.02)', 'rgba(255,255,255,0)']}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.85, y: 0.72 }}
         className="absolute inset-0"
       />
-      <View className="absolute -left-16 top-14 h-48 w-48 rounded-full bg-orange-300/18" />
-      <View className="absolute right-[-40] top-44 h-56 w-56 rounded-full bg-amber-200/22" />
-      <View className="absolute bottom-20 left-10 h-40 w-40 rounded-full bg-rose-200/16" />
-      <View className="absolute right-8 top-20 h-32 w-32 rounded-full bg-white/10" />
+      <View className="absolute -left-16 top-12 h-52 w-52 rounded-full bg-violet-500/18" />
+      <View className="absolute right-[-50] top-40 h-60 w-60 rounded-full bg-cyan-400/14" />
+      <View className="absolute bottom-14 left-6 h-44 w-44 rounded-full bg-fuchsia-500/14" />
+      <View className="absolute right-10 top-24 h-24 w-24 rounded-full bg-white/8" />
       {children}
     </View>
   );
@@ -72,7 +62,6 @@ export function Screen({
   style,
   contentStyle,
   refreshControl,
-  backdropImageOpacity,
   backdropOverlayOpacity,
 }: {
   children: ReactNode;
@@ -81,7 +70,6 @@ export function Screen({
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   refreshControl?: ReactElement<RefreshControlProps>;
-  backdropImageOpacity?: number;
   backdropOverlayOpacity?: number;
 }) {
   const insets = useSafeAreaInsets();
@@ -92,14 +80,14 @@ export function Screen({
 
   if (!scroll) {
     return (
-      <AppBackdrop imageOpacity={backdropImageOpacity} overlayOpacity={backdropOverlayOpacity}>
+      <AppBackdrop overlayOpacity={backdropOverlayOpacity}>
         <View style={[{ flex: 1, paddingHorizontal: H_PADDING }, pad, style]}>{children}</View>
       </AppBackdrop>
     );
   }
 
   return (
-    <AppBackdrop imageOpacity={backdropImageOpacity} overlayOpacity={backdropOverlayOpacity}>
+    <AppBackdrop overlayOpacity={backdropOverlayOpacity}>
       <ScrollView
         style={[{ flex: 1 }, style]}
         contentContainerStyle={[{ paddingHorizontal: H_PADDING }, pad, contentStyle]}
@@ -121,22 +109,22 @@ export function GlassCard({
   className?: string;
 }) {
   return (
-    <View className={`overflow-hidden rounded-[30px] border border-white/30 bg-white/12 shadow-2xl ${className}`}>
-      <View className="absolute inset-0 rounded-[30px] bg-white/10" />
+    <View className={`overflow-hidden rounded-[30px] border border-white/14 bg-[#110F28]/70 shadow-2xl ${className}`}>
+      <View className="absolute inset-0 rounded-[30px] bg-white/6" />
       <LinearGradient
-        colors={['rgba(255,255,255,0.40)', 'rgba(255,255,255,0.16)', 'rgba(255,244,234,0.08)']}
+        colors={['rgba(255,255,255,0.18)', 'rgba(124,92,255,0.12)', 'rgba(17,15,40,0.04)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="absolute inset-0"
       />
       <LinearGradient
-        colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.08)']}
+        colors={['rgba(255,255,255,0.22)', 'rgba(255,255,255,0.02)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="absolute inset-x-0 top-0 h-16"
       />
-      <View className="absolute inset-x-0 top-0 h-px bg-white/80" />
-      <View className="absolute bottom-0 left-6 right-6 h-px bg-[#815C4A]/12" />
+      <View className="absolute inset-x-0 top-0 h-px bg-white/40" />
+      <View className="absolute bottom-0 left-6 right-6 h-px bg-cyan-200/10" />
       <View className="p-5">{children}</View>
     </View>
   );
@@ -150,16 +138,16 @@ export function Card({
   className?: string;
 }) {
   return (
-    <View className={`overflow-hidden rounded-[30px] border border-white/26 bg-white/10 shadow-2xl ${className}`}>
-      <View className="absolute inset-0 rounded-[30px] bg-white/12" />
+    <View className={`overflow-hidden rounded-[30px] border border-white/12 bg-[#141233]/72 shadow-2xl ${className}`}>
+      <View className="absolute inset-0 rounded-[30px] bg-white/5" />
       <LinearGradient
-        colors={['rgba(255,255,255,0.32)', 'rgba(238,242,255,0.15)', 'rgba(255,255,255,0.06)']}
+        colors={['rgba(255,255,255,0.15)', 'rgba(52,209,255,0.05)', 'rgba(124,92,255,0.06)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="absolute inset-0"
       />
       <LinearGradient
-        colors={['rgba(255,255,255,0.34)', 'rgba(255,255,255,0)']}
+        colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0)']}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.85, y: 0.7 }}
         className="absolute inset-x-0 top-0 h-14"
@@ -187,17 +175,17 @@ export function HeroCard({
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-1">
           {eyebrow ? (
-            <Text className="text-xs uppercase tracking-[2px] text-[#6B4A36]">{eyebrow}</Text>
+            <Text className="text-xs uppercase tracking-[2px] text-[#9FAEEC]">{eyebrow}</Text>
           ) : null}
           <View className="mt-2 flex-row items-center gap-3">
             {icon ? (
-              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#2B160B]/8">
-                <Ionicons name={icon} size={20} color="#2B160B" />
+              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/8">
+                <Ionicons name={icon} size={20} color="#FFFFFF" />
               </View>
             ) : null}
             <View className="flex-1">
-              <Text className="text-[26px] font-bold leading-8 text-[#1F130C]">{title}</Text>
-              {subtitle ? <Text className="mt-1 text-base leading-6 text-[#4D3426]">{subtitle}</Text> : null}
+              <Text className="text-[26px] font-bold leading-8 text-white">{title}</Text>
+              {subtitle ? <Text className="mt-1 text-base leading-6 text-[#B6C2E8]">{subtitle}</Text> : null}
             </View>
           </View>
         </View>
@@ -222,10 +210,10 @@ export function ScreenHeader({
     <View className="mb-5 flex-row items-start justify-between gap-4">
       <View className="flex-1">
         {eyebrow ? (
-          <Text className="text-xs uppercase tracking-[2px] text-[#6B4A36]">{eyebrow}</Text>
+          <Text className="text-xs uppercase tracking-[2px] text-[#9FAEEC]">{eyebrow}</Text>
         ) : null}
-        <Text className="mt-2 text-[28px] font-bold leading-9 text-[#1F130C]">{title}</Text>
-        {subtitle ? <Text className="mt-2 text-base leading-7 text-[#4D3426]">{subtitle}</Text> : null}
+        <Text className="mt-2 text-[28px] font-bold leading-9 text-white">{title}</Text>
+        {subtitle ? <Text className="mt-2 text-base leading-7 text-[#B6C2E8]">{subtitle}</Text> : null}
       </View>
       {action ? <View className="pt-1">{action}</View> : null}
     </View>
@@ -233,7 +221,7 @@ export function ScreenHeader({
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
-  return <Text className="mb-3 mt-7 text-sm font-semibold uppercase tracking-[2px] text-[#6B4A36]">{children}</Text>;
+  return <Text className="mb-3 mt-7 text-sm font-semibold uppercase tracking-[2px] text-[#A8B6E8]">{children}</Text>;
 }
 
 export function MetricTile({
@@ -247,10 +235,10 @@ export function MetricTile({
 }) {
   const toneClass =
     tone === 'success'
-      ? 'bg-emerald-300/14 border-emerald-100/30'
+      ? 'bg-emerald-300/14 border-emerald-100/24'
       : tone === 'warning'
-        ? 'bg-amber-200/16 border-amber-50/30'
-        : 'bg-white/10 border-white/16';
+        ? 'bg-amber-300/16 border-amber-100/24'
+        : 'bg-white/8 border-white/12';
 
   return (
     <View className={`flex-1 overflow-hidden rounded-[26px] border px-4 py-4 ${toneClass}`}>
@@ -260,8 +248,8 @@ export function MetricTile({
         end={{ x: 1, y: 1 }}
         className="absolute inset-0"
       />
-      <Text className="text-xs uppercase tracking-[2px] text-[#6B4A36]">{label}</Text>
-      <Text className="mt-2 text-[30px] font-bold text-[#1F130C]">{value}</Text>
+      <Text className="text-xs uppercase tracking-[2px] text-[#A8B6E8]">{label}</Text>
+      <Text className="mt-2 text-[30px] font-bold text-white">{value}</Text>
     </View>
   );
 }
@@ -273,13 +261,13 @@ export function Field({
 }: TextInputProps & { label?: string; hint?: string }) {
   return (
     <View className="mb-3">
-      {label ? <Text className="mb-2 text-base font-medium text-[#2B160B]">{label}</Text> : null}
+      {label ? <Text className="mb-2 text-base font-medium text-white">{label}</Text> : null}
       <TextInput
-        placeholderTextColor="#8B6B59"
-        className="h-14 rounded-2xl border border-white/28 bg-white/18 px-4 text-[16px] text-[#1F130C]"
+        placeholderTextColor="#93A0C8"
+        className="h-14 rounded-2xl border border-white/14 bg-white/8 px-4 text-[16px] text-white"
         {...props}
       />
-      {hint ? <Text className="mt-2 text-sm leading-5 text-[#6B4A36]">{hint}</Text> : null}
+      {hint ? <Text className="mt-2 text-sm leading-5 text-[#A8B6E8]">{hint}</Text> : null}
     </View>
   );
 }
@@ -291,15 +279,15 @@ export function MultilineField({
 }: TextInputProps & { label?: string; hint?: string }) {
   return (
     <View className="mb-3">
-      {label ? <Text className="mb-2 text-base font-medium text-[#2B160B]">{label}</Text> : null}
+      {label ? <Text className="mb-2 text-base font-medium text-white">{label}</Text> : null}
       <TextInput
-        placeholderTextColor="#8B6B59"
+        placeholderTextColor="#93A0C8"
         multiline
         textAlignVertical="top"
-        className="min-h-28 rounded-2xl border border-white/28 bg-white/18 px-4 py-4 text-[16px] text-[#1F130C]"
+        className="min-h-28 rounded-2xl border border-white/14 bg-white/8 px-4 py-4 text-[16px] text-white"
         {...props}
       />
-      {hint ? <Text className="mt-2 text-sm leading-5 text-[#6B4A36]">{hint}</Text> : null}
+      {hint ? <Text className="mt-2 text-sm leading-5 text-[#A8B6E8]">{hint}</Text> : null}
     </View>
   );
 }
@@ -310,7 +298,7 @@ export function Loading({ label = 'Loading…' }: { label?: string }) {
       <View className="flex-1 items-center justify-center px-8">
         <GlassCard className="px-8 py-8">
           <ActivityIndicator size="large" color="#D8DDFF" />
-          <Text className="mt-4 text-center text-base text-[#4D3426]">{label}</Text>
+          <Text className="mt-4 text-center text-base text-[#C8D3F5]">{label}</Text>
         </GlassCard>
       </View>
     </AppBackdrop>
@@ -331,8 +319,8 @@ export function EmptyState({
   return (
     <GlassCard className="items-center px-2 py-3">
       <View className="items-center justify-center px-4 py-6">
-        <Text className="text-center text-2xl font-bold text-[#1F130C]">{title}</Text>
-        <Text className="mt-3 text-center text-base leading-7 text-[#4D3426]">{body}</Text>
+        <Text className="text-center text-2xl font-bold text-white">{title}</Text>
+        <Text className="mt-3 text-center text-base leading-7 text-[#C8D3F5]">{body}</Text>
         {actionLabel && onAction ? (
           <View className="mt-6 w-full">
             <PrimaryButton label={actionLabel} onPress={onAction} />

@@ -16,13 +16,18 @@ export default async function SkusPage() {
 
   return (
     <>
-      <PageHeader title="SKUs" description="Products available for sales recording." />
+      <PageHeader title="SKUs" description="Products available for sales recording. Add new products or remove ones you no longer track." />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <TableWrap>
           <Table>
             <thead>
-              <tr><Th>Name</Th><Th>Code</Th><Th>Status</Th></tr>
+              <tr>
+                <Th>Name</Th>
+                <Th>Code</Th>
+                <Th>Status</Th>
+                <Th className="text-right">Actions</Th>
+              </tr>
             </thead>
             <tbody>
               {(skus ?? []).map((s) => (
@@ -30,6 +35,20 @@ export default async function SkusPage() {
                   <Td className="font-medium">{s.name}</Td>
                   <Td className="font-mono text-xs">{s.code}</Td>
                   <Td>{s.status}</Td>
+                  <Td className="text-right">
+                    <form
+                      action={async () => {
+                        'use server';
+                        const { client: c } = await requireStaff();
+                        await c.rpc('admin_delete_sku' as never, { p_sku_id: s.id } as never);
+                        revalidatePath('/skus');
+                      }}
+                    >
+                      <Button type="submit" variant="destructive" className="h-8 px-3 text-xs">
+                        Delete
+                      </Button>
+                    </form>
+                  </Td>
                 </tr>
               ))}
             </tbody>

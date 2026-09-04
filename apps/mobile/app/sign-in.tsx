@@ -58,7 +58,7 @@ export default function SignIn() {
   }
 
   return (
-    <AppBackdrop imageOpacity={0.5} overlayOpacity={0.18}>
+    <AppBackdrop overlayOpacity={0.18}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1 justify-center px-5"

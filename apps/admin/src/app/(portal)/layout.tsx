@@ -2,8 +2,6 @@ import Link from 'next/link';
 import {
   Boxes,
   Building2,
-  CalendarRange,
-  GraduationCap,
   MapPin,
   Store,
   Users,
@@ -14,12 +12,10 @@ import { signOutAction } from './actions';
 
 const NAV = [
   { href: '/brand-ambassadors', label: 'Brand ambassadors', icon: Users },
-  { href: '/campaigns', label: 'Campaigns', icon: Store },
-  { href: '/stores', label: 'Stores', icon: MapPin },
+  { href: '/campaigns', label: 'Campaigns & Activations', icon: Store },
+  { href: '/stores', label: 'Store management', icon: MapPin },
   { href: '/skus', label: 'SKUs', icon: Boxes },
-  { href: '/veda-activations', label: 'Brand activations', icon: GraduationCap },
-  { href: '/veda-assignments', label: 'Brand assignments', icon: CalendarRange },
-  { href: '/brands', label: 'Add brand', icon: Building2 },
+  { href: '/brands', label: 'Brand', icon: Building2 },
 ] as const;
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {

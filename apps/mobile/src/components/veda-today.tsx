@@ -54,7 +54,7 @@ export default function VedaToday() {
   const assignments = data?.assignments ?? [];
 
   return (
-    <Screen bottomInset={false} backdropImageOpacity={0.4} backdropOverlayOpacity={0.2}>
+    <Screen bottomInset={false} backdropOverlayOpacity={0.2}>
         <HeroCard eyebrow={`Today · ${data?.attendance_date} (Kenya)`} title="Schools dashboard" subtitle="Track active school visits, stationery distribution, and sync health in one place." icon="school" />
 
         <View className="mb-5 flex-row gap-3">

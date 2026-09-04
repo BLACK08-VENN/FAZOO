@@ -34,7 +34,6 @@ function SecureField({ label, value, onChange, keyboardType }: { label: string; 
 export default function Register() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [phoneConfirm, setPhoneConfirm] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,7 +46,6 @@ export default function Register() {
     const parsed = registrationSchema.safeParse({
       full_name: fullName,
       phone,
-      phone_confirm: phoneConfirm,
       password,
       password_confirm: passwordConfirm,
       profile_photo: null,
@@ -95,7 +93,7 @@ export default function Register() {
   }
 
   return (
-    <AppBackdrop imageOpacity={0.36} overlayOpacity={0.22}>
+    <AppBackdrop overlayOpacity={0.22}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingTop: 56, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <HeroCard
@@ -112,7 +110,6 @@ export default function Register() {
 
           <Field label="Full name (as on ID)" value={fullName} onChangeText={setFullName} />
           <Field label="Mobile number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-          <Field label="Confirm mobile number" value={phoneConfirm} onChangeText={setPhoneConfirm} keyboardType="phone-pad" />
           <SecureField label="Password" value={password} onChange={setPassword} />
           <SecureField label="Confirm password" value={passwordConfirm} onChange={setPasswordConfirm} />
 

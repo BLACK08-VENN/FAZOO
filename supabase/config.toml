@@ -18,6 +18,7 @@ additional_redirect_urls = ["http://localhost:8081"]
 
 [auth.email]
 enable_signup = true
+enable_confirmations = false
 
 [storage]
 enabled = true

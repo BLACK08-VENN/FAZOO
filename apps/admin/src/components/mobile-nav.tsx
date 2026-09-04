@@ -2,14 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Store, Building2, GraduationCap, Users } from 'lucide-react';
+import { Store, Building2, MapPin, Boxes, Users } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const ITEMS = [
-  { href: '/brand-ambassadors', label: 'Team', icon: Users },
+  { href: '/brand-ambassadors', label: 'BAs', icon: Users },
   { href: '/campaigns', label: 'Campaigns', icon: Store },
-  { href: '/veda-assignments', label: 'Schools', icon: GraduationCap },
-  { href: '/brands', label: 'Brands', icon: Building2 },
+  { href: '/stores', label: 'Stores', icon: MapPin },
+  { href: '/skus', label: 'SKUs', icon: Boxes },
+  { href: '/brands', label: 'Brand', icon: Building2 },
 ] as const;
 
 export function MobileNav() {
@@ -20,7 +21,7 @@ export function MobileNav() {
       aria-label="Primary mobile"
       className="fazoo-mobile-nav no-print fixed inset-x-0 bottom-0 z-30 border-t lg:hidden"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-4 px-2 pt-1.5">
+      <div className="mx-auto grid max-w-lg grid-cols-5 px-2 pt-1.5">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (

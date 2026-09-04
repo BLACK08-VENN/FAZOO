@@ -4,23 +4,15 @@ import { registrationSchema } from './auth';
 const validBase = {
   full_name: 'Adaeze Nwosu',
   phone: '0803 123 4567',
-  phone_confirm: '+2348031234567',
   password: 'Sup3rSecret!x',
   password_confirm: 'Sup3rSecret!x',
   profile_photo: { mime_type: 'image/jpeg', size_bytes: 240_000 },
 };
 
 describe('registrationSchema', () => {
-  it('accepts a complete registration and normalizes both phone fields', () => {
+  it('accepts a complete registration and normalizes the phone field', () => {
     const parsed = registrationSchema.parse(validBase);
     expect(parsed.phone).toBe('+2348031234567');
-    expect(parsed.phone_confirm).toBe('+2348031234567');
-  });
-
-  it('rejects mismatched phone confirmation', () => {
-    expect(() =>
-      registrationSchema.parse({ ...validBase, phone_confirm: '07011111111' }),
-    ).toThrow(/match/);
   });
 
   it('rejects weak passwords', () => {

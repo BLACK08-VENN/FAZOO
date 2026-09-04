@@ -218,6 +218,9 @@ create trigger guard_profile_update before update on public.profiles
 -- ── auto-create profile on signup ───────────────────────────────────────────
 -- Registration supplies full_name/phone/organization_slug via user_metadata.
 -- New accounts always start pending; admins approve through admin RPCs.
+-- The trigger creates both the legacy profile row AND the primary
+-- organization_membership so self-registered BAs appear in the admin's
+-- pending-approval queue.
 create function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare v_org uuid;
@@ -236,6 +239,25 @@ begin
     'brand_ambassador',
     'pending'
   );
+
+  insert into public.organization_memberships
+    (user_id, organization_id, role, account_status)
+  values (
+    new.id,
+    v_org,
+    'brand_ambassador',
+    'pending'
+  )
+  on conflict (user_id, organization_id) do nothing;
+
+  update public.profiles
+  set current_membership_id = (
+    select m.id from public.organization_memberships m
+    where m.user_id = new.id and m.organization_id = v_org
+    limit 1
+  )
+  where id = new.id;
+
   return new;
 end;
 $$;

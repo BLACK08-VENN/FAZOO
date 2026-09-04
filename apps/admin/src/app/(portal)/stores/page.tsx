@@ -15,7 +15,7 @@ export default async function StoresPage() {
 
   return (
     <>
-      <PageHeader title="Stores" description="Locations and geofence radii." />
+      <PageHeader title="Store management" description="Locations and their geofence radii. Add or remove store locations." />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <TableWrap>
@@ -26,6 +26,7 @@ export default async function StoresPage() {
                 <Th>Address</Th>
                 <Th className="text-right">Radius</Th>
                 <Th>Status</Th>
+                <Th className="text-right">Actions</Th>
               </tr>
             </thead>
             <tbody>
@@ -37,6 +38,20 @@ export default async function StoresPage() {
                   <Td className="text-muted">{s.address ?? '—'}</Td>
                   <Td className="text-right tabular-nums">{s.geofence_radius_metres} m</Td>
                   <Td>{s.status}</Td>
+                  <Td className="text-right">
+                    <form
+                      action={async () => {
+                        'use server';
+                        const { client: c } = await requireStaff();
+                        await c.rpc('admin_delete_store' as never, { p_store_id: s.id } as never);
+                        revalidatePath('/stores');
+                      }}
+                    >
+                      <Button type="submit" variant="destructive" className="h-8 px-3 text-xs">
+                        Delete
+                      </Button>
+                    </form>
+                  </Td>
                 </tr>
               ))}
             </tbody>

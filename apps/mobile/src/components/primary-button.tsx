@@ -28,15 +28,15 @@ export function PrimaryButton({
 }) {
   const shellClass =
     variant === 'ghost'
-      ? 'border border-white/28 bg-white/14'
+      ? 'border border-white/16 bg-white/8'
       : variant === 'danger'
-        ? 'border border-rose-200/26 bg-rose-500/56'
+        ? 'border border-rose-200/20 bg-[#3A1430]'
         : variant === 'secondary'
-          ? 'border border-white/26 bg-white/16'
-          : 'border border-white/26 bg-transparent';
+          ? 'border border-white/16 bg-white/10'
+          : 'border border-white/14 bg-transparent';
 
   const textClass =
-    variant === 'ghost' || variant === 'secondary' ? 'text-[#1F130C]' : 'text-white';
+    variant === 'ghost' || variant === 'secondary' ? 'text-white' : 'text-white';
 
   return (
     <TouchableOpacity
@@ -51,7 +51,7 @@ export function PrimaryButton({
     >
       {variant === 'primary' ? (
         <LinearGradient
-          colors={['rgba(255,255,255,0.32)', 'rgba(124,92,255,0.88)', 'rgba(53,198,255,0.78)']}
+          colors={['#A178FF', '#7C5CFF', '#34D1FF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="min-h-16 flex-row items-center justify-center px-6"
@@ -59,7 +59,7 @@ export function PrimaryButton({
           <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} />
         </LinearGradient>
       ) : (
-        <View className="min-h-16 flex-row items-center justify-center px-6 bg-white/8">
+        <View className="min-h-16 flex-row items-center justify-center px-6 bg-white/6">
           <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} />
         </View>
       )}
@@ -86,7 +86,7 @@ function Content({
   }
   return (
     <View className="flex-row items-center justify-center gap-2">
-      {icon ? <Ionicons name={icon} size={20} color={textClass.includes('[#1F130C]') ? '#1F130C' : '#fff'} /> : null}
+      {icon ? <Ionicons name={icon} size={20} color="#fff" /> : null}
       <Text className={`text-[17px] font-semibold ${textClass}`}>{label}</Text>
     </View>
   );

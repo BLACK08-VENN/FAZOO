@@ -76,7 +76,7 @@ function RetailToday() {
   const assignments = data?.assignments ?? [];
 
   return (
-    <Screen bottomInset={false} backdropImageOpacity={0.4} backdropOverlayOpacity={0.2}>
+    <Screen bottomInset={false} backdropOverlayOpacity={0.2}>
       <HeroCard
         eyebrow={`Today · ${lagosDate()} (Nigeria)`}
         title={data?.attendance_date ?? 'Today'}
