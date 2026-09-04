@@ -63,8 +63,8 @@ export default function VedaToday() {
         </View>
 
         <Card className="mb-4">
-          <Text className="text-base font-bold text-ink">Add a log</Text>
-          <Text className="mb-2 mt-1 text-sm leading-6 text-slate-600">Choose a school, then add a visit log with a document photo and selfie.</Text>
+          <Text className="font-sans text-base font-bold text-ink">Add a log</Text>
+          <Text className="font-sans mb-2 mt-1 text-sm leading-6 text-slate-600">Choose a school, then add a visit log with a document photo and selfie.</Text>
           <PrimaryButton label="Choose school & add log" onPress={() => router.push('/campaigns')} icon="add-circle" />
         </Card>
 
@@ -92,23 +92,23 @@ export default function VedaToday() {
               const totalItems = (item.distributions ?? []).reduce((sum, d) => sum + d.quantity, 0);
               return (
                 <Card key={a.id}>
-                  <Text className="text-base font-bold text-ink">{a.school_name}</Text>
-                  {a.school_region ? <Text className="mt-0.5 text-sm text-slate-500">{a.school_region}</Text> : null}
-                  {item.weekly_off_day && item.weekly_off_day.length > 0 ? <Text className="mt-1 text-xs uppercase tracking-wide text-slate-500">Weekly off: {weeklyOffDayName(item.weekly_off_day)}</Text> : null}
+                  <Text className="font-sans text-base font-bold text-ink">{a.school_name}</Text>
+                  {a.school_region ? <Text className="font-sans mt-0.5 text-sm text-slate-500">{a.school_region}</Text> : null}
+                  {item.weekly_off_day && item.weekly_off_day.length > 0 ? <Text className="font-sans mt-1 text-xs uppercase tracking-wide text-slate-500">Weekly off: {weeklyOffDayName(item.weekly_off_day)}</Text> : null}
                   <View className="mt-4 rounded-3xl bg-slate-100 p-4">
-                    <Text className="text-xs uppercase tracking-wide text-slate-500">Stationery distributed today</Text>
-                    <Text className="mt-1 text-3xl font-bold text-indigo-700">{totalItems}<Text className="text-base font-normal text-slate-500"> units</Text></Text>
+                    <Text className="font-sans text-xs uppercase tracking-wide text-slate-500">Stationery distributed today</Text>
+                    <Text className="font-sans mt-1 text-3xl font-bold text-indigo-700">{totalItems}<Text className="font-sans text-base font-normal text-slate-500"> units</Text></Text>
                     {(item.distributions ?? []).length > 0 ? (
                       <View className="mt-2 gap-1">
                         {(item.distributions ?? []).map((d) => (
                           <View key={d.id} className="flex-row justify-between">
-                            <Text className="text-slate-700">{d.item_name}</Text>
-                            <Text className="font-medium tabular-nums text-slate-700">×{d.quantity}</Text>
+                            <Text className="font-sans text-slate-700">{d.item_name}</Text>
+                            <Text className="font-sans font-medium tabular-nums text-slate-700">×{d.quantity}</Text>
                           </View>
                         ))}
                       </View>
                     ) : (
-                      <Text className="mt-1 text-slate-500">No distribution recorded yet.</Text>
+                      <Text className="font-sans mt-1 text-slate-500">No distribution recorded yet.</Text>
                     )}
                   </View>
                   <View className="mt-4 gap-2">
@@ -131,7 +131,7 @@ export default function VedaToday() {
           </View>
         )}
 
-        <Text className="mt-10 text-center text-xs text-white/42">Fazoo · v0.1</Text>
+        <Text className="font-sans mt-10 text-center text-xs text-white/42">Fazoo · v0.1</Text>
     </Screen>
   );
 }

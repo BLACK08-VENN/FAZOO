@@ -13,7 +13,7 @@ export default function NotFound() {
         icon="compass"
       />
       <GlassCard>
-        <Text className="text-sm leading-6 text-white/72">
+        <Text className="font-sans text-sm leading-6 text-white/72">
           Return to Today to continue your shift, review assignments, or resume an in-progress task.
         </Text>
       </GlassCard>

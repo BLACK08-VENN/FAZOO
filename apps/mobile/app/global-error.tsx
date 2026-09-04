@@ -26,7 +26,7 @@ export default function GlobalError({
         icon="alert-circle"
       />
       <GlassCard>
-        <Text className="text-sm leading-6 text-white/72">
+        <Text className="font-sans text-sm leading-6 text-white/72">
           We captured the error for follow-up. Reset the screen to retry the last action.
         </Text>
       </GlassCard>

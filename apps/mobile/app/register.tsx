@@ -25,7 +25,7 @@ function SecureField({ label, value, onChange, keyboardType }: { label: string; 
         hitSlop={8}
         className="-mt-1 mb-3 self-end"
       >
-        <Text className="text-sm font-semibold text-white/70">{show ? 'Hide' : 'Show'}</Text>
+        <Text className="font-sans text-sm font-semibold text-white/70">{show ? 'Hide' : 'Show'}</Text>
       </Pressable>
     </View>
   );
@@ -103,7 +103,7 @@ export default function Register() {
             icon="person-add"
           />
           <View className="mb-4 rounded-3xl border border-white/14 bg-white/10 px-4 py-4">
-            <Text className="text-sm leading-6 text-[#4D3426]">
+            <Text className="font-sans text-sm leading-6 text-[#4D3426]">
               Sign up first. Your administrator will connect you to the right brand and assign your stores or schools.
             </Text>
           </View>
@@ -113,7 +113,7 @@ export default function Register() {
           <SecureField label="Password" value={password} onChange={setPassword} />
           <SecureField label="Confirm password" value={passwordConfirm} onChange={setPasswordConfirm} />
 
-          {error ? <Text role="alert" className="mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+          {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
 
           <PrimaryButton
             label={busy ? 'Creating account…' : 'Create my account'}

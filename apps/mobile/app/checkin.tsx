@@ -112,19 +112,19 @@ export default function CheckIn() {
       {step === 1 ? (
         <>
           <Card>
-            <Text className="text-xl font-bold text-ink">{assignment?.assignment.store_name ?? 'Loading…'}</Text>
-            <Text className="mt-1 text-sm leading-6 text-slate-600">{assignment?.assignment.store_address}</Text>
-            <Text className="mt-4 text-sm font-semibold text-slate-700">Allowed radius: {radius} m</Text>
+            <Text className="font-sans text-xl font-bold text-white">{assignment?.assignment.store_name ?? 'Loading…'}</Text>
+            <Text className="font-sans mt-1 text-sm leading-6 text-[#C8D3F5]">{assignment?.assignment.store_address}</Text>
+            <Text className="font-sans mt-4 text-sm font-semibold text-[#D9E1FF]">Allowed radius: {radius} m</Text>
             {locating ? (
               <ActivityIndicator color="#5B6CFF" className="mt-4" />
             ) : distance !== null ? (
               <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the store — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check in`} />
             ) : (
-              <Text className="mt-3 text-sm text-slate-500">Tap “Get my location” so we can verify you are at the store.</Text>
+              <Text className="font-sans mt-3 text-sm text-[#A8B6E8]">Tap “Get my location” so we can verify you are at the store.</Text>
             )}
           </Card>
           <GlassCard className="mb-1 mt-4">
-            <Text className="text-sm leading-6 text-white/72">Distance is shown for guidance only. The server rechecks the geofence before your attendance is accepted.</Text>
+            <Text className="font-sans text-sm leading-6 text-white/72">Distance is shown for guidance only. The server rechecks the geofence before your attendance is accepted.</Text>
           </GlassCard>
           <PrimaryButton label={fix ? 'Refresh location' : 'Get my location'} onPress={() => void locate()} busy={locating} icon="locate" />
           <PrimaryButton label="Continue" disabled={!insideGeofence} onPress={() => setStep(2)} />
@@ -134,7 +134,7 @@ export default function CheckIn() {
       {step === 2 ? (
         <>
           <Card>
-            <Text className="text-base leading-6 text-slate-600">Take a clear photo of the Lenovo product or stock evidence for this visit.</Text>
+            <Text className="font-sans text-base leading-6 text-[#C8D3F5]">Take a clear photo of the Lenovo product or stock evidence for this visit.</Text>
             <CaptureBox photo={stock} onSnap={() => void snap('stock')} hint="Tap to take the product photo" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!stock} onPress={() => void snap('stock')} />
@@ -146,7 +146,7 @@ export default function CheckIn() {
       {step === 3 ? (
         <>
           <Card>
-            <Text className="text-base leading-6 text-slate-600">Take a clear selfie of yourself for this Lenovo visit.</Text>
+            <Text className="font-sans text-base leading-6 text-[#C8D3F5]">Take a clear selfie of yourself for this Lenovo visit.</Text>
             <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your selfie" />
           </Card>
           <MultilineField label="Notes" placeholder="Optional notes for your supervisor" value={notes} onChangeText={setNotes} />
@@ -161,7 +161,7 @@ export default function CheckIn() {
 function CaptureBox({ photo, onSnap, hint }: { photo: CapturedPhoto | null; onSnap: () => void; hint: string; }) {
   return (
     <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
-      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-semibold text-white">{hint}</Text></View>}
+      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-sans font-semibold text-white">{hint}</Text></View>}
     </PrimaryButton>
   );
 }

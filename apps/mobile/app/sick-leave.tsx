@@ -64,7 +64,7 @@ export default function SickLeave() {
 
       <SectionLabel>Details</SectionLabel>
       <GlassCard>
-        <Text className="text-base leading-6 text-white/78">
+        <Text className="font-sans text-base leading-6 text-white/78">
           Sick leave is recorded against today’s server-verified attendance date and becomes visible to your supervisor immediately or on next sync.
         </Text>
       </GlassCard>

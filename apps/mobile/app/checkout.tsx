@@ -101,20 +101,20 @@ export default function Checkout() {
 
       {step === 1 ? (
         <>
-          {selected ? <Text className="mb-3 text-sm text-white/70">{selected.assignment.store_name || selected.assignment.campaign_name}{selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}</Text> : null}
+          {selected ? <Text className="font-sans mb-3 text-sm text-white/70">{selected.assignment.store_name || selected.assignment.campaign_name}{selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}</Text> : null}
           <Card>
-            <Text className="text-4xl font-bold text-indigo-700">{selected?.total_units_today ?? 0}<Text className="text-base font-normal text-slate-500"> units today</Text></Text>
+            <Text className="font-sans text-4xl font-bold text-indigo-700">{selected?.total_units_today ?? 0}<Text className="font-sans text-base font-normal text-slate-500"> units today</Text></Text>
             {(selected?.sales ?? []).map((s) => (
               <View key={s.id} className="mt-2 flex-row justify-between">
-                <Text className="text-slate-700">{s.sku_name}</Text>
-                <Text className="tabular-nums text-slate-700">×{s.quantity}</Text>
+                <Text className="font-sans text-slate-700">{s.sku_name}</Text>
+                <Text className="font-sans tabular-nums text-slate-700">×{s.quantity}</Text>
               </View>
             ))}
-            {(selected?.sales ?? []).length === 0 ? <Text className="mt-2 text-slate-500">No sales were recorded.</Text> : null}
+            {(selected?.sales ?? []).length === 0 ? <Text className="font-sans mt-2 text-slate-500">No sales were recorded.</Text> : null}
           </Card>
           <GlassCard className="mt-4">
             <View className="flex-row items-center justify-between gap-4">
-              <Text className="flex-1 text-sm leading-6 text-white/80">I understand today's sales become read-only after checkout.</Text>
+              <Text className="font-sans flex-1 text-sm leading-6 text-white/80">I understand today's sales become read-only after checkout.</Text>
               <Switch value={confirmed} onValueChange={setConfirmed} accessibilityLabel="Confirm checkout lock" />
             </View>
           </GlassCard>
@@ -126,7 +126,7 @@ export default function Checkout() {
       {step === 2 ? (
         <>
           <Card>
-            <Text className="text-base leading-6 text-slate-600">Take a clear photo of the Lenovo product or stock evidence for this completed visit.</Text>
+            <Text className="font-sans text-base leading-6 text-slate-600">Take a clear photo of the Lenovo product or stock evidence for this completed visit.</Text>
             <CaptureBox photo={stock} onSnap={() => void snap('stock')} hint="Tap to take the product photo" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!stock} onPress={() => void snap('stock')} />
@@ -138,7 +138,7 @@ export default function Checkout() {
       {step === 3 ? (
         <>
           <Card>
-            <Text className="text-base leading-6 text-slate-600">Take a clear selfie of yourself for this Lenovo checkout.</Text>
+            <Text className="font-sans text-base leading-6 text-slate-600">Take a clear selfie of yourself for this Lenovo checkout.</Text>
             <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your selfie" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />
@@ -153,7 +153,7 @@ export default function Checkout() {
 function CaptureBox({ photo, onSnap, hint }: { photo: CapturedPhoto | null; onSnap: () => void; hint: string; }) {
   return (
     <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
-      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-semibold text-white">{hint}</Text></View>}
+      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-sans font-semibold text-white">{hint}</Text></View>}
     </PrimaryButton>
   );
 }

@@ -122,7 +122,7 @@ export default function VedaNewLog() {
       {step === 1 ? (
         <>
           <Card>
-            <Text className="text-base leading-6 text-slate-600">Photograph the stamped document for this school visit.</Text>
+            <Text className="font-sans text-base leading-6 text-slate-600">Photograph the stamped document for this school visit.</Text>
             <CaptureBox photo={document} onSnap={() => void snap('document')} hint="Tap to photograph the stamped document" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!document} onPress={() => void snap('document')} />
@@ -133,13 +133,13 @@ export default function VedaNewLog() {
       {step === 2 ? (
         <>
           <Card>
-            <Text className="text-base leading-6 text-slate-600">Take a clear selfie of yourself at the school.</Text>
+            <Text className="font-sans text-base leading-6 text-slate-600">Take a clear selfie of yourself at the school.</Text>
             <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your selfie" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />
           <GlassCard className="mt-4">
-            <Text className="mb-2 text-sm font-semibold text-white">Location verification</Text>
-            {locating ? <ActivityIndicator color="#D8DDFF" className="mt-2" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are ${distance} m from the school — within the ${geofenceRadius} m zone` : `You are ${distance} m away — move closer than ${geofenceRadius} m`} /> : <Text className="text-sm text-white/68">Get your location to verify you are at the school.</Text>}
+            <Text className="font-sans mb-2 text-sm font-semibold text-white">Location verification</Text>
+            {locating ? <ActivityIndicator color="#D8DDFF" className="mt-2" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are ${distance} m from the school — within the ${geofenceRadius} m zone` : `You are ${distance} m away — move closer than ${geofenceRadius} m`} /> : <Text className="font-sans text-sm text-white/68">Get your location to verify you are at the school.</Text>}
           </GlassCard>
           <PrimaryButton label={fix ? 'Refresh location' : 'Get my location'} onPress={() => void locate()} busy={locating} icon="locate" />
           <Field label="Learner count" placeholder="Learner count (optional)" keyboardType="number-pad" value={learnerCount} onChangeText={setLearnerCount} />
@@ -155,7 +155,7 @@ export default function VedaNewLog() {
 function CaptureBox({ photo, onSnap, hint }: { photo: CapturedPhoto | null; onSnap: () => void; hint: string }) {
   return (
     <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
-      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-semibold text-white">{hint}</Text></View>}
+      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-sans font-semibold text-white">{hint}</Text></View>}
     </PrimaryButton>
   );
 }

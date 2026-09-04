@@ -1,11 +1,13 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
 import { useRouteGuard } from '@/lib/guard';
 import { useRecoveryLinks } from '@/lib/recovery';
 import { AppBackdrop } from '@/components/ui';
+import soraFont from '../assets/fonts/Sora-Variable.ttf';
 import '../global.css';
 
 Sentry.init({
@@ -18,12 +20,15 @@ Sentry.init({
 function RootLayout() {
   useRecoveryLinks();
   const { ready } = useRouteGuard();
+  const [fontsLoaded] = useFonts({
+    Sora: soraFont,
+  });
 
-  if (!ready) {
+  if (!ready || !fontsLoaded) {
     return (
       <AppBackdrop>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#C084FC" accessibilityLabel="Loading session" />
+          <ActivityIndicator size="large" color="#A985FF" accessibilityLabel="Loading session" />
         </View>
       </AppBackdrop>
     );
@@ -35,7 +40,7 @@ function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#FFF4EA' },
+          contentStyle: { backgroundColor: '#080616' },
         }}
       >
         <Stack.Screen name="(app)" />

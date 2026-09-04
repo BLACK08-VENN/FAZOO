@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const ACTIVE = '#FFFFFF';
-const INACTIVE = 'rgba(167, 183, 235, 0.72)';
+const INACTIVE = 'rgba(203, 199, 231, 0.66)';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -29,10 +29,10 @@ export default function AppLayout() {
           left: 16,
           right: 16,
           bottom: 16,
-          backgroundColor: 'rgba(18, 15, 44, 0.94)',
-          borderTopColor: 'rgba(255,255,255,0.12)',
+          backgroundColor: 'rgba(20, 16, 39, 0.94)',
+          borderTopColor: 'rgba(255,255,255,0.22)',
           borderTopWidth: 1,
-          borderRadius: 28,
+          borderRadius: 30,
           height: 82,
           paddingTop: 12,
           paddingBottom: 12,
@@ -41,9 +41,9 @@ export default function AppLayout() {
         tabBarItemStyle: {
           paddingVertical: 4,
         },
-        tabBarLabelStyle: { fontSize: 13, fontWeight: '700' },
+        tabBarLabelStyle: { fontFamily: 'Sora', fontSize: 12, fontWeight: '700' },
         tabBarLabel: ({ children, color }) => (
-          <Text style={{ color, fontSize: 13, fontWeight: '700', paddingBottom: 2 }}>{children}</Text>
+          <Text style={{ color, fontFamily: 'Sora', fontSize: 12, fontWeight: '700', paddingBottom: 2 }}>{children}</Text>
         ),
         sceneStyle: { backgroundColor: 'transparent' },
       }}

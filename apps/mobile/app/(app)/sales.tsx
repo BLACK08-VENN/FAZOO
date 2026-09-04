@@ -101,11 +101,11 @@ export default function Sales() {
       ) : (
         <>
           <Card className="mb-4">
-            <Text className="mb-3 text-lg font-bold text-ink">Choose SKU</Text>
+            <Text className="font-sans mb-3 text-lg font-bold text-ink">Choose SKU</Text>
             {skus.map((s) => (
               <Pressable key={s.id} onPress={() => setSkuId(s.id)} accessibilityRole="button" className={`mb-2 rounded-2xl border px-4 py-4 ${skuId === s.id ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
-                <Text className="text-base font-semibold text-slate-800">{s.name}</Text>
-                <Text className="mt-1 text-sm text-slate-500">{s.code}{skuId === s.id ? ' · selected' : ''}</Text>
+                <Text className="font-sans text-base font-semibold text-slate-800">{s.name}</Text>
+                <Text className="font-sans mt-1 text-sm text-slate-500">{s.code}{skuId === s.id ? ' · selected' : ''}</Text>
               </Pressable>
             ))}
           </Card>
@@ -118,12 +118,12 @@ export default function Sales() {
 
       {(selected?.sales ?? []).length > 0 ? (
         <Card className="mt-6">
-          <Text className="mb-2 text-lg font-bold text-ink">Recorded today</Text>
+          <Text className="font-sans mb-2 text-lg font-bold text-ink">Recorded today</Text>
           {(selected?.sales ?? []).map((s, index, arr) => (
             <View key={s.id} className={`py-3 ${index < arr.length - 1 ? 'border-b border-slate-200' : ''}`}>
               <View className="flex-row items-center justify-between">
-                <Text className="flex-1 text-base font-medium text-slate-800">{s.sku_name}</Text>
-                <Text className="tabular-nums text-base text-slate-700">×{s.quantity}</Text>
+                <Text className="font-sans flex-1 text-base font-medium text-slate-800">{s.sku_name}</Text>
+                <Text className="font-sans tabular-nums text-base text-slate-700">×{s.quantity}</Text>
               </View>
               {logOpen ? (
                 editingId === s.id ? (

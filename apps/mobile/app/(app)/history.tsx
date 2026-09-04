@@ -55,8 +55,8 @@ export default function History() {
   return (
     <Screen bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <ScreenHeader eyebrow="History" title="Your activity" subtitle="Attendance records, timings, and submitted evidence from recent days." />
-      {loading ? <Text className="text-white/70">Loading…</Text> : null}
-      {error ? <Text role="alert" className="mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+      {loading ? <Text className="font-sans text-white/70">Loading…</Text> : null}
+      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
       {!loading && logs.length === 0 ? (
         <EmptyState title="No attendance history yet" body="Your check-ins and photos will appear here after your first completed visit." />
       ) : null}
@@ -64,14 +64,14 @@ export default function History() {
         <Card key={l.id} className="mb-4">
           <View className="flex-row justify-between gap-4">
             <View className="flex-1">
-              <Text className="text-lg font-bold text-ink">{l.attendance_date}</Text>
-              <Text className="mt-1 capitalize text-slate-600">
+              <Text className="font-sans text-lg font-bold text-ink">{l.attendance_date}</Text>
+              <Text className="font-sans mt-1 capitalize text-slate-600">
                 {l.attendance_status.replace('_', ' ')}
                 {l.checkin_at ? ` · in ${formatLagosDisplay(l.checkin_at)}` : ''}
                 {l.checkout_at ? ` · out ${formatLagosDisplay(l.checkout_at)}` : ''}
               </Text>
             </View>
-            <Text className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold text-slate-600">{l.status}</Text>
+            <Text className="font-sans rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold text-slate-600">{l.status}</Text>
           </View>
           <PhotoThumbnails photos={photosByLog.get(l.id) ?? []} />
         </Card>
@@ -126,7 +126,7 @@ function PhotoThumbnails({ photos }: { photos: Photo[] }) {
               accessibilityLabel={PHOTO_TYPE_LABELS[photo.photo_type]}
               onError={() => setFailed((prev) => ({ ...prev, [photo.storage_path]: true }))}
             />
-            <Text className="mt-1 text-center text-[10px] text-slate-500">{PHOTO_TYPE_LABELS[photo.photo_type]}</Text>
+            <Text className="font-sans mt-1 text-center text-[10px] text-slate-500">{PHOTO_TYPE_LABELS[photo.photo_type]}</Text>
           </View>
         );
       })}

@@ -54,7 +54,7 @@ const initialForm: LeaveFormState = {
 function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} className={`mb-2 mr-2 rounded-full border px-4 py-2 ${selected ? 'border-white/20 bg-white/18' : 'border-white/12 bg-white/8'}`}>
-      <Text className={`font-medium ${selected ? 'text-white' : 'text-white/72'}`}>{label}</Text>
+      <Text className={`font-sans font-medium ${selected ? 'text-white' : 'text-white/72'}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -81,7 +81,7 @@ function DateField({ label, value, onChange, minimumDate, icon = 'calendar' }: {
   }
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-white/82">{label}</Text>
+      <Text className="font-sans mb-2 text-sm font-medium text-white/82">{label}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value || 'not set'}`} onPress={() => setShow((open) => !open)} className="h-14 flex-row items-center justify-between rounded-2xl border border-white/12 bg-white/10 px-4">
         <Text className={value ? 'text-white' : 'text-white/52'}>{value || 'Pick a date'}</Text>
         <Ionicons name={icon} size={18} color="#D8DDFF" />
@@ -197,7 +197,7 @@ export default function LeavePage() {
 
       <SectionLabel>1. Leave details</SectionLabel>
       <Card className="mb-4">
-        <Text className="mb-2 text-lg font-bold text-ink">Type of leave</Text>
+        <Text className="font-sans mb-2 text-lg font-bold text-ink">Type of leave</Text>
         <View className="mb-2 flex-row flex-wrap rounded-3xl bg-slate-950 px-3 py-3">
           {LEAVE_TYPES.map((item) => <Choice key={item.value} label={item.label} selected={form.leave_type === item.value} onPress={() => setForm((v) => ({ ...v, leave_type: item.value }))} />)}
         </View>
@@ -210,8 +210,8 @@ export default function LeavePage() {
       <Card className="mb-4">
         <View className="mb-4 flex-row items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-4">
           <View className="flex-1">
-            <Text className="font-semibold text-slate-800">Supervisor informed</Text>
-            <Text className="mt-1 text-sm leading-6 text-slate-500">Confirm you have discussed this request.</Text>
+            <Text className="font-sans font-semibold text-slate-800">Supervisor informed</Text>
+            <Text className="font-sans mt-1 text-sm leading-6 text-slate-500">Confirm you have discussed this request.</Text>
           </View>
           <Switch value={form.supervisor_informed} onValueChange={(value) => setForm((v) => ({ ...v, supervisor_informed: value }))} trackColor={{ true: '#5B6CFF' }} />
         </View>
@@ -223,7 +223,7 @@ export default function LeavePage() {
 
       <SectionLabel>3. Supporting documents</SectionLabel>
       <GlassCard>
-        <Text className="mb-3 text-sm leading-6 text-white/72">Select the documents you can provide to your supervisor.</Text>
+        <Text className="font-sans mb-3 text-sm leading-6 text-white/72">Select the documents you can provide to your supervisor.</Text>
         <View className="flex-row flex-wrap">
           {DOCUMENTS.map(([value, label]) => <Choice key={value} label={label} selected={form.supporting_document_types.includes(value)} onPress={() => toggleDocument(value)} />)}
         </View>
@@ -231,29 +231,29 @@ export default function LeavePage() {
 
       <SectionLabel>Acknowledgement</SectionLabel>
       <GlassCard>
-        <Text className="text-sm leading-6 text-white/76">By sending this form, I confirm the details are accurate and understand the request is not approved until an admin confirms it.</Text>
+        <Text className="font-sans text-sm leading-6 text-white/76">By sending this form, I confirm the details are accurate and understand the request is not approved until an admin confirms it.</Text>
         <View className="mt-4 flex-row items-center justify-between gap-4">
-          <Text className="font-semibold text-white">I acknowledge</Text>
+          <Text className="font-sans font-semibold text-white">I acknowledge</Text>
           <Switch value={form.policy_acknowledged} onValueChange={(value) => setForm((v) => ({ ...v, policy_acknowledged: value }))} trackColor={{ true: '#5B6CFF' }} />
         </View>
       </GlassCard>
 
-      {message ? <Text accessibilityRole="alert" className={`mb-3 mt-4 text-sm font-medium ${message.tone === 'ok' ? 'text-emerald-200' : 'text-rose-200'}`}>{message.text}</Text> : null}
+      {message ? <Text accessibilityRole="alert" className={`font-sans mb-3 mt-4 text-sm font-medium ${message.tone === 'ok' ? 'text-emerald-200' : 'text-rose-200'}`}>{message.text}</Text> : null}
       <PrimaryButton label="Send leave request" busy={busy} onPress={() => void submit()} icon="send" />
 
       <SectionLabel>My requests</SectionLabel>
-      {loading ? <Text className="text-white/70">Loading…</Text> : null}
+      {loading ? <Text className="font-sans text-white/70">Loading…</Text> : null}
       {!loading && requests.length === 0 ? <EmptyState title="No leave requests yet" body="Your recent submissions will appear here." /> : null}
       {requests.map((request) => (
         <Card key={request.id} className="mb-4">
           <View className="flex-row items-start justify-between gap-4">
             <View className="flex-1">
-              <Text className="text-lg font-bold capitalize text-ink">{request.leave_type.replaceAll('_', ' ')}</Text>
-              <Text className="mt-1 text-sm text-slate-500">{request.start_date} — {request.end_date}</Text>
+              <Text className="font-sans text-lg font-bold capitalize text-ink">{request.leave_type.replaceAll('_', ' ')}</Text>
+              <Text className="font-sans mt-1 text-sm text-slate-500">{request.start_date} — {request.end_date}</Text>
             </View>
-            <Text className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${request.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : request.status === 'denied' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{request.status}</Text>
+            <Text className={`font-sans rounded-full px-3 py-1 text-xs font-bold uppercase ${request.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : request.status === 'denied' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{request.status}</Text>
           </View>
-          {request.review_note ? <Text className="mt-3 border-t border-slate-200 pt-3 text-sm leading-6 text-slate-600">Admin note: {request.review_note}</Text> : null}
+          {request.review_note ? <Text className="font-sans mt-3 border-t border-slate-200 pt-3 text-sm leading-6 text-slate-600">Admin note: {request.review_note}</Text> : null}
         </Card>
       ))}
     </Screen>

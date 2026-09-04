@@ -94,12 +94,12 @@ export default function Profile() {
               disabled={!newPassword}
             />
             {error ? (
-              <Text role="alert" className="mt-2 font-medium text-white">
+              <Text role="alert" className="font-sans mt-2 font-medium text-white">
                 {error}
               </Text>
             ) : null}
             {message ? (
-              <Text role="status" className="mt-2 font-medium text-emerald-200">
+              <Text role="status" className="font-sans mt-2 font-medium text-emerald-200">
                 {message}
               </Text>
             ) : null}
@@ -118,7 +118,7 @@ export default function Profile() {
 
           <View className="mt-6 flex-row items-center justify-center gap-2">
             <Ionicons name="cloud-done" size={14} color="#D8DDFF" />
-            <Text className="text-center text-xs text-white/58">
+            <Text className="font-sans text-center text-xs text-white/58">
             Fazoo field app · your data syncs securely when online
             </Text>
           </View>

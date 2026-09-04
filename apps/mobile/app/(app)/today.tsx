@@ -25,8 +25,8 @@ export default function Today() {
   if (kind === 'schools') return <VedaToday />;
   if (kindLoading && kind === null) {
     return (
-      <View className="flex-1 items-center justify-center bg-lavender">
-        <ActivityIndicator size="large" color="#3139B4" />
+      <View className="flex-1 items-center justify-center bg-transparent">
+        <ActivityIndicator size="large" color="#7C5CFF" />
       </View>
     );
   }
@@ -85,7 +85,7 @@ function RetailToday() {
         trailing={
           <View className="items-end">
             <View className="rounded-full bg-white/12 px-3 py-2">
-              <Text className="text-xs font-semibold text-white/80">
+              <Text className="font-sans text-xs font-semibold text-white/80">
                 {online === false ? 'Offline' : 'Ready'}
               </Text>
             </View>
@@ -101,11 +101,11 @@ function RetailToday() {
       </Card>
 
       {counts.failed > 0 ? (
-        <Card className="mb-4 border-rose-300/30 bg-rose-200/70">
+        <Card className="mb-4 border-rose-300/20 bg-[#31172A]/80">
           <View className="flex-row items-center justify-between gap-4">
             <View className="flex-1">
-              <Text className="text-base font-semibold text-[#6B1020]">{counts.failed} action{counts.failed > 1 ? 's' : ''} failed to sync</Text>
-              <Text className="mt-1 text-sm leading-6 text-[#8A1D32]">
+              <Text className="font-sans text-base font-semibold text-white">{counts.failed} action{counts.failed > 1 ? 's' : ''} failed to sync</Text>
+              <Text className="font-sans mt-1 text-sm leading-6 text-[#F1B8C6]">
                 Retry now when you have a stable connection.
               </Text>
             </View>
@@ -116,8 +116,8 @@ function RetailToday() {
 
       {assignments.length === 0 ? (
         <Card>
-          <Text className="text-lg font-semibold text-[#1F130C]">No assignment scheduled.</Text>
-          <Text className="mt-2 text-base leading-7 text-[#4D3426]">
+          <Text className="font-sans text-lg font-semibold text-white">No assignment scheduled.</Text>
+          <Text className="font-sans mt-2 text-base leading-7 text-[#C8D3F5]">
             Check back later or contact your supervisor if you expected a route today.
           </Text>
         </Card>
@@ -130,9 +130,9 @@ function RetailToday() {
               <Card key={assignment.id}>
                 <View className="flex-row items-start justify-between gap-4">
                   <View className="flex-1">
-                    <Text className="text-xs uppercase tracking-[2px] text-[#6B4A36]">{assignment.campaign_name}</Text>
-                    <Text className="mt-2 text-[24px] font-bold leading-8 text-[#1F130C]">{assignment.store_name}</Text>
-                    <Text className="mt-2 text-base leading-7 text-[#4D3426]">{assignment.store_address}</Text>
+                    <Text className="font-sans text-xs uppercase tracking-[2px] text-[#A8B6E8]">{assignment.campaign_name}</Text>
+                    <Text className="font-sans mt-2 text-[24px] font-bold leading-8 text-white">{assignment.store_name}</Text>
+                    <Text className="font-sans mt-2 text-base leading-7 text-[#C8D3F5]">{assignment.store_address}</Text>
                   </View>
                   {item.log ? (
                     <StatusPill
@@ -142,24 +142,24 @@ function RetailToday() {
                   ) : null}
                 </View>
 
-                <View className="mt-3 rounded-xl bg-lavender/60 p-3">
-                  <Text className="text-xs uppercase tracking-wide text-muted">
+                <View className="mt-3 rounded-xl bg-white/6 p-3">
+                  <Text className="font-sans text-xs uppercase tracking-wide text-[#A8B6E8]">
                     Units sold today
                   </Text>
-                  <Text className="mt-1 text-3xl font-bold tabular-nums text-primary">
+                  <Text className="font-sans mt-1 text-3xl font-bold tabular-nums text-white">
                     {item.total_units_today ?? 0}
                   </Text>
                   {(item.sales ?? []).length > 0 ? (
                     <View className="mt-2 space-y-1">
                       {(item.sales ?? []).map((sale: NonNullable<BaTodayResult['assignments'][number]['sales']>[number]) => (
                         <View key={sale.id} className="flex-row justify-between">
-                          <Text className="text-charcoal">{sale.sku_name}</Text>
-                          <Text className="font-medium tabular-nums">{sale.quantity}</Text>
+                          <Text className="font-sans text-[#D9E1FF]">{sale.sku_name}</Text>
+                          <Text className="font-sans font-medium tabular-nums text-white">{sale.quantity}</Text>
                         </View>
                       ))}
                     </View>
                   ) : (
-                    <Text className="mt-1 text-muted">No sales recorded yet.</Text>
+                    <Text className="font-sans mt-1 text-[#A8B6E8]">No sales recorded yet.</Text>
                   )}
                 </View>
 
@@ -214,7 +214,7 @@ function RetailToday() {
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
-      <Text className="mt-10 text-center text-xs text-white/40">Fazoo · v0.1</Text>
+      <Text className="font-sans mt-10 text-center text-xs text-white/40">Fazoo · v0.1</Text>
     </Screen>
   );
 }

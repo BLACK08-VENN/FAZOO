@@ -79,7 +79,7 @@ export default function CampaignLogs() {
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <ScreenHeader eyebrow="Logs" title={headerTitle ?? ''} subtitle={headerSubtitle ?? undefined} />
 
-      {error ? <Text role="alert" className="mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
 
       {canAddVedaLog ? (
         <PrimaryButton
@@ -90,7 +90,7 @@ export default function CampaignLogs() {
       ) : null}
 
       {isVeda && !params.assignmentId ? (
-        <Text className="mb-3 text-sm leading-6 text-white/72">
+        <Text className="font-sans mb-3 text-sm leading-6 text-white/72">
           No active assignment was found for this school, but you can still start a new school log from here.
         </Text>
       ) : null}
@@ -110,16 +110,16 @@ export default function CampaignLogs() {
                 <Card key={v.id} className="mb-3">
                   <View className="flex-row items-start justify-between gap-4">
                     <View className="flex-1">
-                      <Text className="text-lg font-bold text-ink">{v.session_date}</Text>
-                      <Text className="mt-1 text-sm leading-6 text-slate-600">
+                      <Text className="font-sans text-lg font-bold text-ink">{v.session_date}</Text>
+                      <Text className="font-sans mt-1 text-sm leading-6 text-slate-600">
                         Learners: {v.learner_count}
                         {v.checkin_at ? ` · in ${formatLagosDisplay(v.checkin_at)}` : ''}
                         {v.checkout_at ? ` · out ${formatLagosDisplay(v.checkout_at)}` : ''}
                       </Text>
                     </View>
-                    <Text className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{v.status}</Text>
+                    <Text className="font-sans rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{v.status}</Text>
                   </View>
-                  {v.notes ? <Text className="mt-3 text-sm leading-6 text-slate-600">{v.notes}</Text> : null}
+                  {v.notes ? <Text className="font-sans mt-3 text-sm leading-6 text-slate-600">{v.notes}</Text> : null}
                 </Card>
               );
             }
@@ -128,16 +128,16 @@ export default function CampaignLogs() {
               <Card key={r.id} className="mb-3">
                 <View className="flex-row items-start justify-between gap-4">
                   <View className="flex-1">
-                    <Text className="text-lg font-bold text-ink">{r.attendance_date}</Text>
-                    <Text className="mt-1 text-sm capitalize leading-6 text-slate-600">
+                    <Text className="font-sans text-lg font-bold text-ink">{r.attendance_date}</Text>
+                    <Text className="font-sans mt-1 text-sm capitalize leading-6 text-slate-600">
                       {r.attendance_status.replace('_', ' ')}
                       {r.checkin_at ? ` · in ${formatLagosDisplay(r.checkin_at)}` : ''}
                       {r.checkout_at ? ` · out ${formatLagosDisplay(r.checkout_at)}` : ''}
                     </Text>
                   </View>
-                  <Text className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{r.status}</Text>
+                  <Text className="font-sans rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{r.status}</Text>
                 </View>
-                {r.notes ? <Text className="mt-3 text-sm leading-6 text-slate-600">{r.notes}</Text> : null}
+                {r.notes ? <Text className="font-sans mt-3 text-sm leading-6 text-slate-600">{r.notes}</Text> : null}
               </Card>
             );
           })}

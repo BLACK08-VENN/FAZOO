@@ -45,7 +45,7 @@ export default function ForgotPassword() {
         <GlassCard>
           {sent ? (
             <View className="rounded-2xl border border-emerald-300/30 bg-emerald-400/12 px-4 py-4">
-              <Text role="status" className="font-medium text-white">
+              <Text role="status" className="font-sans font-medium text-white">
                 Request received. Contact your supervisor to complete the reset if no message arrives.
               </Text>
             </View>
@@ -53,7 +53,7 @@ export default function ForgotPassword() {
 
           {error ? (
             <View className="mb-3 rounded-2xl border border-rose-300/30 bg-rose-400/12 px-4 py-4">
-              <Text role="alert" className="font-medium text-white">
+              <Text role="alert" className="font-sans font-medium text-white">
                 {error}
               </Text>
             </View>

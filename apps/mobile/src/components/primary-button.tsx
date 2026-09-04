@@ -46,12 +46,13 @@ export function PrimaryButton({
       accessibilityHint={accessibilityHint}
       accessibilityRole="button"
       accessibilityState={{ busy, disabled }}
-      className={`my-1.5 overflow-hidden rounded-2xl ${shellClass} ${disabled ? 'opacity-45' : ''}`}
+      className={`my-1.5 overflow-hidden rounded-[20px] ${shellClass} ${disabled ? 'opacity-45' : ''}`}
+      style={{ shadowColor: variant === 'primary' ? '#875CFF' : '#05020F', shadowOpacity: disabled ? 0 : 0.34, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: disabled ? 0 : 6 }}
       activeOpacity={0.85}
     >
       {variant === 'primary' ? (
         <LinearGradient
-          colors={['#A178FF', '#7C5CFF', '#34D1FF']}
+          colors={['#B68CFF', '#875CFF', '#5CDCF7']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="min-h-16 flex-row items-center justify-center px-6"
@@ -87,7 +88,7 @@ function Content({
   return (
     <View className="flex-row items-center justify-center gap-2">
       {icon ? <Ionicons name={icon} size={20} color="#fff" /> : null}
-      <Text className={`text-[17px] font-semibold ${textClass}`}>{label}</Text>
+      <Text className={`font-sans text-[17px] font-semibold ${textClass}`}>{label}</Text>
     </View>
   );
 }

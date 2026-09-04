@@ -24,7 +24,7 @@ export function StatusPill({
       accessibilityRole="text"
       accessibilityLabel={`${tone} status: ${label}`}
     >
-      <Text className="text-base font-medium capitalize text-white">{label}</Text>
+      <Text className="font-sans text-base font-medium capitalize text-white">{label}</Text>
     </View>
   );
 }

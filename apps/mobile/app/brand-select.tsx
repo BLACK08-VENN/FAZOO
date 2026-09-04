@@ -124,7 +124,7 @@ export default function BrandSelect() {
         icon="layers"
       />
 
-      {error ? <Text role="alert" className="mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
 
       <SectionLabel>Available brands</SectionLabel>
       {approved.map((m) => (
@@ -134,9 +134,9 @@ export default function BrandSelect() {
               <BrandLogo name={m.organization_name} slug={m.organization_slug} logoUrl={m.logo_url} />
             </View>
           ) : null}
-          <Text className="text-xl font-bold text-ink">{m.organization_name}</Text>
-          <Text className="mt-1 text-sm text-slate-500">{m.organization_slug}</Text>
-          <Text className="mt-3 text-sm leading-6 text-slate-600">
+          <Text className="font-sans text-xl font-bold text-ink">{m.organization_name}</Text>
+          <Text className="font-sans mt-1 text-sm text-slate-500">{m.organization_slug}</Text>
+          <Text className="font-sans mt-3 text-sm leading-6 text-slate-600">
             {m.has_code_gate ? 'Enter your supervisor-issued access code to unlock this brand.' : 'Open your dashboard and continue your shift.'}
           </Text>
 
@@ -171,8 +171,8 @@ export default function BrandSelect() {
           <GlassCard>
             {others.map((m) => (
               <View key={m.organization_id} className="border-b border-white/10 py-3 last:border-b-0">
-                <Text className="text-base font-semibold text-white">{m.organization_name}</Text>
-                <Text className="mt-1 text-sm capitalize text-white/68">{m.account_status.replace(/_/g, ' ')}</Text>
+                <Text className="font-sans text-base font-semibold text-white">{m.organization_name}</Text>
+                <Text className="font-sans mt-1 text-sm capitalize text-white/68">{m.account_status.replace(/_/g, ' ')}</Text>
               </View>
             ))}
           </GlassCard>

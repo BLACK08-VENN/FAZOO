@@ -159,25 +159,25 @@ export default function Campaigns() {
         >
           <View className="flex-row items-start justify-between gap-4">
             <View className="flex-1">
-              <Text className="text-xl font-bold text-ink">{item.title}</Text>
-              {item.subtitle ? <Text className="mt-2 text-sm leading-6 text-slate-600">{item.subtitle}</Text> : null}
+              <Text className="font-sans text-xl font-bold text-white">{item.title}</Text>
+              {item.subtitle ? <Text className="font-sans mt-2 text-sm leading-6 text-[#C8D3F5]">{item.subtitle}</Text> : null}
             </View>
-            <View className={`rounded-full px-3 py-1 ${item.locked ? 'bg-slate-900/8' : 'bg-emerald-500/10'}`}>
-              <Text className={`text-xs font-semibold uppercase ${item.locked ? (item.unlocked ? 'text-emerald-700' : 'text-slate-500') : 'text-emerald-700'}`}>
+            <View className={`rounded-full px-3 py-1 ${item.locked ? 'bg-white/8' : 'bg-emerald-500/14'}`}>
+              <Text className={`font-sans text-xs font-semibold uppercase ${item.locked ? (item.unlocked ? 'text-emerald-200' : 'text-[#A8B6E8]') : 'text-emerald-200'}`}>
                 {item.locked ? (item.unlocked ? 'Unlocked' : 'Locked') : 'Open'}
               </Text>
             </View>
           </View>
           <View className="mt-4 flex-row items-center justify-between">
-            <Text className="text-sm text-slate-500">
+            <Text className="font-sans text-sm text-[#A8B6E8]">
               {needsCode ? 'Unlock once to add logs.' : 'Tap to view logs and continue.'}
             </Text>
-            <Ionicons name={needsCode ? 'lock-closed' : 'chevron-forward'} size={18} color="#667085" />
+            <Ionicons name={needsCode ? 'lock-closed' : 'chevron-forward'} size={18} color="#C8D3F5" />
           </View>
         </TouchableOpacity>
 
         {needsCode && codeOpen === item.id ? (
-          <View className="mt-4 border-t border-slate-200 pt-4">
+          <View className="mt-4 border-t border-white/10 pt-4">
             <Field
               label="Access code"
               placeholder="Enter access code"
@@ -218,12 +218,12 @@ export default function Campaigns() {
       />
 
       <GlassCard className="mb-5">
-        <Text className="text-sm leading-6 text-white/72">
+        <Text className="font-sans text-sm leading-6 text-white/72">
           Access codes are validated server-side. Once unlocked, you can keep moving without re-entering the passcode on every visit.
         </Text>
       </GlassCard>
 
-      {error ? <Text role="alert" className="mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
 
       {items.length === 0 ? (
         <EmptyState
