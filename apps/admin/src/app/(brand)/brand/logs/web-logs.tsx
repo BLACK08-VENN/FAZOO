@@ -226,7 +226,7 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
         p_school_id: selectedSchool.school_id,
         p_learner_count: count,
         p_notes: notes.trim() || undefined,
-      });
+      } as never);
       if (checkinError) throw new Error(checkinError.message);
 
       setSuccess(`Log started successfully for ${selectedSchool.school_name}.`);
@@ -342,7 +342,8 @@ function RetailLogForm({ organizationId, userId }: Pick<Props, 'organizationId' 
     else {
       const result = data as unknown as BaTodayResult;
       setToday(result);
-      if (!assignmentId && result.assignments.length === 1) setAssignmentId(result.assignments[0].assignment.id);
+      const onlyAssignment = result.assignments.length === 1 ? result.assignments[0] : undefined;
+      if (!assignmentId && onlyAssignment) setAssignmentId(onlyAssignment.assignment.id);
     }
     setLoading(false);
   }
