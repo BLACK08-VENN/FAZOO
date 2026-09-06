@@ -159,7 +159,6 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const visibleSchools = useMemo(() => {
@@ -350,7 +349,6 @@ function RetailLogForm({ organizationId, userId }: Pick<Props, 'organizationId' 
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selected = today?.assignments.find((row) => row.assignment.id === assignmentId) ?? null;
