@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { BarChart3, ClipboardList, LogOut, Store, Users } from 'lucide-react';
+import { BarChart3, ClipboardList, FilePlus2, LogOut, Store, Users } from 'lucide-react';
 import { requireClient } from '@/lib/client-auth';
 import { signOutAction } from '../(portal)/actions';
 
 const NAV = [
   { href: '/brand', label: 'Overview', icon: BarChart3, exact: true },
+  { href: '/brand/logs', label: 'Create Log', icon: FilePlus2 },
   { href: '/brand/campaigns', label: 'Campaigns', icon: ClipboardList },
   { href: '/brand/stores', label: 'Stores', icon: Store },
   { href: '/brand/bas', label: 'Brand Ambassadors', icon: Users },
@@ -16,7 +17,11 @@ const ROLE_LABEL = { client: 'Client', brand_ambassador: 'Brand Ambassador' } as
 export default async function BrandLayout({ children }: { children: React.ReactNode }) {
   const { profile, brand } = await requireClient();
   const roleLabel = ROLE_LABEL[profile.role as keyof typeof ROLE_LABEL] ?? 'Brand workspace';
-  const nav = NAV.filter((item) => item.href === '/brand' || profile.role !== 'brand_ambassador');
+  const nav = NAV.filter((item) =>
+    profile.role === 'brand_ambassador'
+      ? item.href === '/brand' || item.href === '/brand/logs'
+      : item.href !== '/brand/logs',
+  );
 
   return (
     <div className="fazoo-shell flex min-h-screen">
