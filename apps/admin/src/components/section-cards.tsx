@@ -16,7 +16,7 @@ const SECTIONS = [
   { href: '/skus', label: 'SKUs', icon: Boxes },
   { href: '/veda-activations', label: 'Brand Activations', icon: GraduationCap },
   { href: '/veda-assignments', label: 'Brand Assignments', icon: CalendarRange },
-  { href: '/brands', label: 'Add Brand', icon: Building2 },
+  { href: '/brands', label: 'Brand', icon: Building2 },
 ] as const;
 
 export function SectionCards() {

@@ -29,6 +29,19 @@ Everything lives in ordered SQL migrations under `supabase/migrations/`:
 | `00023_fix_is_org_admin.sql` | org-admin helper fix |
 | `00024_admin_ba_management.sql` | admin BA create/assign management |
 | `00025_multi_off_days_and_assignments.sql` | array off-days + multi-assignment (`ba_today`/`veda_today` → `assignments[]`, per-assignment RPCs) |
+| `00026_veda_school_addresses.sql` | Veda school address fields |
+| `00027_rename_veda_demo_campaign.sql` | rename Veda demo campaign |
+| `00028_remove_demo_from_veda.sql` | strip demo data from Veda schema |
+| `00029_campaign_school_unlock.sql` | campaign → school unlock |
+| `00030_admin_delete_campaign.sql` | `admin_delete_campaign` RPC |
+| `00031_veda_self_serve_school_checkin.sql` | Veda BA self-serve school check-in |
+| `00032_fix_campaign_delete_cascade.sql` | campaign delete cascade fix |
+| `00033_admin_delete_store.sql` | `admin_delete_store` RPC |
+| `00034_admin_delete_sku.sql` | `admin_delete_sku` RPC |
+| `00035_admin_delete_organization.sql` | `admin_delete_organization` RPC |
+| `00036_ba_self_signup_membership.sql` | BA self-signup membership |
+| `00037_admin_set_organization_status.sql` | `admin_set_organization_status` RPC (pause/resume a brand) |
+| `00038_admin_create_campaign.sql` | `admin_create_campaign` RPC (brand-scoped campaign creation) |
 
 ## Conventions
 
