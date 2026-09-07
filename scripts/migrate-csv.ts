@@ -591,6 +591,7 @@ async function importVeda() {
     region?: string,
     address?: string,
     skipGeocoding = false,
+    campaignDetails: Partial<SchoolImportRecord> = {},
   ): Promise<string> {
     const existing = schoolIdByLegacy.get(legacyId);
     if (existing) return existing;
@@ -608,6 +609,7 @@ async function importVeda() {
           latitude: g?.lat ?? null,
           longitude: g?.lon ?? null,
           status: 'active',
+          ...campaignDetails,
         },
         { onConflict: 'organization_id,legacy_id' },
       )
@@ -622,21 +624,88 @@ async function importVeda() {
   const schoolsFile = process.argv.find((a) => a.startsWith('--veda-schools-file='))?.split('=')[1]
     ?? 'veda-schools.csv';
   const skipSchoolGeocoding = process.argv.includes('--skip-school-geocoding');
-  const schoolsRaw = readCsv<{ id: string; title: string; region: string; address?: string }>(schoolsFile);
+  type LegacySchoolRow = { id: string; title: string; region: string; address?: string };
+  type BooklistSchoolRow = {
+    'School Type:': string;
+    'BA Name:.BA Name': string;
+    Region: string;
+    Code: string;
+    'Name of the School:.Name_of_School': string;
+    'Contact Person Name:': string;
+    'Contact Person Designation:': string;
+    'Contact Person ( Mobile Phone Number):': string;
+    'Would you like us to print your book list?': string;
+    'When can we visit to collect the book list?': string;
+    'Max Total Population': string;
+  };
+  type SchoolImportRecord = {
+    organization_id: string;
+    legacy_id: number;
+    name: string;
+    address: string | null;
+    region: string | null;
+    latitude: null;
+    longitude: null;
+    status: 'active';
+    school_type?: string | null;
+    assigned_ba_name?: string | null;
+    source_code?: string | null;
+    contact_person_name?: string | null;
+    contact_person_designation?: string | null;
+    contact_person_phone?: string | null;
+    booklist_print_response?: string | null;
+    booklist_collection_visit?: string | null;
+    max_total_population?: number | null;
+  };
+
+  const rawSchools = readCsv<LegacySchoolRow | BooklistSchoolRow>(schoolsFile);
+  const isBooklist = rawSchools.length > 0 && 'Code' in rawSchools[0]!;
+  const schoolRecords: SchoolImportRecord[] = rawSchools.map((row) => {
+    if (!('Code' in row)) {
+      return {
+        organization_id: orgId,
+        legacy_id: Number(str(row.id)),
+        name: str(row.title),
+        address: str(row.address) || null,
+        region: str(row.region) || null,
+        latitude: null,
+        longitude: null,
+        status: 'active',
+      };
+    }
+
+    const code = str(row.Code);
+    const sourceName = str(row['Name of the School:.Name_of_School']);
+    const population = str(row['Max Total Population']);
+    if (!code || !/^\d+$/.test(code)) throw new Error(`Veda booklist school has invalid Code: "${code}"`);
+    if (population && !/^\d+$/.test(population)) {
+      throw new Error(`Veda booklist school ${code} has invalid Max Total Population`);
+    }
+    return {
+      organization_id: orgId,
+      legacy_id: Number(code),
+      name: sourceName || `Unnamed school (${code})`,
+      address: null,
+      region: str(row.Region) || null,
+      latitude: null,
+      longitude: null,
+      status: 'active',
+      school_type: str(row['School Type:']) || null,
+      assigned_ba_name: str(row['BA Name:.BA Name']) || null,
+      source_code: code,
+      contact_person_name: str(row['Contact Person Name:']) || null,
+      contact_person_designation: str(row['Contact Person Designation:']) || null,
+      contact_person_phone: str(row['Contact Person ( Mobile Phone Number):']) || null,
+      booklist_print_response: str(row['Would you like us to print your book list?']) || null,
+      booklist_collection_visit: str(row['When can we visit to collect the book list?']) || null,
+      max_total_population: population ? Number(population) : null,
+    };
+  });
 
   // A current school register can be loaded without sessions or geocoding.
   // Batch it to avoid thousands of sequential network round trips.
   if (process.argv.includes('--only=schools') && skipSchoolGeocoding) {
-    const records = schoolsRaw.map((s) => ({
-      organization_id: orgId,
-      legacy_id: Number(str(s.id)),
-      name: str(s.title),
-      address: str(s.address) || null,
-      region: str(s.region) || null,
-      latitude: null,
-      longitude: null,
-      status: 'active' as const,
-    }));
+    const records = schoolRecords;
     const batchSize = 500;
     for (let offset = 0; offset < records.length; offset += batchSize) {
       const batch = records.slice(offset, offset + batchSize);
@@ -646,12 +715,14 @@ async function importVeda() {
       if (error) throw new Error(`Veda school batch ${offset / batchSize + 1}: ${error.message}`);
       log.ok(`schools: ${Math.min(offset + batch.length, records.length)}/${records.length}`);
     }
-    const { count, error: countError } = await client
+    let countQuery = client
       .from('veda_schools')
       .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .gte('legacy_id', 1000001)
-      .lte('legacy_id', 1000000 + records.length);
+      .eq('organization_id', orgId);
+    countQuery = isBooklist
+      ? countQuery.not('source_code', 'is', null)
+      : countQuery.gte('legacy_id', 1000001).lte('legacy_id', 1000000 + records.length);
+    const { count, error: countError } = await countQuery;
     if (countError) throw new Error(`Veda school verification: ${countError.message}`);
     if (count !== records.length) {
       throw new Error(`Veda school verification: expected ${records.length}, found ${count ?? 0}`);
@@ -660,13 +731,14 @@ async function importVeda() {
     return;
   }
 
-  for (const s of schoolsRaw) {
+  for (const s of schoolRecords) {
     await ensureVedaSchool(
-      str(s.id),
-      str(s.title),
-      str(s.region),
-      str(s.address),
+      String(s.legacy_id),
+      s.name,
+      s.region ?? undefined,
+      s.address ?? undefined,
       skipSchoolGeocoding,
+      s,
     );
   }
 
@@ -762,8 +834,8 @@ async function main() {
   });
 
   orgIds = {
-    lenovo: await getOrg('lenovo-nigeria'),
-    veda: await getOrg('veda'),
+    lenovo: brand === 'lenovo' || brand === 'all' ? await getOrg('lenovo-nigeria') : '',
+    veda: brand === 'veda' || brand === 'all' ? await getOrg('veda') : '',
   };
   log.info(`connected to ${env.url}`);
 
