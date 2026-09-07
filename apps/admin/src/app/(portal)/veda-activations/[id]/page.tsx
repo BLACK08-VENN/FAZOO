@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Fragment } from 'react';
 import { notFound } from 'next/navigation';
 import { requireStaff } from '@/lib/auth';
 import { mapsLink } from '@/lib/format';
@@ -33,6 +34,7 @@ interface VedaSessionDetail {
     id: string;
     quantity: number;
     stationery_item: { id: string; name: string; code: string | null } | null;
+    grade: { id: string; name: string; code: string | null } | null;
   }> | null;
 }
 
@@ -50,9 +52,10 @@ export default async function VedaActivationDetailPage({
       `*,
        profiles!veda_sessions_brand_ambassador_id_fkey ( id, full_name, phone ),
        veda_schools!veda_sessions_school_id_fkey ( id, name, region, address ),
-       veda_session_distributions (
+        veda_session_distributions (
          id, quantity,
-         stationery_item:veda_stationery_items!veda_session_distributions_stationery_item_id_fkey ( id, name, code )
+         stationery_item:veda_stationery_items!veda_session_distributions_stationery_item_id_fkey ( id, name, code ),
+         grade:veda_grades!veda_session_distributions_grade_fkey ( id, name, code )
        )`,
     )
     .eq('id', id)
@@ -186,21 +189,61 @@ export default async function VedaActivationDetailPage({
         <Table>
           <thead>
             <tr>
+              <Th>Grade / level</Th>
               <Th>Stationery item</Th>
               <Th>Code</Th>
               <Th className="text-right">Units issued</Th>
             </tr>
           </thead>
           <tbody>
-            {(session.veda_session_distributions ?? []).map((d) => (
-              <tr key={d.id}>
-                <Td>{d.stationery_item?.name ?? 'Unknown item'}</Td>
-                <Td className="font-mono text-xs">{d.stationery_item?.code}</Td>
-                <Td className="text-right tabular-nums font-medium">{d.quantity}</Td>
-              </tr>
-            ))}
+            {(() => {
+              const dists = session.veda_session_distributions ?? [];
+              if (dists.length === 0) {
+                return (
+                  <tr>
+                    <Td colSpan={4} className="text-center text-muted">No distributions recorded.</Td>
+                  </tr>
+                );
+              }
+              const rows: Array<{
+                gradeKey: string;
+                gradeName: string;
+                items: typeof dists;
+              }> = [];
+              for (const d of dists) {
+                const gradeKey = d.grade?.id ?? '__general__';
+                const gradeName = d.grade?.name ?? 'General';
+                let bucket = rows.find((r) => r.gradeKey === gradeKey);
+                if (!bucket) {
+                  bucket = { gradeKey, gradeName, items: [] };
+                  rows.push(bucket);
+                }
+                bucket.items.push(d);
+              }
+              return rows.map((bucket) => (
+                <Fragment key={bucket.gradeKey}>
+                  {bucket.items.map((d) => (
+                    <tr key={d.id}>
+                      <Td className="font-medium">{bucket.gradeName}</Td>
+                      <Td>{d.stationery_item?.name ?? 'Unknown item'}</Td>
+                      <Td className="font-mono text-xs">{d.stationery_item?.code}</Td>
+                      <Td className="text-right tabular-nums font-medium">{d.quantity}</Td>
+                    </tr>
+                  ))}
+                  <tr className="bg-muted/10">
+                    <Td className="font-semibold text-muted">Subtotal — {bucket.gradeName}</Td>
+                    <Td />
+                    <Td />
+                    <Td className="text-right tabular-nums font-semibold text-muted">
+                      {bucket.items.reduce((s, d) => s + d.quantity, 0)}
+                    </Td>
+                  </tr>
+                </Fragment>
+              ));
+            })()}
             <tr>
               <Td className="font-semibold">Total units</Td>
+              <Td />
               <Td />
               <Td className="text-right tabular-nums font-semibold">{totalUnits}</Td>
             </tr>

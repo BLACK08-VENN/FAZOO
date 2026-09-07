@@ -15,6 +15,15 @@ export interface VedaSchool {
   name: string;
   address: string | null;
   region: string | null;
+  school_type: string | null;
+  assigned_ba_name: string | null;
+  source_code: string | null;
+  contact_person_name: string | null;
+  contact_person_designation: string | null;
+  contact_person_phone: string | null;
+  booklist_print_response: string | null;
+  booklist_collection_visit: string | null;
+  max_total_population: number | null;
   latitude: number | null;
   longitude: number | null;
   geofence_radius_metres: number;
@@ -77,6 +86,8 @@ export interface VedaSessionDistribution {
   organization_id: Uuid;
   session_id: Uuid;
   stationery_item_id: Uuid;
+  /** Which grade/class band received this line, or null for "general". */
+  grade_id: Uuid | null;
   quantity: number;
   client_request_id: Uuid | null;
   created_at: IsoTimestamp;

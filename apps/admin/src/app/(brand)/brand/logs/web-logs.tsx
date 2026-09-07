@@ -143,6 +143,10 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
   const [learnerCount, setLearnerCount] = useState('');
   const [notes, setNotes] = useState('');
   const { fix, locating, locationError, locate } = useLocation();
+  const [gradeId, setGradeId] = useState('');
+  const [draft, setDraft] = useState<Record<string, number>>({});
+  const [savingDist, setSavingDist] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -174,7 +178,90 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
   const selectedSchool = schools.find((school) => school.school_id === selectedSchoolId) ?? null;
   const assignment = today?.assignments.find((row) => row.assignment.school_id === selectedSchoolId)?.assignment ?? null;
   const existingSession = today?.assignments.find((row) => row.assignment.school_id === selectedSchoolId)?.session ?? null;
+  const existingDistributions = today?.assignments.find((row) => row.assignment.school_id === selectedSchoolId)?.distributions ?? [];
   const canUseSchool = selectedSchool && (!selectedSchool.locked || selectedSchool.unlocked);
+
+  const grades = today?.grades ?? [];
+  const stationeryItems = today?.stationery_items ?? [];
+  const openSession = existingSession && existingSession.status === 'open' ? existingSession : null;
+  const sessionDone = existingSession && existingSession.status === 'completed' ? true : false;
+
+  const GENERAL = '__general__';
+  const draftKey = (gid: string, itemId: string) => `${gid || GENERAL}|${itemId}`;
+  const originalQty = (gid: string, itemId: string) =>
+    existingDistributions
+      .filter((d) => (d.grade_id ?? GENERAL) === (gid || GENERAL) && d.stationery_item_id === itemId)
+      .reduce((sum, d) => sum + d.quantity, 0);
+
+  async function saveDistributions() {
+    if (!openSession || !assignment) return;
+    setSavingDist(true);
+    setError(null);
+    setSuccess(null);
+    let changed = 0;
+    try {
+      for (const gid of [GENERAL, ...grades.map((g) => g.id)]) {
+        const gradeIdParam = gid === GENERAL ? null : gid;
+        for (const item of stationeryItems) {
+          const next = draft[draftKey(gid, item.id)] ?? 0;
+          const original = originalQty(gid, item.id);
+          if (next === original) continue;
+          const requestId = crypto.randomUUID();
+          if (next > 0) {
+            const { error: recErr } = await client.rpc('veda_record_distribution', {
+              p_session_id: openSession.id,
+              p_stationery_item_id: item.id,
+              p_grade_id: gradeIdParam,
+              p_quantity: next,
+              p_client_request_id: requestId,
+            });
+            if (recErr) throw new Error(recErr.message);
+          } else {
+            const { error: remErr } = await client.rpc('veda_remove_distribution', {
+              p_session_id: openSession.id,
+              p_stationery_item_id: item.id,
+              p_grade_id: gradeIdParam,
+              p_client_request_id: requestId,
+            });
+            if (remErr) throw new Error(remErr.message);
+          }
+          changed += 1;
+        }
+      }
+      if (changed === 0) setSuccess('Nothing to update.');
+      else setSuccess(`${changed} distribution line${changed > 1 ? 's' : ''} saved.`);
+      await load();
+    } catch (saveErr) {
+      setError(saveErr instanceof Error ? saveErr.message : 'Could not save distributions.');
+    } finally {
+      setSavingDist(false);
+    }
+  }
+
+  async function checkout() {
+    if (!openSession || !assignment) return;
+    if (!fix) return setError('Capture your location before checking out.');
+    setCheckingOut(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const { error: coErr } = await client.rpc('veda_checkout', {
+        p_session_id: openSession.id,
+        p_latitude: fix.latitude,
+        p_longitude: fix.longitude,
+        p_accuracy_metres: fix.accuracy ?? undefined,
+        p_client_request_id: crypto.randomUUID(),
+        p_notes: notes.trim() || undefined,
+      });
+      if (coErr) throw new Error(coErr.message);
+      setSuccess('Visit checked out successfully.');
+      await load();
+    } catch (checkoutError) {
+      setError(checkoutError instanceof Error ? checkoutError.message : 'Could not check out.');
+    } finally {
+      setCheckingOut(false);
+    }
+  }
 
   async function unlockSchool() {
     if (!selectedSchoolId || !unlockCode.trim()) return;
@@ -317,6 +404,90 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
       <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={busy || !canUseSchool || !fix || !selfie || !document}>
         {busy ? 'Submitting log…' : 'Start school log'}
       </Button>
+
+      {selectedSchool ? (
+        !openSession && !sessionDone ? (
+          <p className="text-xs text-muted">After you start a log, record stationery distributed per grade and check out here.</p>
+        ) : sessionDone ? (
+          <Card className="p-4 sm:p-5">
+            <h2 className="text-sm font-semibold text-ink">Visit complete</h2>
+            <p className="mt-1 text-xs text-muted">This school visit has already been checked out.</p>
+            {existingDistributions.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-sm text-ink">
+                {existingDistributions.map((d) => (
+                  <li key={d.id} className="flex justify-between">
+                    <span>{d.item_name}{d.grade_name ? ` · ${d.grade_name}` : d.grade_id ? '' : ' · General'}</span>
+                    <span className="tabular-nums">×{d.quantity}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-xs text-muted">No distributions were recorded.</p>
+            )}
+          </Card>
+        ) : (
+          <>
+            <Card className="p-4 sm:p-5">
+              <h2 className="text-sm font-semibold text-ink">Stationery distributed</h2>
+              <p className="mt-1 text-xs text-muted">Choose a grade, then set how many of each item were distributed to that grade this visit.</p>
+
+              <div className="mt-4">
+                <Label htmlFor="veda-grade">Grade / class band</Label>
+                <Select id="veda-grade" value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
+                  <option value="">General (no specific grade)</option>
+                  {grades.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {stationeryItems.length === 0 ? (
+                  <p className="text-xs text-muted">No stationery items configured yet.</p>
+                ) : (
+                  stationeryItems.map((item) => {
+                    const key = draftKey(gradeId, item.id);
+                    const value = draft[key] ?? originalQty(gradeId, item.id);
+                    return (
+                      <div key={item.id} className="flex items-center justify-between gap-3">
+                        <span className="text-sm text-ink">{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => setDraft((d) => ({ ...d, [key]: Math.max(0, value - 1) }))}>−</Button>
+                          <input
+                            className="w-20 rounded-lg border border-ink/15 bg-white px-2 py-1 text-center text-sm tabular-nums text-ink"
+                            type="number" min="0" step="1" inputMode="numeric"
+                            value={value}
+                            onChange={(e) => setDraft((d) => ({ ...d, [key]: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
+                          />
+                          <Button type="button" variant="outline" size="sm" onClick={() => setDraft((d) => ({ ...d, [key]: Math.min(100000, value + 1) }))}>+</Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <Button type="button" className="mt-4 w-full sm:w-auto" disabled={savingDist || stationeryItems.length === 0} onClick={() => void saveDistributions()}>
+                {savingDist ? 'Saving…' : 'Save distributions'}
+              </Button>
+            </Card>
+
+            <Card className="p-4 sm:p-5">
+              <h2 className="text-sm font-semibold text-ink">Check out</h2>
+              <p className="mt-1 text-xs text-muted">Verify your GPS then check out of this school visit. Re-capture your location if it changed.</p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Button type="button" variant="outline" onClick={() => void locate()} disabled={locating}>
+                  {locating ? 'Getting location…' : fix ? 'Refresh location' : 'Get my location'}
+                </Button>
+                <Button type="button" disabled={checkingOut || !fix} onClick={() => void checkout()}>
+                  {checkingOut ? 'Checking out…' : 'Check out school visit'}
+                </Button>
+              </div>
+              {fix ? <p className="mt-2 text-xs text-muted">Checking out from last captured location{fix.accuracy ? ` (≈${Math.round(fix.accuracy)} m)` : ''}.</p> : null}
+            </Card>
+          </>
+        )
+      ) : null}
     </form>
   );
 }

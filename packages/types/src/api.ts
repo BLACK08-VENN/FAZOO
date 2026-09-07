@@ -92,17 +92,26 @@ export interface VedaCheckinInput {
   client_request_id: Uuid;
 }
 
+export interface VedaGrade {
+  id: Uuid;
+  name: string;
+  code: string;
+  sort_order: number;
+}
+
 export interface VedaRecordDistributionInput {
   session_id: Uuid;
   stationery_item_id: Uuid;
   quantity: number;
   client_request_id: Uuid;
+  grade_id?: Uuid | null;
 }
 
 export interface VedaRemoveDistributionInput {
   session_id: Uuid;
   stationery_item_id: Uuid;
   client_request_id: Uuid;
+  grade_id?: Uuid | null;
 }
 
 export interface VedaCheckoutInput {
@@ -139,6 +148,8 @@ export interface VedaTodayResult {
       item_name: string;
       item_code: string | null;
       quantity: number;
+      grade_id: Uuid | null;
+      grade_name: string | null;
     }>;
     session_status: DailyLogStatus | null;
     learner_count: number;
@@ -148,4 +159,5 @@ export interface VedaTodayResult {
     name: string;
     code: string | null;
   }>;
+  grades: VedaGrade[];
 }

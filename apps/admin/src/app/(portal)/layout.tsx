@@ -3,6 +3,7 @@ import {
   Boxes,
   Building2,
   CalendarOff,
+  Layers,
   MapPin,
   Store,
   Users,
@@ -17,6 +18,7 @@ const NAV = [
   { href: '/stores', label: 'Store management', icon: MapPin },
   { href: '/skus', label: 'SKUs', icon: Boxes },
   { href: '/brands', label: 'Brand', icon: Building2 },
+  { href: '/veda-grades', label: 'Veda grades', icon: Layers },
   { href: '/leave-requests', label: 'Leave requests', icon: CalendarOff },
 ] as const;
 
