@@ -1,0 +1,2 @@
+-- Already applied remotely (BA web log schema).
+-- Pulled into local migration history to sync with remote.
