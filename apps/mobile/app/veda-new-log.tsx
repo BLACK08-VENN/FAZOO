@@ -115,7 +115,7 @@ export default function VedaNewLog() {
     <Screen>
       <ScreenHeader eyebrow={`Step ${step} of 2`} title={stepTitle} subtitle={params.schoolName} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
-        {[1, 2].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-white' : 'bg-white/14'}`} />)}
+        {[1, 2].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
       </View>
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
@@ -138,8 +138,8 @@ export default function VedaNewLog() {
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />
           <GlassCard className="mt-4">
-            <Text className="font-sans mb-2 text-sm font-semibold text-white">Location verification</Text>
-            {locating ? <ActivityIndicator color="#D8DDFF" className="mt-2" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are ${distance} m from the school — within the ${geofenceRadius} m zone` : `You are ${distance} m away — move closer than ${geofenceRadius} m`} /> : <Text className="font-sans text-sm text-white/68">Get your location to verify you are at the school.</Text>}
+            <Text className="font-sans mb-2 text-sm font-semibold text-ink">Location verification</Text>
+            {locating ? <ActivityIndicator color="#7B2FBE" className="mt-2" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are ${distance} m from the school — within the ${geofenceRadius} m zone` : `You are ${distance} m away — move closer than ${geofenceRadius} m`} /> : <Text className="font-sans text-sm text-muted">Get your location to verify you are at the school.</Text>}
           </GlassCard>
           <PrimaryButton label={fix ? 'Refresh location' : 'Get my location'} onPress={() => void locate()} busy={locating} icon="locate" />
           <Field label="Learner count" placeholder="Learner count (optional)" keyboardType="number-pad" value={learnerCount} onChangeText={setLearnerCount} />
@@ -155,7 +155,7 @@ export default function VedaNewLog() {
 function CaptureBox({ photo, onSnap, hint }: { photo: CapturedPhoto | null; onSnap: () => void; hint: string }) {
   return (
     <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
-      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-sans font-semibold text-white">{hint}</Text></View>}
+      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-ink/15 bg-lavender"><Text className="font-sans font-semibold text-ink">{hint}</Text></View>}
     </PrimaryButton>
   );
 }

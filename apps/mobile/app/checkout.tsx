@@ -94,14 +94,14 @@ export default function Checkout() {
     <Screen>
       <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Review totals, capture fresh evidence, and lock the day." />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
-        {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-white' : 'bg-white/14'}`} />)}
+        {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
       </View>
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
       {step === 1 ? (
         <>
-          {selected ? <Text className="font-sans mb-3 text-sm text-white/70">{selected.assignment.store_name || selected.assignment.campaign_name}{selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}</Text> : null}
+          {selected ? <Text className="font-sans mb-3 text-sm text-muted">{selected.assignment.store_name || selected.assignment.campaign_name}{selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}</Text> : null}
           <Card>
             <Text className="font-sans text-4xl font-bold text-indigo-700">{selected?.total_units_today ?? 0}<Text className="font-sans text-base font-normal text-slate-500"> units today</Text></Text>
             {(selected?.sales ?? []).map((s) => (
@@ -114,7 +114,7 @@ export default function Checkout() {
           </Card>
           <GlassCard className="mt-4">
             <View className="flex-row items-center justify-between gap-4">
-              <Text className="font-sans flex-1 text-sm leading-6 text-white/80">I understand today's sales become read-only after checkout.</Text>
+              <Text className="font-sans flex-1 text-sm leading-6 text-ink">I understand today's sales become read-only after checkout.</Text>
               <Switch value={confirmed} onValueChange={setConfirmed} accessibilityLabel="Confirm checkout lock" />
             </View>
           </GlassCard>
@@ -153,7 +153,7 @@ export default function Checkout() {
 function CaptureBox({ photo, onSnap, hint }: { photo: CapturedPhoto | null; onSnap: () => void; hint: string; }) {
   return (
     <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
-      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-sans font-semibold text-white">{hint}</Text></View>}
+      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-ink/15 bg-lavender"><Text className="font-sans font-semibold text-ink">{hint}</Text></View>}
     </PrimaryButton>
   );
 }

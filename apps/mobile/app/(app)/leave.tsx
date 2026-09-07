@@ -53,8 +53,8 @@ const initialForm: LeaveFormState = {
 
 function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} className={`mb-2 mr-2 rounded-full border px-4 py-2 ${selected ? 'border-white/20 bg-white/18' : 'border-white/12 bg-white/8'}`}>
-      <Text className={`font-sans font-medium ${selected ? 'text-white' : 'text-white/72'}`}>{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} className={`mb-2 mr-2 rounded-full border px-4 py-2 ${selected ? 'border-primary/40 bg-primary/10' : 'border-ink/12 bg-white'}`}>
+      <Text className={`font-sans font-medium ${selected ? 'text-primary' : 'text-muted'}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -81,13 +81,13 @@ function DateField({ label, value, onChange, minimumDate, icon = 'calendar' }: {
   }
   return (
     <View className="mb-4">
-      <Text className="font-sans mb-2 text-sm font-medium text-white/82">{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value || 'not set'}`} onPress={() => setShow((open) => !open)} className="h-14 flex-row items-center justify-between rounded-2xl border border-white/12 bg-white/10 px-4">
-        <Text className={value ? 'text-white' : 'text-white/52'}>{value || 'Pick a date'}</Text>
-        <Ionicons name={icon} size={18} color="#D8DDFF" />
+      <Text className="font-sans mb-2 text-sm font-medium text-ink">{label}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value || 'not set'}`} onPress={() => setShow((open) => !open)} className="h-14 flex-row items-center justify-between rounded-2xl border border-ink/12 bg-white px-4">
+        <Text className={value ? 'text-ink' : 'text-muted'}>{value || 'Pick a date'}</Text>
+        <Ionicons name={icon} size={18} color="#7B2FBE" />
       </Pressable>
       {show ? (
-        <View className="mt-2 overflow-hidden rounded-2xl border border-white/12 bg-white">
+        <View className="mt-2 overflow-hidden rounded-2xl border border-ink/12 bg-white">
           <DateTimePicker value={toDate(value)} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} minimumDate={minimumDate} onChange={onEvent} />
         </View>
       ) : null}
@@ -198,7 +198,7 @@ export default function LeavePage() {
       <SectionLabel>1. Leave details</SectionLabel>
       <Card className="mb-4">
         <Text className="font-sans mb-2 text-lg font-bold text-ink">Type of leave</Text>
-        <View className="mb-2 flex-row flex-wrap rounded-3xl bg-slate-950 px-3 py-3">
+        <View className="mb-2 flex-row flex-wrap rounded-3xl bg-lavender px-3 py-3">
           {LEAVE_TYPES.map((item) => <Choice key={item.value} label={item.label} selected={form.leave_type === item.value} onPress={() => setForm((v) => ({ ...v, leave_type: item.value }))} />)}
         </View>
         <DateField label="Start date" value={form.start_date} minimumDate={new Date()} onChange={(value) => setForm((v) => ({ ...v, start_date: value }))} />
@@ -213,7 +213,7 @@ export default function LeavePage() {
             <Text className="font-sans font-semibold text-slate-800">Supervisor informed</Text>
             <Text className="font-sans mt-1 text-sm leading-6 text-slate-500">Confirm you have discussed this request.</Text>
           </View>
-          <Switch value={form.supervisor_informed} onValueChange={(value) => setForm((v) => ({ ...v, supervisor_informed: value }))} trackColor={{ true: '#5B6CFF' }} />
+          <Switch value={form.supervisor_informed} onValueChange={(value) => setForm((v) => ({ ...v, supervisor_informed: value }))} trackColor={{ true: '#7B2FBE' }} />
         </View>
         {!form.supervisor_informed ? (
           <MultilineField label="Why have they not been informed?" placeholder="Explain briefly" value={form.supervisor_not_informed_reason ?? ''} onChangeText={(value) => setForm((v) => ({ ...v, supervisor_not_informed_reason: value }))} />
@@ -223,7 +223,7 @@ export default function LeavePage() {
 
       <SectionLabel>3. Supporting documents</SectionLabel>
       <GlassCard>
-        <Text className="font-sans mb-3 text-sm leading-6 text-white/72">Select the documents you can provide to your supervisor.</Text>
+        <Text className="font-sans mb-3 text-sm leading-6 text-muted">Select the documents you can provide to your supervisor.</Text>
         <View className="flex-row flex-wrap">
           {DOCUMENTS.map(([value, label]) => <Choice key={value} label={label} selected={form.supporting_document_types.includes(value)} onPress={() => toggleDocument(value)} />)}
         </View>
@@ -231,18 +231,18 @@ export default function LeavePage() {
 
       <SectionLabel>Acknowledgement</SectionLabel>
       <GlassCard>
-        <Text className="font-sans text-sm leading-6 text-white/76">By sending this form, I confirm the details are accurate and understand the request is not approved until an admin confirms it.</Text>
+        <Text className="font-sans text-sm leading-6 text-muted">By sending this form, I confirm the details are accurate and understand the request is not approved until an admin confirms it.</Text>
         <View className="mt-4 flex-row items-center justify-between gap-4">
-          <Text className="font-sans font-semibold text-white">I acknowledge</Text>
-          <Switch value={form.policy_acknowledged} onValueChange={(value) => setForm((v) => ({ ...v, policy_acknowledged: value }))} trackColor={{ true: '#5B6CFF' }} />
+          <Text className="font-sans font-semibold text-ink">I acknowledge</Text>
+          <Switch value={form.policy_acknowledged} onValueChange={(value) => setForm((v) => ({ ...v, policy_acknowledged: value }))} trackColor={{ true: '#7B2FBE' }} />
         </View>
       </GlassCard>
 
-      {message ? <Text accessibilityRole="alert" className={`font-sans mb-3 mt-4 text-sm font-medium ${message.tone === 'ok' ? 'text-emerald-200' : 'text-rose-200'}`}>{message.text}</Text> : null}
+      {message ? <Text accessibilityRole="alert" className={`font-sans mb-3 mt-4 text-sm font-medium ${message.tone === 'ok' ? 'text-emerald-700' : 'text-bad'}`}>{message.text}</Text> : null}
       <PrimaryButton label="Send leave request" busy={busy} onPress={() => void submit()} icon="send" />
 
       <SectionLabel>My requests</SectionLabel>
-      {loading ? <Text className="font-sans text-white/70">Loading…</Text> : null}
+      {loading ? <Text className="font-sans text-muted">Loading…</Text> : null}
       {!loading && requests.length === 0 ? <EmptyState title="No leave requests yet" body="Your recent submissions will appear here." /> : null}
       {requests.map((request) => (
         <Card key={request.id} className="mb-4">

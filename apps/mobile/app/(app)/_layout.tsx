@@ -2,8 +2,8 @@ import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ACTIVE = '#FFFFFF';
-const INACTIVE = 'rgba(203, 199, 231, 0.66)';
+const ACTIVE = '#7B2FBE';
+const INACTIVE = 'rgba(23, 23, 28, 0.42)';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -29,14 +29,18 @@ export default function AppLayout() {
           left: 16,
           right: 16,
           bottom: 16,
-          backgroundColor: 'rgba(20, 16, 39, 0.94)',
-          borderTopColor: 'rgba(255,255,255,0.22)',
+          backgroundColor: 'rgba(255,255,255,0.96)',
+          borderTopColor: 'rgba(11,11,15,0.09)',
           borderTopWidth: 1,
           borderRadius: 30,
           height: 82,
           paddingTop: 12,
           paddingBottom: 12,
           elevation: 0,
+          shadowColor: '#23122C',
+          shadowOpacity: 0.1,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: -8 },
         },
         tabBarItemStyle: {
           paddingVertical: 4,
@@ -72,7 +76,7 @@ export default function AppLayout() {
           tabBarIcon: ({ focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(124,92,255,0.24)' : 'transparent',
+                backgroundColor: focused ? 'rgba(123,47,190,0.12)' : 'transparent',
                 borderRadius: 16,
                 paddingHorizontal: 12,
                 paddingVertical: 7,
@@ -90,7 +94,7 @@ export default function AppLayout() {
           tabBarIcon: ({ focused }) => (
             <View
               style={{
-                backgroundColor: focused ? 'rgba(52,209,255,0.18)' : 'transparent',
+                backgroundColor: focused ? 'rgba(139,47,209,0.10)' : 'transparent',
                 borderRadius: 16,
                 paddingHorizontal: 12,
                 paddingVertical: 7,

@@ -79,7 +79,7 @@ export default function CampaignLogs() {
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <ScreenHeader eyebrow="Logs" title={headerTitle ?? ''} subtitle={headerSubtitle ?? undefined} />
 
-      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
 
       {canAddVedaLog ? (
         <PrimaryButton
@@ -90,14 +90,14 @@ export default function CampaignLogs() {
       ) : null}
 
       {isVeda && !params.assignmentId ? (
-        <Text className="font-sans mb-3 text-sm leading-6 text-white/72">
+        <Text className="font-sans mb-3 text-sm leading-6 text-muted">
           No active assignment was found for this school, but you can still start a new school log from here.
         </Text>
       ) : null}
 
       {loading ? (
         <View className="mt-10 items-center justify-center">
-          <ActivityIndicator size="large" color="#D8DDFF" />
+          <ActivityIndicator size="large" color="#7B2FBE" />
         </View>
       ) : logs.length === 0 ? (
         <EmptyState title="No logs yet" body={`No logs yet for this ${isVeda ? 'school' : 'campaign'}.`} />

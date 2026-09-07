@@ -25,7 +25,7 @@ function SecureField({ label, value, onChange, keyboardType }: { label: string; 
         hitSlop={8}
         className="-mt-1 mb-3 self-end"
       >
-        <Text className="font-sans text-sm font-semibold text-white/70">{show ? 'Hide' : 'Show'}</Text>
+        <Text className="font-sans text-sm font-semibold text-muted">{show ? 'Hide' : 'Show'}</Text>
       </Pressable>
     </View>
   );
@@ -93,7 +93,7 @@ export default function Register() {
   }
 
   return (
-    <AppBackdrop overlayOpacity={0.22}>
+    <AppBackdrop>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingTop: 56, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <HeroCard
@@ -102,8 +102,8 @@ export default function Register() {
             subtitle="Create your account in one quick step and wait for an administrator to approve it."
             icon="person-add"
           />
-          <View className="mb-4 rounded-3xl border border-white/14 bg-white/10 px-4 py-4">
-            <Text className="font-sans text-sm leading-6 text-[#4D3426]">
+          <View className="mb-4 rounded-3xl border border-ink/10 bg-white px-4 py-4">
+            <Text className="font-sans text-sm leading-6 text-charcoal">
               Sign up first. Your administrator will connect you to the right brand and assign your stores or schools.
             </Text>
           </View>
@@ -113,7 +113,7 @@ export default function Register() {
           <SecureField label="Password" value={password} onChange={setPassword} />
           <SecureField label="Confirm password" value={passwordConfirm} onChange={setPasswordConfirm} />
 
-          {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+          {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
 
           <PrimaryButton
             label={busy ? 'Creating account…' : 'Create my account'}

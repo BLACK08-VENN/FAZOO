@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 type ButtonVariant = 'primary' | 'ghost' | 'danger' | 'secondary';
@@ -26,17 +25,18 @@ export function PrimaryButton({
   children?: ReactNode;
   icon?: keyof typeof Ionicons.glyphMap;
 }) {
+  const outlined = variant === 'ghost' || variant === 'secondary';
   const shellClass =
     variant === 'ghost'
-      ? 'border border-white/16 bg-white/8'
+      ? 'border border-transparent bg-transparent'
       : variant === 'danger'
-        ? 'border border-rose-200/20 bg-[#3A1430]'
+        ? 'border border-transparent bg-bad'
         : variant === 'secondary'
-          ? 'border border-white/16 bg-white/10'
-          : 'border border-white/14 bg-transparent';
+          ? 'border border-ink/15 bg-white'
+          : 'border border-transparent bg-primary';
 
-  const textClass =
-    variant === 'ghost' || variant === 'secondary' ? 'text-white' : 'text-white';
+  const textClass = outlined ? 'text-ink' : 'text-white';
+  const toneColor = outlined ? '#0B0B0F' : '#FFFFFF';
 
   return (
     <TouchableOpacity
@@ -46,24 +46,13 @@ export function PrimaryButton({
       accessibilityHint={accessibilityHint}
       accessibilityRole="button"
       accessibilityState={{ busy, disabled }}
-      className={`my-1.5 overflow-hidden rounded-[20px] ${shellClass} ${disabled ? 'opacity-45' : ''}`}
-      style={{ shadowColor: variant === 'primary' ? '#875CFF' : '#05020F', shadowOpacity: disabled ? 0 : 0.34, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: disabled ? 0 : 6 }}
+      className={`my-1.5 overflow-hidden rounded-[20px] ${shellClass} ${disabled ? 'opacity-50' : ''}`}
+      style={{ shadowColor: variant === 'primary' ? '#7B2FBE' : '#23122C', shadowOpacity: disabled || variant === 'ghost' ? 0 : 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: disabled || variant === 'ghost' ? 0 : 4 }}
       activeOpacity={0.85}
     >
-      {variant === 'primary' ? (
-        <LinearGradient
-          colors={['#B68CFF', '#875CFF', '#5CDCF7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          className="min-h-16 flex-row items-center justify-center px-6"
-        >
-          <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} />
-        </LinearGradient>
-      ) : (
-        <View className="min-h-16 flex-row items-center justify-center px-6 bg-white/6">
-          <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} />
-        </View>
-      )}
+      <View className="min-h-16 flex-row items-center justify-center px-6">
+        <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} toneColor={toneColor} />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -74,20 +63,22 @@ function Content({
   children,
   icon,
   textClass,
+  toneColor,
 }: {
   busy?: boolean;
   label?: string;
   children?: ReactNode;
   icon?: keyof typeof Ionicons.glyphMap;
   textClass: string;
+  toneColor: string;
 }) {
-  if (busy) return <ActivityIndicator color="#fff" accessibilityLabel="Loading" />;
+  if (busy) return <ActivityIndicator color={toneColor} accessibilityLabel="Loading" />;
   if (children) {
     return <View className="h-full w-full items-center justify-center overflow-hidden rounded-2xl">{children}</View>;
   }
   return (
     <View className="flex-row items-center justify-center gap-2">
-      {icon ? <Ionicons name={icon} size={20} color="#fff" /> : null}
+      {icon ? <Ionicons name={icon} size={20} color={toneColor} /> : null}
       <Text className={`font-sans text-[17px] font-semibold ${textClass}`}>{label}</Text>
     </View>
   );

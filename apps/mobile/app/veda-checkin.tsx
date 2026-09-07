@@ -106,7 +106,7 @@ export default function VedaCheckIn() {
     <Screen>
       <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Verify your location, capture school evidence, and record the learner count." />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
-        {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-white' : 'bg-white/14'}`} />)}
+        {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
       </View>
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
@@ -117,9 +117,9 @@ export default function VedaCheckIn() {
             <Text className="font-sans text-xl font-bold text-ink">{assignment?.assignment.school_name ?? 'Loading…'}</Text>
             <Text className="font-sans mt-1 text-sm text-slate-500">{assignment?.assignment.school_region}</Text>
             <Text className="font-sans mt-4 text-sm font-semibold text-slate-700">Allowed radius: {radius} m</Text>
-            {locating ? <ActivityIndicator color="#5B6CFF" className="mt-4" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the school — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check in`} /> : <Text className="font-sans mt-3 text-sm text-slate-500">Tap “Get my location” so we can verify you are at the school.</Text>}
+            {locating ? <ActivityIndicator color="#7B2FBE" className="mt-4" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the school — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check in`} /> : <Text className="font-sans mt-3 text-sm text-muted">Tap “Get my location” so we can verify you are at the school.</Text>}
           </Card>
-          <GlassCard className="mb-1 mt-4"><Text className="font-sans text-sm leading-6 text-white/72">Your displayed distance is for guidance. The server makes the final geofence decision.</Text></GlassCard>
+          <GlassCard className="mb-1 mt-4"><Text className="font-sans text-sm leading-6 text-muted">Your displayed distance is for guidance. The server makes the final geofence decision.</Text></GlassCard>
           <PrimaryButton label={fix ? 'Refresh location' : 'Get my location'} onPress={() => void locate()} busy={locating} icon="locate" />
           <PrimaryButton label="Continue" disabled={!insideGeofence} onPress={() => setStep(2)} />
         </>
@@ -156,7 +156,7 @@ export default function VedaCheckIn() {
 function CaptureBox({ photo, onSnap, hint }: { photo: CapturedPhoto | null; onSnap: () => void; hint: string }) {
   return (
     <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
-      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/6"><Text className="font-sans font-semibold text-white">{hint}</Text></View>}
+      {photo ? <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" /> : <View className="min-h-48 w-full items-center justify-center rounded-2xl border border-dashed border-ink/15 bg-lavender"><Text className="font-sans font-semibold text-ink">{hint}</Text></View>}
     </PrimaryButton>
   );
 }

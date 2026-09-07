@@ -44,16 +44,16 @@ export default function ForgotPassword() {
 
         <GlassCard>
           {sent ? (
-            <View className="rounded-2xl border border-emerald-300/30 bg-emerald-400/12 px-4 py-4">
-              <Text role="status" className="font-sans font-medium text-white">
+            <View className="rounded-2xl border border-ok/30 bg-emerald-50 px-4 py-4">
+              <Text role="status" className="font-sans font-medium text-emerald-700">
                 Request received. Contact your supervisor to complete the reset if no message arrives.
               </Text>
             </View>
           ) : null}
 
           {error ? (
-            <View className="mb-3 rounded-2xl border border-rose-300/30 bg-rose-400/12 px-4 py-4">
-              <Text role="alert" className="font-sans font-medium text-white">
+            <View className="mb-3 rounded-2xl border border-bad/30 bg-red-50 px-4 py-4">
+              <Text role="alert" className="font-sans font-medium text-bad">
                 {error}
               </Text>
             </View>

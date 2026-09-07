@@ -58,7 +58,7 @@ export default function SignIn() {
   }
 
   return (
-    <AppBackdrop overlayOpacity={0.18}>
+    <AppBackdrop>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1 justify-center px-5"
@@ -71,9 +71,9 @@ export default function SignIn() {
           />
 
           <GlassCard>
-            <Text className="font-sans text-xs uppercase tracking-[2px] text-[#A8B6E8]">Welcome back</Text>
-            <Text className="font-sans mt-2 text-[26px] font-bold leading-8 text-white">Sign in to start today&apos;s route</Text>
-            <Text className="font-sans mt-2 text-base leading-7 text-[#C8D3F5]">
+            <Text className="font-sans text-xs uppercase tracking-[2px] text-primary">Welcome back</Text>
+            <Text className="font-sans mt-2 text-[26px] font-bold leading-8 text-ink">Sign in to start today&apos;s route</Text>
+            <Text className="font-sans mt-2 text-base leading-7 text-muted">
               Use your mobile number or provisioned email, then continue into your daily dashboard.
             </Text>
 
@@ -88,7 +88,7 @@ export default function SignIn() {
               />
 
               <View className="mb-3">
-                <Text className="font-sans mb-2 text-base font-medium text-white">Password</Text>
+                <Text className="font-sans mb-2 text-base font-medium text-ink">Password</Text>
                 <View className="relative">
                   <Field
                     placeholder="Enter your password"
@@ -104,7 +104,7 @@ export default function SignIn() {
                     hitSlop={8}
                     className="absolute inset-y-0 right-0 items-center justify-center pr-4"
                   >
-                    <Text className={`font-sans text-sm font-semibold ${showPassword ? 'text-white' : 'text-[#A8B6E8]'}`}>
+                    <Text className={`font-sans text-sm font-semibold ${showPassword ? 'text-ink' : 'text-muted'}`}>
                       {showPassword ? 'Hide' : 'Show'}
                     </Text>
                   </Pressable>
@@ -112,8 +112,8 @@ export default function SignIn() {
               </View>
 
               {error ? (
-                <View className="mb-2 rounded-2xl border border-rose-300/30 bg-rose-400/12 px-4 py-3">
-                  <Text role="alert" className="font-sans font-medium text-white">
+                <View className="mb-2 rounded-2xl border border-bad/30 bg-red-50 px-4 py-3">
+                  <Text role="alert" className="font-sans font-medium text-bad">
                     {error}
                   </Text>
                 </View>
@@ -124,20 +124,20 @@ export default function SignIn() {
               <View className="mt-5 flex-row items-center justify-between">
                 <Link href="/forgot-password" asChild>
                   <Pressable>
-                    <Text className="font-sans text-base font-medium text-[#C8D3F5]">Forgot password?</Text>
+                    <Text className="font-sans text-base font-medium text-primary">Forgot password?</Text>
                   </Pressable>
                 </Link>
-                <View className="flex-row items-center gap-2 rounded-full bg-white/8 px-3 py-2">
-                  <Ionicons name="shield-checkmark" size={14} color="#C8D3F5" />
-                  <Text className="font-sans text-xs text-[#C8D3F5]">Secure sign-in</Text>
+                <View className="flex-row items-center gap-2 rounded-full bg-lavender px-3 py-2">
+                  <Ionicons name="shield-checkmark" size={14} color="#7B2FBE" />
+                  <Text className="font-sans text-xs text-muted">Secure sign-in</Text>
                 </View>
               </View>
             </View>
           </GlassCard>
 
           <Link href="/register" asChild>
-            <Pressable className="mt-6 self-center rounded-full border border-white/14 bg-white/8 px-5 py-3">
-              <Text className="font-sans text-center text-base font-medium text-white">New here? Register as a Brand Ambassador</Text>
+            <Pressable className="mt-6 self-center rounded-full border border-ink/15 bg-white px-5 py-3">
+              <Text className="font-sans text-center text-base font-medium text-ink">New here? Register as a Brand Ambassador</Text>
             </Pressable>
           </Link>
       </KeyboardAvoidingView>

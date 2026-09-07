@@ -90,8 +90,8 @@ export default function VedaCheckout() {
         {(selected?.distributions ?? []).length === 0 ? <Text className="font-sans mt-2 text-slate-500">No stationery was recorded.</Text> : null}
       </Card>
       <GlassCard className="mt-4">
-        <Text className="font-sans mb-3 font-medium text-white">Verify you are still at the school</Text>
-        {locating ? <Text className="font-sans text-sm text-white/68">Getting your location…</Text> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the school — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check out`} /> : <Text className="font-sans text-sm text-white/68">We'll verify your location against the school before closing the visit.</Text>}
+        <Text className="font-sans mb-3 font-medium text-ink">Verify you are still at the school</Text>
+        {locating ? <Text className="font-sans text-sm text-muted">Getting your location…</Text> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the school — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check out`} /> : <Text className="font-sans text-sm text-muted">We'll verify your location against the school before closing the visit.</Text>}
         <View className="mt-3">
           <PrimaryButton label={fix ? 'Refresh location' : 'Get my location'} onPress={() => void locate()} busy={locating} icon="locate" />
         </View>
@@ -99,7 +99,7 @@ export default function VedaCheckout() {
       <Field label="Notes" placeholder="Notes (optional)" multiline value={notes} onChangeText={setNotes} />
       <GlassCard>
         <View className="flex-row items-center justify-between gap-4">
-          <Text className="font-sans flex-1 text-sm leading-6 text-white/80">I confirm today's distribution totals are final.</Text>
+          <Text className="font-sans flex-1 text-sm leading-6 text-ink">I confirm today's distribution totals are final.</Text>
           <Switch value={confirmed} onValueChange={setConfirmed} accessibilityLabel="Confirm visit completion" />
         </View>
       </GlassCard>

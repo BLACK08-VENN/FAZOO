@@ -45,7 +45,7 @@ export default function VedaToday() {
     return (
       <Screen scroll={false}>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#D8DDFF" />
+          <ActivityIndicator size="large" color="#7B2FBE" />
         </View>
       </Screen>
     );
@@ -54,7 +54,7 @@ export default function VedaToday() {
   const assignments = data?.assignments ?? [];
 
   return (
-    <Screen bottomInset={false} backdropOverlayOpacity={0.2}>
+    <Screen bottomInset={false}>
         <HeroCard eyebrow={`Today · ${data?.attendance_date} (Kenya)`} title="Schools dashboard" subtitle="Track active school visits, stationery distribution, and sync health in one place." icon="school" />
 
         <View className="mb-5 flex-row gap-3">
@@ -131,7 +131,7 @@ export default function VedaToday() {
           </View>
         )}
 
-        <Text className="font-sans mt-10 text-center text-xs text-white/42">Fazoo · v0.1</Text>
+        <Text className="font-sans mt-10 text-center text-xs text-muted">Fazoo · v0.1</Text>
     </Screen>
   );
 }

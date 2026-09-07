@@ -55,8 +55,8 @@ export default function History() {
   return (
     <Screen bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <ScreenHeader eyebrow="History" title="Your activity" subtitle="Attendance records, timings, and submitted evidence from recent days." />
-      {loading ? <Text className="font-sans text-white/70">Loading…</Text> : null}
-      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+      {loading ? <Text className="font-sans text-muted">Loading…</Text> : null}
+      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
       {!loading && logs.length === 0 ? (
         <EmptyState title="No attendance history yet" body="Your check-ins and photos will appear here after your first completed visit." />
       ) : null}
@@ -113,7 +113,7 @@ function PhotoThumbnails({ photos }: { photos: Photo[] }) {
         if (!url) {
           return (
             <View key={photo.id} className="h-20 w-20 items-center justify-center rounded-2xl bg-slate-100">
-              <ActivityIndicator size="small" color="#5B6CFF" />
+              <ActivityIndicator size="small" color="#7B2FBE" />
             </View>
           );
         }

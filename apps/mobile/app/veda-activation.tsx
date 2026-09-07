@@ -93,7 +93,7 @@ export default function VedaActivation() {
   }
 
   if (data === null) {
-    return <Screen scroll={false}><View className="flex-1 items-center justify-center"><Text className="font-sans text-white/70">Loading today&apos;s visit…</Text></View></Screen>;
+    return <Screen scroll={false}><View className="flex-1 items-center justify-center"><Text className="font-sans text-muted">Loading today&apos;s visit…</Text></View></Screen>;
   }
 
   const school = selected?.assignment ?? null;

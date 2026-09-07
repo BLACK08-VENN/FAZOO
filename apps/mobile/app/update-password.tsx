@@ -60,7 +60,7 @@ export default function UpdatePassword() {
       />
 
       {error ? (
-        <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">
+        <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">
           {error}
         </Text>
       ) : null}

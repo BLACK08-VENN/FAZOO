@@ -12,11 +12,18 @@ export function StatusPill({
   label: string;
 }) {
   const map = {
-    ok: 'bg-emerald-300/16 border-emerald-100/30',
-    warn: 'bg-amber-300/18 border-amber-100/30',
-    bad: 'bg-rose-300/18 border-rose-100/32',
-    purple: 'bg-violet-300/18 border-violet-100/32',
-    neutral: 'bg-white/10 border-white/20',
+    ok: 'bg-emerald-50 border-ok/30',
+    warn: 'bg-amber-50 border-warn/30',
+    bad: 'bg-red-50 border-bad/30',
+    purple: 'bg-primary/10 border-primary/25',
+    neutral: 'bg-lavender border-ink/10',
+  } as const;
+  const textClass = {
+    ok: 'text-emerald-700',
+    warn: 'text-amber-700',
+    bad: 'text-red-700',
+    purple: 'text-primary',
+    neutral: 'text-ink',
   } as const;
   return (
     <View
@@ -24,7 +31,7 @@ export function StatusPill({
       accessibilityRole="text"
       accessibilityLabel={`${tone} status: ${label}`}
     >
-      <Text className="font-sans text-base font-medium capitalize text-white">{label}</Text>
+      <Text className={`font-sans text-base font-medium capitalize ${textClass[tone]}`}>{label}</Text>
     </View>
   );
 }

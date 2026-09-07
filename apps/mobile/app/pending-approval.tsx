@@ -17,11 +17,11 @@ export default function PendingApproval() {
       />
 
       <GlassCard>
-        <Text className="font-sans text-base leading-7 text-white/76">
+        <Text className="font-sans text-base leading-7 text-muted">
           You will be able to check in as soon as an administrator approves your account and assigns you to a store or school.
         </Text>
         {profile?.account_status === 'rejected' ? (
-          <Text role="alert" className="font-sans mt-4 text-sm font-medium leading-6 text-rose-200">
+          <Text role="alert" className="font-sans mt-4 text-sm font-medium leading-6 text-bad">
             Your application was not approved. Please contact your supervisor.
           </Text>
         ) : null}

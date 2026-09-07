@@ -28,7 +28,7 @@ function RootLayout() {
     return (
       <AppBackdrop>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#A985FF" accessibilityLabel="Loading session" />
+          <ActivityIndicator size="large" color="#7B2FBE" accessibilityLabel="Loading session" />
         </View>
       </AppBackdrop>
     );
@@ -36,11 +36,11 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#080616' },
+          contentStyle: { backgroundColor: '#F6F2FA' },
         }}
       >
         <Stack.Screen name="(app)" />

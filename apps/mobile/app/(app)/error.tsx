@@ -26,7 +26,7 @@ export default function AppError({
         icon="warning"
       />
       <GlassCard>
-        <Text className="font-sans text-sm leading-6 text-white/72">
+        <Text className="font-sans text-sm leading-6 text-muted">
           Your session is still active. Retry this screen first; if the issue continues, sign out and back in.
         </Text>
       </GlassCard>

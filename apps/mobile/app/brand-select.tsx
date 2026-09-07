@@ -92,7 +92,7 @@ export default function BrandSelect() {
     return (
       <Screen scroll={false}>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#D8DDFF" />
+          <ActivityIndicator size="large" color="#7B2FBE" />
         </View>
       </Screen>
     );
@@ -124,7 +124,7 @@ export default function BrandSelect() {
         icon="layers"
       />
 
-      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-rose-200">{error}</Text> : null}
+      {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
 
       <SectionLabel>Available brands</SectionLabel>
       {approved.map((m) => (
@@ -170,9 +170,9 @@ export default function BrandSelect() {
           <SectionLabel>Pending memberships</SectionLabel>
           <GlassCard>
             {others.map((m) => (
-              <View key={m.organization_id} className="border-b border-white/10 py-3 last:border-b-0">
-                <Text className="font-sans text-base font-semibold text-white">{m.organization_name}</Text>
-                <Text className="font-sans mt-1 text-sm capitalize text-white/68">{m.account_status.replace(/_/g, ' ')}</Text>
+              <View key={m.organization_id} className="border-b border-ink/10 py-3 last:border-b-0">
+                <Text className="font-sans text-base font-semibold text-ink">{m.organization_name}</Text>
+                <Text className="font-sans mt-1 text-sm capitalize text-muted">{m.account_status.replace(/_/g, ' ')}</Text>
               </View>
             ))}
           </GlassCard>
