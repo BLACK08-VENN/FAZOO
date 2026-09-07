@@ -2,6 +2,7 @@ import Link from 'next/link';
 import {
   Boxes,
   Building2,
+  CalendarOff,
   MapPin,
   Store,
   Users,
@@ -16,6 +17,7 @@ const NAV = [
   { href: '/stores', label: 'Store management', icon: MapPin },
   { href: '/skus', label: 'SKUs', icon: Boxes },
   { href: '/brands', label: 'Brand', icon: Building2 },
+  { href: '/leave-requests', label: 'Leave requests', icon: CalendarOff },
 ] as const;
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
