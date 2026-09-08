@@ -1,0 +1,11 @@
+node_modules
+apps/mobile
+apps/admin/.next
+supabase
+docs
+artifacts
+builds
+migration
+*.zip
+*.apk
+.git
