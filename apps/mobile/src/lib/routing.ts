@@ -21,6 +21,7 @@ export type RedirectRoute =
   | '/update-password'
   | '/sign-in'
   | '/brand-select'
+  | '/profile'
   | '/today'
   | '/pending-approval';
 
@@ -33,7 +34,7 @@ export function routeRedirect(
   if (recovery) return pathname === '/update-password' ? null : '/update-password';
   if (!authenticated)
     return PROTECTED.some((path) => pathname.startsWith(path)) ? '/sign-in' : null;
-  if (GUEST_ONLY.some((path) => path === pathname)) return '/today';
+  if (GUEST_ONLY.some((path) => path === pathname)) return '/profile';
   if (pathname !== '/update-password' && status !== 'approved') return '/pending-approval';
   return null;
 }

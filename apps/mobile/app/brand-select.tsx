@@ -84,7 +84,7 @@ export default function BrandSelect() {
       setError(err.message);
       return;
     }
-    router.replace('/today');
+    router.replace('/profile');
   }
 
   if (loading) {

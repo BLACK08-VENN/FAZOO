@@ -114,6 +114,7 @@ export default function AppLayout() {
   return (
     <>
       <Tabs
+        initialRouteName="profile"
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: ACTIVE,
@@ -162,6 +163,13 @@ export default function AppLayout() {
         }}
       >
         <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ focused }) => <FancyTabIcon name="person" focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
           name="today"
           options={{
             title: 'Today',
@@ -173,13 +181,6 @@ export default function AppLayout() {
           options={{
             title: 'History',
             tabBarIcon: ({ focused }) => <FancyTabIcon name="time" focused={focused} />,
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            tabBarIcon: ({ focused }) => <FancyTabIcon name="person" focused={focused} />,
           }}
         />
         {/* Non-tab routes in this group — hidden from the tab bar */}

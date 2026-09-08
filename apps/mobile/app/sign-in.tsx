@@ -50,7 +50,7 @@ export default function SignIn() {
         );
         return;
       }
-      router.replace('/today');
+      router.replace('/profile');
     } catch (cause) {
       console.error('[sign-in] unexpected failure', cause);
       Sentry.captureException(cause);

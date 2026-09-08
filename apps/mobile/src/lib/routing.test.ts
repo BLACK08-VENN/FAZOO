@@ -21,6 +21,9 @@ describe('routeRedirect', () => {
   it('allows an approved BA', () => {
     expect(routeRedirect('/sales', true, 'approved')).toBeNull();
   });
+  it('lands an authenticated BA on profile', () => {
+    expect(routeRedirect('/sign-in', true, 'approved')).toBe('/profile');
+  });
   it('routes password recovery independently of account status', () => {
     expect(routeRedirect('/sign-in', true, 'pending', true)).toBe('/update-password');
   });
