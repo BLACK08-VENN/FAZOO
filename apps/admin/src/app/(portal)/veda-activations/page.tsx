@@ -3,6 +3,8 @@ import { requireStaff } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
 import { BrandPicker } from '@/components/brand-picker';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Input, Label } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 
 interface ActivationRow {
@@ -26,10 +28,10 @@ interface BrandOption {
 export default async function BrandActivationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ org?: string }>;
+  searchParams: Promise<{ org?: string; from?: string; to?: string }>;
 }) {
   const { client, profile } = await requireStaff();
-  const { org } = await searchParams;
+  const { org, from, to } = await searchParams;
 
   const { data: brandsRaw } = await client
     .from('organizations')
@@ -43,7 +45,7 @@ export default async function BrandActivationsPage({
     return brands[0]?.id;
   })();
 
-  const { data: raw } = await client
+  const query = client
     .from('veda_sessions')
     .select(
       `id,
@@ -55,6 +57,13 @@ export default async function BrandActivationsPage({
     .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000')
     .order('session_date', { ascending: false })
     .limit(500);
+
+  const dateQuery =
+    from || to
+      ? query.gte('session_date', from ?? '0000-01-01').lte('session_date', to ?? '9999-12-31')
+      : query;
+
+  const { data: raw } = await dateQuery;
 
   const rows = (raw ?? []) as unknown as ActivationRow[];
   const totalUnits = rows.reduce(
@@ -82,7 +91,11 @@ export default async function BrandActivationsPage({
             Assign a visit
           </Link>
           <a
-            href="/api/reports/veda-activations"
+            href={`/api/reports/veda-activations?${new URLSearchParams(
+              Object.entries({ org: selectedOrg ?? '', from: from ?? '', to: to ?? '' }).filter(
+                ([, v]) => v !== '',
+              ),
+            )}`}
             className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep"
             download
           >
@@ -90,6 +103,40 @@ export default async function BrandActivationsPage({
           </a>
         </div>
       </PageHeader>
+
+      <Card className="mb-6 p-4">
+        <form
+          method="get"
+          action="/veda-activations"
+          role="search"
+          aria-label="Filter activations by date"
+          className="flex flex-wrap items-end gap-3"
+        >
+          <input type="hidden" name="org" value={selectedOrg ?? ''} />
+          <div>
+            <Label htmlFor="v-from">From</Label>
+            <Input id="v-from" name="from" type="date" defaultValue={from ?? ''} />
+          </div>
+          <div>
+            <Label htmlFor="v-to">To</Label>
+            <Input id="v-to" name="to" type="date" defaultValue={to ?? ''} />
+          </div>
+          <button
+            type="submit"
+            className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            Apply
+          </button>
+          {(from || to) ? (
+            <a
+              href={`/veda-activations${selectedOrg ? `?org=${encodeURIComponent(selectedOrg)}` : ''}`}
+              className="inline-flex h-10 items-center rounded-lg border border-ink/10 px-4 text-sm font-medium text-muted hover:bg-lavender"
+            >
+              Clear
+            </a>
+          ) : null}
+        </form>
+      </Card>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <StatCard label="Visits" value={rows.length} />

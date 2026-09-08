@@ -1,3 +1,4 @@
+import { type NextRequest } from 'next/server';
 import { requireStaff, isElevated } from '@/lib/auth';
 import { mapsLink } from '@/lib/format';
 import { formatNairobiDisplay } from '@fazoo/config';
@@ -50,12 +51,16 @@ interface CsvRow {
   veda_schools: { id: string; name: string; region: string | null } | null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   // 1) Authorization: approved elevated staff only (org-scoped via RLS client).
   const { client, profile } = await requireStaff();
   if (!isElevated(profile.role)) {
     return new Response('Forbidden', { status: 403 });
   }
+
+  const params = request.nextUrl.searchParams;
+  const from = params.get('from') ?? null;
+  const to = params.get('to') ?? null;
 
   // 2) Rate limit (fixed-window counter in Postgres, keyed per user).
   try {
@@ -74,7 +79,7 @@ export async function GET() {
     // Limiter unavailable (e.g. local dev without service key): continue.
   }
 
-  const { data: raw } = await client
+  const query = client
     .from('veda_sessions')
     .select(
       `id, session_date, status, learner_count, checkin_at, checkout_at,
@@ -84,6 +89,10 @@ export async function GET() {
     )
     .order('session_date', { ascending: false })
     .limit(Math.min(5000, CSV_EXPORT_MAX_ROWS));
+
+  const { data: raw } = await (from || to
+    ? query.gte('session_date', from ?? '0000-01-01').lte('session_date', to ?? '9999-12-31')
+    : query);
 
   const rows = (raw ?? []) as unknown as CsvRow[];
   const sessionIds = rows.map((r) => r.id);
