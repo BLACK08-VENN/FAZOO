@@ -49,3 +49,4 @@ admin_login_credentials.csv
 # Historical migration inputs and derived location cache (private operational data)
 migration/data/
 scripts/.geocode-cache.json
+.vercel

@@ -14,6 +14,8 @@ interface Membership {
   account_status: string;
   has_code_gate: boolean;
   logo_url: string | null;
+  kind: 'retail' | 'schools';
+  assigned: boolean;
 }
 
 export default function BrandSelect() {
@@ -30,22 +32,19 @@ export default function BrandSelect() {
   async function load() {
     setLoading(true);
     setError(null);
-    const { data, error: err } = await supabase.rpc('my_memberships');
-    const next = (data as Membership[]) ?? [];
+    const { data, error: err } = await supabase.rpc('ba_brand_options' as never);
+    const next = (data as unknown as Membership[] | null) ?? [];
     setMemberships(next);
     if (err) setError(err.message);
-    if (!err) {
-      const approved = next.filter((m) => m.account_status === 'approved');
-      if (approved.length === 1) {
-        await switchBrand(approved[0]!);
-        return;
-      }
-    }
     setLoading(false);
   }
 
   async function openBrand(m: Membership) {
     if (m.account_status !== 'approved') return;
+    if (!m.assigned) {
+      setError('Your administrator has not assigned you to an active campaign for this brand.');
+      return;
+    }
     if (!m.has_code_gate) {
       await switchBrand(m);
       return;
@@ -103,11 +102,11 @@ export default function BrandSelect() {
       <Screen contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
         <HeroCard
           eyebrow="Workspace"
-          title="No brands yet"
-          subtitle="You don't belong to any brand yet. Contact your administrator once you have been added."
+          title="No active brands"
+          subtitle="There are no brands with active campaigns available to your account right now."
           icon="business"
         />
-        <EmptyState title="Nothing to unlock yet" body="Refresh after your administrator adds you to a brand." actionLabel="Refresh" onAction={() => void load()} />
+        <EmptyState title="Nothing to open yet" body="Refresh after your administrator assigns you to an active campaign." actionLabel="Refresh" onAction={() => void load()} />
       </Screen>
     );
   }
@@ -120,13 +119,13 @@ export default function BrandSelect() {
       <HeroCard
         eyebrow="Workspace"
         title="Choose a brand"
-        subtitle={`You belong to ${memberships.length} brand${memberships.length > 1 ? 's' : ''}. Unlock one to continue.`}
+        subtitle="Brands with active campaigns are shown below. You can open only the ones assigned to you by an administrator."
         icon="layers"
       />
 
       {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
 
-      <SectionLabel>Available brands</SectionLabel>
+      <SectionLabel>Brands with active campaigns</SectionLabel>
       {approved.map((m) => (
         <Card key={m.organization_id} className="mb-4">
           {m.logo_url ? (
@@ -137,10 +136,14 @@ export default function BrandSelect() {
           <Text className="font-sans text-xl font-bold text-ink">{m.organization_name}</Text>
           <Text className="font-sans mt-1 text-sm text-slate-500">{m.organization_slug}</Text>
           <Text className="font-sans mt-3 text-sm leading-6 text-slate-600">
-            {m.has_code_gate ? 'Enter your supervisor-issued access code to unlock this brand.' : 'Open your dashboard and continue your shift.'}
+            {!m.assigned
+              ? 'Not assigned — contact your administrator if you should work on this brand.'
+              : m.has_code_gate
+                ? 'Enter your supervisor-issued access code to unlock this brand.'
+                : 'Assigned to you — open your dashboard and continue your shift.'}
           </Text>
 
-          {m.has_code_gate ? (
+          {m.assigned && m.has_code_gate ? (
             <View className="mt-4">
               <Field
                 label="Access code"
@@ -155,12 +158,12 @@ export default function BrandSelect() {
           ) : null}
 
           <PrimaryButton
-            disabled={unlocking === m.organization_id}
+            disabled={!m.assigned || unlocking === m.organization_id}
             busy={unlocking === m.organization_id}
             accessibilityLabel={`Open ${m.organization_name}`}
-            label={m.has_code_gate ? 'Unlock & open' : 'Open dashboard'}
+            label={!m.assigned ? 'Not assigned' : m.has_code_gate ? 'Unlock & open' : 'Open dashboard'}
             onPress={() => void openBrand(m)}
-            icon={m.has_code_gate ? 'lock-open' : 'arrow-forward'}
+            icon={!m.assigned ? 'lock-closed' : m.has_code_gate ? 'lock-open' : 'arrow-forward'}
           />
         </Card>
       ))}

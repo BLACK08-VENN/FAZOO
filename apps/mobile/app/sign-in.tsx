@@ -3,11 +3,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
 import { toAuthEmail, normalizeInternationalPhone } from '@fazoo/validation';
 import { PrimaryButton } from '@/components/primary-button';
@@ -15,6 +17,7 @@ import { AppBackdrop, Field, GlassCard, HeroCard } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 export default function SignIn() {
+  const insets = useSafeAreaInsets();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -61,8 +64,20 @@ export default function SignIn() {
     <AppBackdrop>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-center px-5"
+        className="flex-1"
       >
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingHorizontal: 20,
+            paddingTop: insets.top + 20,
+            paddingBottom: insets.bottom + 20,
+          }}
+          contentInsetAdjustmentBehavior="never"
+          keyboardShouldPersistTaps="handled"
+        >
           <HeroCard
             eyebrow="Field-force platform"
             title="Fazoo"
@@ -121,7 +136,7 @@ export default function SignIn() {
 
               <PrimaryButton label="Sign in" icon="arrow-forward" onPress={submit} busy={busy} />
 
-              <View className="mt-5 flex-row items-center justify-between">
+              <View className="mt-5 flex-row flex-wrap items-center justify-between gap-3">
                 <Link href="/forgot-password" asChild>
                   <Pressable>
                     <Text className="font-sans text-base font-medium text-primary">Forgot password?</Text>
@@ -136,10 +151,11 @@ export default function SignIn() {
           </GlassCard>
 
           <Link href="/register" asChild>
-            <Pressable className="mt-6 self-center rounded-full border border-ink/15 bg-white px-5 py-3">
+            <Pressable className="mt-6 max-w-full self-center rounded-full border border-ink/15 bg-white px-5 py-3">
               <Text className="font-sans text-center text-base font-medium text-ink">New here? Register as a Brand Ambassador</Text>
             </Pressable>
           </Link>
+        </ScrollView>
       </KeyboardAvoidingView>
     </AppBackdrop>
   );

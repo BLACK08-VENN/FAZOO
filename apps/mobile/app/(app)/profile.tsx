@@ -61,8 +61,8 @@ export default function Profile() {
         <>
           <Card className="mt-3">
             <View className="flex-row gap-3">
-              <MetricTile label="Status" value={profile?.account_status ?? '—'} />
-              <MetricTile label="Role" value={profile?.role ?? '—'} />
+              <MetricTile compact label="Status" value={profile?.account_status ?? '—'} />
+              <MetricTile compact label="Role" value={profile?.role ?? '—'} />
             </View>
           </Card>
 

@@ -206,10 +206,12 @@ export function MetricTile({
   label,
   value,
   tone = 'default',
+  compact = false,
 }: {
   label: string;
   value: ReactNode;
   tone?: 'default' | 'success' | 'warning';
+  compact?: boolean;
 }) {
   const toneClass =
     tone === 'success'
@@ -217,6 +219,15 @@ export function MetricTile({
       : tone === 'warning'
         ? 'border-warn/30 bg-amber-50'
         : 'border-ink/10 bg-white';
+
+  if (compact) {
+    return (
+      <View className={`overflow-hidden rounded-[16px] border px-3 py-1.5 ${toneClass}`}>
+        <Text className="font-sans text-[10px] uppercase tracking-[1.5px] text-muted">{label}</Text>
+        <Text className="font-sans text-sm font-bold text-ink">{value}</Text>
+      </View>
+    );
+  }
 
   return (
     <View className={`flex-1 overflow-hidden rounded-[26px] border px-4 py-4 ${toneClass}`}>
