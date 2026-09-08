@@ -92,7 +92,7 @@ export default function Checkout() {
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Review totals, capture fresh evidence, and lock the day." />
+      <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Review totals, capture fresh evidence, and lock the day." onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
         {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
       </View>

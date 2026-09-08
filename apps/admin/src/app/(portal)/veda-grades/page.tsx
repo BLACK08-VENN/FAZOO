@@ -63,7 +63,7 @@ export default async function VedaGradesPage() {
     const name = String(formData.get('name') ?? '').trim();
     const code = String(formData.get('code') ?? '').trim();
     const sortOrder = Number(formData.get('sort_order') ?? 0);
-    const status = String(formData.get('status') ?? 'active');
+    const status = formData.get('status') === 'inactive' ? 'inactive' : 'active';
     const stationeryIds = formData
       .getAll('stationery_item')
       .map((v) => String(v))
@@ -77,7 +77,7 @@ export default async function VedaGradesPage() {
       p_code: code,
       p_sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
       p_status: status,
-      p_grade_id: gradeId ?? null,
+      p_grade_id: gradeId,
       p_stationery_ids: stationeryIds,
     });
     if (!error) revalidatePath('/veda-grades');

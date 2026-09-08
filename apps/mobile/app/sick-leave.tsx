@@ -60,6 +60,7 @@ export default function SickLeave() {
         title="Mark sick leave"
         subtitle="Let your supervisor know you are unavailable today. This blocks check-in for the rest of the day."
         icon="medkit"
+        onBack={() => router.back()}
       />
 
       <SectionLabel>Details</SectionLabel>

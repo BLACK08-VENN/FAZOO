@@ -94,7 +94,7 @@ export default function Sales() {
 
   return (
     <Screen bottomInset={false}>
-      <ScreenHeader eyebrow="Record a sale" title={`Today: ${selected?.total_units_today ?? 0} units`} subtitle={selected ? `${selected.assignment.store_name || selected.assignment.campaign_name}${selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}` : 'Choose an active assignment to record units sold.'} />
+      <ScreenHeader eyebrow="Record a sale" title={`Today: ${selected?.total_units_today ?? 0} units`} subtitle={selected ? `${selected.assignment.store_name || selected.assignment.campaign_name}${selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}` : 'Choose an active assignment to record units sold.'} onBack={() => router.back()} />
 
       {skus.length === 0 ? (
         <EmptyState title="No active SKUs" body="There are no active SKUs on this campaign yet." />

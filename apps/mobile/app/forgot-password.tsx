@@ -40,6 +40,7 @@ export default function ForgotPassword() {
           eyebrow="Account recovery"
           title="Reset your password"
           subtitle="Request a secure reset path. If self-service messaging is unavailable, your supervisor can complete the handoff."
+          onBack={() => router.back()}
         />
 
         <GlassCard>

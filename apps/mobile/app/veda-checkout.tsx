@@ -77,7 +77,7 @@ export default function VedaCheckout() {
 
   return (
     <Screen>
-      <ScreenHeader eyebrow="Check out" title="Complete today's visit" subtitle="Confirm totals, verify presence at the school, and close the session." />
+      <ScreenHeader eyebrow="Check out" title="Complete today's visit" subtitle="Confirm totals, verify presence at the school, and close the session." onBack={() => router.back()} />
       {error ? <StatusPill tone="bad" label={error} /> : null}
       <Card>
         <Text className="font-sans text-lg font-bold text-ink">{assignment?.school_name ?? 'Loading…'}</Text>

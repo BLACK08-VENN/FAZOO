@@ -25,8 +25,6 @@ interface VedaSchool {
   school_name: string;
   school_region: string | null;
   status: string;
-  locked: boolean;
-  unlocked: boolean;
 }
 
 type SchoolItem = {
@@ -34,8 +32,6 @@ type SchoolItem = {
   id: string;
   title: string;
   subtitle?: string;
-  locked: boolean;
-  unlocked: boolean;
   isSchool: true;
   assignmentId: string | null;
 };
@@ -118,40 +114,62 @@ export default function Campaigns() {
     router.push({ pathname: '/campaign-logs', params: { kind: 'retail', campaignId: id, campaignName: name } });
   }
 
-  async function unlockAndOpen(id: string, isSchool: boolean, name: string) {
+  async function unlockAndOpen(id: string, name: string) {
     const code = (codeInput[id] ?? '').trim();
     if (!code) {
-      setError('Enter the access code for this item.');
+      setError('Enter the access code for this campaign.');
       return;
     }
     setUnlocking(id);
     setError(null);
-    const { error: err } = isSchool
-      ? await supabase.rpc('ba_unlock_veda_school', { p_school_id: id, p_code: code })
-      : await supabase.rpc('ba_unlock_campaign', { p_campaign_id: id, p_code: code });
+    const { error: err } = await supabase.rpc('ba_unlock_campaign', { p_campaign_id: id, p_code: code });
     setUnlocking(null);
     if (err) {
       setError(/invalid access code/i.test(err.message) ? 'That access code is incorrect — try again or contact your admin.' : err.message);
       return;
     }
     await load();
-    const assignmentId = isSchool ? vedaSchools.find((school) => school.school_id === id)?.assignment_id ?? null : null;
-    await open(id, isSchool, name, assignmentId);
+    await open(id, false, name);
   }
 
   const items: Array<SchoolItem | CampaignItem> =
     kind === 'schools'
-      ? vedaSchools.map((s) => ({ key: s.school_id, id: s.school_id, title: s.school_name, subtitle: s.school_region ?? undefined, locked: s.locked, unlocked: s.unlocked, isSchool: true, assignmentId: s.assignment_id ?? null }))
+      ? vedaSchools.map((s) => ({ key: s.school_id, id: s.school_id, title: s.school_name, subtitle: s.school_region ?? undefined, isSchool: true, assignmentId: s.assignment_id ?? null }))
       : retailCampaigns.map((c) => ({ key: c.campaign_id, id: c.campaign_id, title: c.campaign_name, subtitle: (c.stores ?? []).join(', ') || undefined, locked: c.locked, unlocked: c.unlocked, isSchool: false }));
 
   function renderItem(item: (typeof items)[number]) {
-    const needsCode = item.locked && !item.unlocked;
+    if (item.isSchool) {
+      return (
+        <Card key={item.key} className="mb-4">
+          <TouchableOpacity
+            onPress={() => void open(item.id, true, item.title, item.assignmentId)}
+            accessibilityRole="button"
+            accessibilityLabel={item.title}
+            activeOpacity={0.8}
+          >
+            <View className="flex-row items-start justify-between gap-4">
+              <View className="flex-1">
+                <Text className="font-sans text-xl font-bold text-ink">{item.title}</Text>
+                {item.subtitle ? <Text className="font-sans mt-2 text-sm leading-6 text-muted">{item.subtitle}</Text> : null}
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#6B6472" />
+            </View>
+            <View className="mt-4">
+              <Text className="font-sans text-sm text-muted">Tap to view logs and continue.</Text>
+            </View>
+          </TouchableOpacity>
+        </Card>
+      );
+    }
+
+    const campaign = item as CampaignItem;
+    const needsCode = campaign.locked && !campaign.unlocked;
     return (
       <Card key={item.key} className="mb-4">
         <TouchableOpacity
           onPress={() => {
             if (needsCode) openCode(item.id);
-            else void open(item.id, item.isSchool, item.title, item.isSchool ? item.assignmentId : null);
+            else void open(item.id, false, item.title);
           }}
           accessibilityRole="button"
           accessibilityLabel={item.title}
@@ -185,11 +203,11 @@ export default function Campaigns() {
               autoCapitalize="none"
               value={codeInput[item.id] ?? ''}
               onChangeText={(v) => setCodeInput((prev) => ({ ...prev, [item.id]: v }))}
-              onSubmitEditing={() => void unlockAndOpen(item.id, item.isSchool, item.title)}
+              onSubmitEditing={() => void unlockAndOpen(item.id, item.title)}
             />
             <PrimaryButton
               label="Unlock & continue"
-              onPress={() => void unlockAndOpen(item.id, item.isSchool, item.title)}
+              onPress={() => void unlockAndOpen(item.id, item.title)}
               busy={unlocking === item.id}
               icon="lock-open"
             />
@@ -214,14 +232,17 @@ export default function Campaigns() {
       <ScreenHeader
         eyebrow="Add a log"
         title={kind === 'schools' ? 'Choose a school' : 'Choose a campaign'}
-        subtitle={kind === 'schools' ? 'Pick any active school. Locked ones need a passcode from your supervisor before you can add logs.' : 'Pick any active campaign. Locked ones need a passcode from your supervisor before you can add logs.'}
+        subtitle={kind === 'schools' ? 'Pick any active school to add logs.' : 'Pick any active campaign. Locked ones need a passcode from your supervisor before you can add logs.'}
+        onBack={() => router.back()}
       />
 
-      <GlassCard className="mb-5">
-        <Text className="font-sans text-sm leading-6 text-muted">
-          Access codes are validated server-side. Once unlocked, you can keep moving without re-entering the passcode on every visit.
-        </Text>
-      </GlassCard>
+      {kind !== 'schools' ? (
+        <GlassCard className="mb-5">
+          <Text className="font-sans text-sm leading-6 text-muted">
+            Access codes are validated server-side. Once unlocked, you can keep moving without re-entering the passcode on every visit.
+          </Text>
+        </GlassCard>
+      ) : null}
 
       {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
 

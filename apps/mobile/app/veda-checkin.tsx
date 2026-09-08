@@ -104,7 +104,7 @@ export default function VedaCheckIn() {
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Verify your location, capture school evidence, and record the learner count." />
+      <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Verify your location, capture school evidence, and record the learner count." onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
         {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
       </View>

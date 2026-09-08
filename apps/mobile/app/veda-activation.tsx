@@ -100,7 +100,7 @@ export default function VedaActivation() {
 
   return (
     <Screen>
-      <HeroCard eyebrow="Today's visit" title={school?.school_name ?? 'No school'} subtitle={school?.school_region ?? undefined} icon="albums" />
+      <HeroCard eyebrow="Today's visit" title={school?.school_name ?? 'No school'} subtitle={school?.school_region ?? undefined} icon="albums" onBack={() => router.back()} />
       {selected?.is_weekly_off_today ? <StatusPill tone="warn" label="Weekly off" /> : session?.status === 'completed' ? <StatusPill tone="ok" label="Complete" /> : <StatusPill tone="purple" label="In progress" />}
       {error ? <StatusPill tone="bad" label={error} /> : null}
       {savedMessage ? <StatusPill tone="ok" label={savedMessage} /> : null}

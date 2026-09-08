@@ -77,7 +77,7 @@ export default function CampaignLogs() {
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
-      <ScreenHeader eyebrow="Logs" title={headerTitle ?? ''} subtitle={headerSubtitle ?? undefined} />
+      <ScreenHeader eyebrow="Logs" title={headerTitle ?? ''} subtitle={headerSubtitle ?? undefined} onBack={() => router.back()} />
 
       {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
 

@@ -4,6 +4,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
   type StyleProp,
   type TextInputProps,
@@ -126,16 +127,23 @@ export function HeroCard({
   eyebrow,
   icon,
   trailing,
+  onBack,
 }: {
   title: string;
   subtitle?: string;
   eyebrow?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   trailing?: ReactNode;
+  onBack?: () => void;
 }) {
   return (
     <GlassCard className="mb-5">
       <View className="flex-row items-start justify-between gap-4">
+        {onBack ? (
+          <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
+            <Ionicons name="chevron-back" size={22} color="#0B0B0F" />
+          </TouchableOpacity>
+        ) : null}
         <View className="flex-1">
           {eyebrow ? (
             <Text className="font-sans text-xs uppercase tracking-[2px] text-primary">{eyebrow}</Text>
@@ -163,14 +171,21 @@ export function ScreenHeader({
   title,
   subtitle,
   action,
+  onBack,
 }: {
   eyebrow?: string;
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  onBack?: () => void;
 }) {
   return (
     <View className="mb-5 flex-row items-start justify-between gap-4">
+      {onBack ? (
+        <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
+          <Ionicons name="chevron-back" size={22} color="#0B0B0F" />
+        </TouchableOpacity>
+      ) : null}
       <View className="flex-1">
         {eyebrow ? (
           <Text className="font-sans text-xs uppercase tracking-[2px] text-primary">{eyebrow}</Text>

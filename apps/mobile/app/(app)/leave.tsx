@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Platform, Pressable, RefreshControl, Switch, Text, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { leaveRequestSchema, type LeaveRequestInput } from '@fazoo/validation';
 import type { BaTodayResult } from '@fazoo/types';
 import { PrimaryButton } from '@/components/primary-button';
@@ -96,6 +97,7 @@ function DateField({ label, value, onChange, minimumDate, icon = 'calendar' }: {
 }
 
 export default function LeavePage() {
+  const router = useRouter();
   const [form, setForm] = useState<LeaveFormState>(initialForm);
   const [requests, setRequests] = useState<LeaveRow[]>([]);
   const [assignments, setAssignments] = useState<BaTodayResult['assignments'][number]['assignment'][]>([]);
@@ -179,7 +181,7 @@ export default function LeavePage() {
 
   return (
     <Screen bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadRequests(); }} />}>
-      <HeroCard eyebrow="Time away" title="Leave request" subtitle="Your verified profile and assignment determine how this request is reviewed. Complete the details carefully." icon="calendar-clear" />
+      <HeroCard eyebrow="Time away" title="Leave request" subtitle="Your verified profile and assignment determine how this request is reviewed. Complete the details carefully." icon="calendar-clear" onBack={() => router.back()} />
 
       <SectionLabel>Assignment</SectionLabel>
       {assignments.length === 0 ? (

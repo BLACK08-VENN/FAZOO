@@ -113,7 +113,7 @@ export default function VedaNewLog() {
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={`Step ${step} of 2`} title={stepTitle} subtitle={params.schoolName} />
+      <ScreenHeader eyebrow={`Step ${step} of 2`} title={stepTitle} subtitle={params.schoolName} onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
         {[1, 2].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
       </View>
