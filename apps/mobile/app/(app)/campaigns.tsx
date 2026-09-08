@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { VedaTodayResult } from '@fazoo/types';
 import { supabase } from '@/lib/supabase';
 import { useOrgKind } from '@/lib/org-kind';
 import { PrimaryButton } from '@/components/primary-button';
@@ -20,7 +19,6 @@ interface RetailCampaign {
 }
 
 interface VedaSchool {
-  assignment_id?: string | null;
   school_id: string;
   school_name: string;
   school_region: string | null;
@@ -33,7 +31,6 @@ type SchoolItem = {
   title: string;
   subtitle?: string;
   isSchool: true;
-  assignmentId: string | null;
 };
 
 type CampaignItem = {
@@ -65,28 +62,9 @@ export default function Campaigns() {
   const load = useCallback(async () => {
     setError(null);
     if (kind === 'schools') {
-      const [{ data, error: err }, { data: todayData, error: todayError }] = await Promise.all([
-        supabase.rpc('ba_list_veda_schools'),
-        supabase.rpc('veda_today'),
-      ]);
+      const { data, error: err } = await supabase.rpc('ba_list_veda_schools');
       if (err) setError('Could not load schools.');
-      else {
-        const assignmentsBySchoolId = new Map<string, string>();
-        if (!todayError && todayData) {
-          const today = todayData as unknown as VedaTodayResult;
-          for (const item of today.assignments) {
-            if (item.assignment.school_id) {
-              assignmentsBySchoolId.set(item.assignment.school_id, item.assignment.id);
-            }
-          }
-        }
-        setVedaSchools(
-          ((data as VedaSchool[] | null) ?? []).map((school) => ({
-            ...school,
-            assignment_id: assignmentsBySchoolId.get(school.school_id) ?? null,
-          })),
-        );
-      }
+      else setVedaSchools((data as VedaSchool[] | null) ?? []);
     } else {
       const { data, error: err } = await supabase.rpc('ba_list_campaigns');
       if (err) setError('Could not load campaigns.');
@@ -106,9 +84,9 @@ export default function Campaigns() {
     }, [kindLoading, load]),
   );
 
-  async function open(id: string, isSchool: boolean, name: string, assignmentId?: string | null) {
+  async function open(id: string, isSchool: boolean, name: string) {
     if (isSchool) {
-      router.push({ pathname: '/campaign-logs', params: { kind: 'schools', schoolId: id, schoolName: name, ...(assignmentId ? { assignmentId } : {}) } });
+      router.push({ pathname: '/campaign-logs', params: { kind: 'schools', schoolId: id, schoolName: name } });
       return;
     }
     router.push({ pathname: '/campaign-logs', params: { kind: 'retail', campaignId: id, campaignName: name } });
@@ -134,7 +112,7 @@ export default function Campaigns() {
 
   const items: Array<SchoolItem | CampaignItem> =
     kind === 'schools'
-      ? vedaSchools.map((s) => ({ key: s.school_id, id: s.school_id, title: s.school_name, subtitle: s.school_region ?? undefined, isSchool: true, assignmentId: s.assignment_id ?? null }))
+      ? vedaSchools.map((s) => ({ key: s.school_id, id: s.school_id, title: s.school_name, subtitle: s.school_region ?? undefined, isSchool: true }))
       : retailCampaigns.map((c) => ({ key: c.campaign_id, id: c.campaign_id, title: c.campaign_name, subtitle: (c.stores ?? []).join(', ') || undefined, locked: c.locked, unlocked: c.unlocked, isSchool: false }));
 
   function renderItem(item: (typeof items)[number]) {
@@ -142,7 +120,7 @@ export default function Campaigns() {
       return (
         <Card key={item.key} className="mb-4">
           <TouchableOpacity
-            onPress={() => void open(item.id, true, item.title, item.assignmentId)}
+            onPress={() => void open(item.id, true, item.title)}
             accessibilityRole="button"
             accessibilityLabel={item.title}
             activeOpacity={0.8}

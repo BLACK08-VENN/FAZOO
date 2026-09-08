@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       audit_logs: {
@@ -928,7 +953,7 @@ export type Database = {
           end_date: string | null
           id: string
           organization_id: string
-          school_id: string
+          region: string
           start_date: string
           status: Database["public"]["Enums"]["assignment_status"]
           updated_at: string
@@ -940,7 +965,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           organization_id: string
-          school_id: string
+          region: string
           start_date: string
           status?: Database["public"]["Enums"]["assignment_status"]
           updated_at?: string
@@ -952,7 +977,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           organization_id?: string
-          school_id?: string
+          region?: string
           start_date?: string
           status?: Database["public"]["Enums"]["assignment_status"]
           updated_at?: string
@@ -971,13 +996,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_assignments_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "veda_schools"
             referencedColumns: ["id"]
           },
         ]
@@ -1072,42 +1090,8 @@ export type Database = {
           },
         ]
       }
-      veda_school_unlocks: {
-        Row: {
-          school_id: string
-          unlocked_at: string
-          user_id: string
-        }
-        Insert: {
-          school_id: string
-          unlocked_at?: string
-          user_id: string
-        }
-        Update: {
-          school_id?: string
-          unlocked_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "veda_school_unlocks_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "veda_schools"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_school_unlocks_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       veda_schools: {
         Row: {
-          access_code: string | null
           address: string | null
           assigned_ba_name: string | null
           booklist_collection_visit: string | null
@@ -1131,7 +1115,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          access_code?: string | null
           address?: string | null
           assigned_ba_name?: string | null
           booklist_collection_visit?: string | null
@@ -1155,7 +1138,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          access_code?: string | null
           address?: string | null
           assigned_ba_name?: string | null
           booklist_collection_visit?: string | null
@@ -1635,10 +1617,6 @@ export type Database = {
         Args: { p_campaign_id: string; p_code: string }
         Returns: undefined
       }
-      ba_unlock_veda_school: {
-        Args: { p_code: string; p_school_id: string }
-        Returns: undefined
-      }
       ba_update_sale: {
         Args: {
           p_daily_log_id?: string
@@ -1736,12 +1714,16 @@ export type Database = {
         }
         Returns: Json
       }
+      veda_admin_delete_stationery_item: {
+        Args: { p_item_id: string }
+        Returns: Json
+      }
       veda_admin_upsert_assignment: {
         Args: {
           p_assignment_id?: string
           p_brand_ambassador_id: string
           p_end_date?: string
-          p_school_id: string
+          p_region: string
           p_start_date?: string
           p_status?: Database["public"]["Enums"]["assignment_status"]
           p_weekly_off_day?: number[]
@@ -1773,6 +1755,15 @@ export type Database = {
       veda_admin_upsert_stationery: {
         Args: {
           p_code?: string
+          p_item_id?: string
+          p_name: string
+          p_status?: Database["public"]["Enums"]["sku_status"]
+        }
+        Returns: string
+      }
+      veda_admin_upsert_stationery_item: {
+        Args: {
+          p_code: string
           p_item_id?: string
           p_name: string
           p_status?: Database["public"]["Enums"]["sku_status"]
@@ -2021,6 +2012,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       account_status: [

@@ -13,7 +13,7 @@ import { readCachedVedaToday, writeCachedVedaToday } from '@/lib/cache';
 import { Screen, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
 
 export default function VedaCheckout() {
-  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
+  const { school: schoolParam } = useLocalSearchParams<{ school?: string }>();
   const [today, setToday] = useState<VedaTodayResult | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [fix, setFix] = useState<Fix | null>(null);
@@ -37,10 +37,19 @@ export default function VedaCheckout() {
     })();
   }, [today]);
 
-  const selected = today?.assignments.find((item) => item.assignment.id === assignmentParam) ?? today?.assignments[0] ?? null;
-  const assignment = selected?.assignment ?? null;
-  const session = selected?.session ?? null;
-  const totalItems = (selected?.distributions ?? []).reduce((sum, d) => sum + d.quantity, 0);
+  const schoolRow =
+    today?.regions.flatMap((r) => r.schools).find((s) => s.school_id === schoolParam) ?? null;
+  const assignment = schoolRow
+    ? {
+        school_name: schoolRow.school_name,
+        school_region: schoolRow.school_region,
+        school_latitude: schoolRow.school_latitude,
+        school_longitude: schoolRow.school_longitude,
+        geofence_radius_metres: schoolRow.geofence_radius_metres,
+      }
+    : null;
+  const session = schoolRow?.session ?? null;
+  const totalItems = (schoolRow?.distributions ?? []).reduce((sum, d) => sum + d.quantity, 0);
 
   async function locate() {
     setError(null);
@@ -86,8 +95,8 @@ export default function VedaCheckout() {
           <Text className="font-sans text-slate-500">Stationery distributed</Text>
           <Text className="font-sans font-bold tabular-nums text-indigo-700">{totalItems} units</Text>
         </View>
-        {(selected?.distributions ?? []).map((d) => <View key={d.id} className="mt-2 flex-row justify-between"><Text className="font-sans text-slate-700">{d.item_name}</Text><Text className="font-sans tabular-nums text-slate-700">×{d.quantity}</Text></View>)}
-        {(selected?.distributions ?? []).length === 0 ? <Text className="font-sans mt-2 text-slate-500">No stationery was recorded.</Text> : null}
+        {(schoolRow?.distributions ?? []).map((d) => <View key={d.id} className="mt-2 flex-row justify-between"><Text className="font-sans text-slate-700">{d.item_name}</Text><Text className="font-sans tabular-nums text-slate-700">×{d.quantity}</Text></View>)}
+        {(schoolRow?.distributions ?? []).length === 0 ? <Text className="font-sans mt-2 text-slate-500">No stationery was recorded.</Text> : null}
       </Card>
       <GlassCard className="mt-4">
         <Text className="font-sans mb-3 font-medium text-ink">Verify you are still at the school</Text>

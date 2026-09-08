@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { distanceMetres } from '@fazoo/config';
-import type { AssignmentToday, VedaTodayResult } from '@fazoo/types';
+import type { VedaRegionSchool, VedaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
 import { capturePhoto, persistPhoto, photoPath, type CapturedPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
@@ -24,27 +24,29 @@ export default function VedaCheckIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
-  const [assignment, setAssignment] = useState<{ id: string; assignment: AssignmentToday; geofence: number; } | null>(null);
+  const { school: schoolParam } = useLocalSearchParams<{ school?: string }>();
+  const [school, setSchool] = useState<{ school: VedaRegionSchool; region: string } | null>(null);
 
-  async function loadVisit(): Promise<typeof assignment> {
+  async function loadSchool(): Promise<void> {
     const { data, error: todayError } = await supabase.rpc('veda_today');
     if (!todayError && data) {
       const today = data as unknown as VedaTodayResult;
       await writeCachedVedaToday(today);
-      const match = today.assignments.find((item) => item.assignment.id === assignmentParam) ?? today.assignments[0];
-      if (!match) return null;
-      return { id: match.assignment.id, assignment: match.assignment, geofence: match.assignment.geofence_radius_metres ?? 200 };
+      const region = today.regions.find((r) => r.schools.some((s) => s.school_id === schoolParam));
+      const schoolRow = region?.schools.find((s) => s.school_id === schoolParam);
+      if (region && schoolRow) setSchool({ school: schoolRow, region: region.region });
+      return;
     }
     const cached = await readCachedVedaToday();
-    const match = cached?.assignments.find((item) => item.assignment.id === assignmentParam) ?? cached?.assignments[0];
-    return match ? { id: match.assignment.id, assignment: match.assignment, geofence: match.assignment.geofence_radius_metres ?? 200 } : null;
+    const region = cached?.regions.find((r) => r.schools.some((s) => s.school_id === schoolParam));
+    const schoolRow = region?.schools.find((s) => s.school_id === schoolParam);
+    if (region && schoolRow) setSchool({ school: schoolRow, region: region.region });
   }
 
-  useEffect(() => { void loadVisit().then(setAssignment); }, [assignmentParam]);
+  useEffect(() => { void loadSchool(); }, [schoolParam]);
 
-  const radius = assignment?.geofence ?? 200;
-  const distance = fix && assignment && assignment.assignment.school_latitude && assignment.assignment.school_longitude ? Math.round(distanceMetres(fix.latitude, fix.longitude, assignment.assignment.school_latitude, assignment.assignment.school_longitude)) : null;
+  const radius = school?.school.geofence_radius_metres ?? 200;
+  const distance = fix && school && school.school.school_latitude && school.school.school_longitude ? Math.round(distanceMetres(fix.latitude, fix.longitude, school.school.school_latitude, school.school.school_longitude)) : null;
   const insideGeofence = distance !== null && distance <= radius;
 
   async function locate() {
@@ -65,7 +67,7 @@ export default function VedaCheckIn() {
   }
 
   async function submit() {
-    if (!fix || !assignment || !selfie || !document) return;
+    if (!fix || !school || !selfie || !document) return;
     setBusy(true);
     setError(null);
     const requestId = newRequestId();
@@ -86,7 +88,7 @@ export default function VedaCheckIn() {
         p_learner_count: Math.max(0, Number(learnerCount) || 0),
         p_notes: notes.trim() || null,
         p_client_request_id: requestId,
-        p_assignment_id: assignment.id,
+        p_school_id: school.school.school_id,
       };
       await enqueue('veda_checkin', payload, requestId, [
         { localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType },
@@ -114,8 +116,8 @@ export default function VedaCheckIn() {
       {step === 1 ? (
         <>
           <Card>
-            <Text className="font-sans text-xl font-bold text-ink">{assignment?.assignment.school_name ?? 'Loading…'}</Text>
-            <Text className="font-sans mt-1 text-sm text-slate-500">{assignment?.assignment.school_region}</Text>
+            <Text className="font-sans text-xl font-bold text-ink">{school?.school.school_name ?? 'Loading…'}</Text>
+            <Text className="font-sans mt-1 text-sm text-slate-500">{school?.region}</Text>
             <Text className="font-sans mt-4 text-sm font-semibold text-slate-700">Allowed radius: {radius} m</Text>
             {locating ? <ActivityIndicator color="#7B2FBE" className="mt-4" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the school — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check in`} /> : <Text className="font-sans mt-3 text-sm text-muted">Tap “Get my location” so we can verify you are at the school.</Text>}
           </Card>
@@ -143,6 +145,12 @@ export default function VedaCheckIn() {
             <Text className="font-sans text-base leading-6 text-slate-600">Photograph the stamped confirmation document and enter the learner count.</Text>
             <CaptureBox photo={document} onSnap={() => void snap('document')} hint="Tap to photograph the stamped document" />
           </Card>
+          <GlassCard className="mb-2">
+            <Text className="font-sans text-sm font-semibold text-ink">Before you capture — check for the school stamp</Text>
+            <Text className="font-sans mt-1 text-sm leading-6 text-slate-600">
+              The document must carry the school's official stamp. Make sure it is clearly visible and in focus before uploading.
+            </Text>
+          </GlassCard>
           <Field label="Learner count" placeholder="Learner count" keyboardType="number-pad" value={learnerCount} onChangeText={setLearnerCount} />
           <Field label="Notes" placeholder="Notes (optional)" multiline value={notes} onChangeText={setNotes} />
           <PrimaryButton label="Check In" onPress={() => void submit()} busy={busy} disabled={!document} icon="checkmark-circle" />

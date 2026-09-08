@@ -3,11 +3,11 @@ import { requireStaff } from '@/lib/auth';
 import { PageHeader } from '@/components/page';
 import { BrandPicker } from '@/components/brand-picker';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
-import { Input, Label, Select } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { weeklyOffDayName, WEEKDAY_NAMES } from '@fazoo/config';
+import { Input, Label } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface AssignmentRow {
   id: string;
@@ -15,8 +15,8 @@ interface AssignmentRow {
   end_date: string | null;
   status: string;
   weekly_off_day: number[];
+  region: string;
   profiles: { full_name: string } | null;
-  veda_schools: { name: string; region: string | null } | null;
 }
 
 interface BrandOption {
@@ -24,6 +24,7 @@ interface BrandOption {
   name: string;
 }
 
+/** Distinct active regions across the org's schools, for the multi-select. */
 export default async function BrandAssignmentsPage({
   searchParams,
 }: {
@@ -44,13 +45,12 @@ export default async function BrandAssignmentsPage({
     return brands[0]?.id;
   })();
 
-  const [{ data: raw }, { data: bas }, { data: schools }] = await Promise.all([
+  const [{ data: raw }, { data: bas }, { data: regionRows }] = await Promise.all([
     client
       .from('veda_assignments')
       .select(
-        `id, start_date, end_date, status, weekly_off_day,
-         profiles!veda_assignments_brand_ambassador_id_fkey ( full_name ),
-         veda_schools!veda_assignments_school_id_fkey ( name, region )`,
+        `id, start_date, end_date, status, weekly_off_day, region,
+         profiles!veda_assignments_brand_ambassador_id_fkey ( full_name )`,
       )
       .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000')
       .order('start_date', { ascending: false })
@@ -64,19 +64,21 @@ export default async function BrandAssignmentsPage({
       .order('full_name'),
     client
       .from('veda_schools')
-      .select('id, name, region')
+      .select('region')
       .eq('status', 'active')
-      .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000')
-      .order('name'),
+      .eq('organization_id', selectedOrg ?? '00000000-0000-0000-0000-000000000000'),
   ]);
 
   const rows = (raw ?? []) as unknown as AssignmentRow[];
+  const regions = Array.from(
+    new Set(((regionRows ?? []) as Array<{ region: string | null }>).map((s) => s.region ?? '').filter(Boolean)),
+  ).sort();
 
   return (
     <>
       <PageHeader
         title="Brand Assignments"
-        description="Assign schools to BAs quickly so they appear immediately in the VEDA mobile app."
+        description="Assign regions to BAs — each BA can visit any active school inside their assigned region(s)."
       >
         <BrandPicker action="/veda-assignments" brands={brands} current={selectedOrg} />
       </PageHeader>
@@ -87,7 +89,7 @@ export default async function BrandAssignmentsPage({
             <thead>
               <tr>
                 <Th>Brand Ambassador</Th>
-                <Th>School</Th>
+                <Th>Region</Th>
                 <Th>Weekly off-day</Th>
                 <Th>Period</Th>
                 <Th>Status</Th>
@@ -96,18 +98,13 @@ export default async function BrandAssignmentsPage({
             <tbody>
               {rows.length === 0 ? (
                 <EmptyRow colSpan={5}>
-                  No school-visit assignments for this brand yet.
+                  No region assignments for this brand yet.
                 </EmptyRow>
               ) : (
                 rows.map((a) => (
                   <tr key={a.id}>
                     <Td className="font-medium">{a.profiles?.full_name ?? 'Unknown'}</Td>
-                    <Td className="text-xs">
-                      {a.veda_schools?.name ?? 'Unknown'}
-                      {a.veda_schools?.region ? (
-                        <span className="block text-muted">{a.veda_schools.region}</span>
-                      ) : null}
-                    </Td>
+                    <Td className="text-xs font-semibold uppercase">{a.region}</Td>
                     <Td>{weeklyOffDayName(a.weekly_off_day)}</Td>
                     <Td className="text-xs">
                       {a.start_date} → {a.end_date ?? 'open'}
@@ -125,7 +122,7 @@ export default async function BrandAssignmentsPage({
         </TableWrap>
 
         <Card>
-          <CardHeader title="Quick school assignment" description="Choose a BA and school to make it available in VEDA immediately." />
+          <CardHeader title="Region assignment" description="Choose a BA and the region(s) to access. Each selected region is assigned." />
           <CardBody>
             <form
               action={async (formData: FormData) => {
@@ -135,42 +132,52 @@ export default async function BrandAssignmentsPage({
                   .map((d) => Number(d))
                   .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
                 const startDate = String(formData.get('start_date') ?? '');
-                const schoolId = String(formData.get('school_id') ?? '');
+                const regions = formData.getAll('region').map((r) => String(r).trim()).filter(Boolean);
                 const baId = String(formData.get('ba_id') ?? '');
-                if (!schoolId || !baId || !startDate) return;
+                if (!baId || !startDate || regions.length === 0) return;
 
                 const { client: c, profile: actor } = await requireStaff();
                 if (actor.role === 'supervisor') return;
-                await c.rpc('veda_admin_upsert_assignment', {
-                  p_brand_ambassador_id: baId,
-                  p_school_id: schoolId,
-                  p_weekly_off_day: offDays,
-                  p_start_date: startDate,
-                  p_status: 'active',
-                });
+                for (const region of regions) {
+                  await c.rpc('veda_admin_upsert_assignment', {
+                    p_brand_ambassador_id: baId,
+                    p_region: region,
+                    p_weekly_off_day: offDays,
+                    p_start_date: startDate,
+                    p_status: 'active',
+                  });
+                }
                 revalidatePath('/veda-assignments');
+                revalidatePath('/veda-activations');
               }}
               className="space-y-3"
             >
               <div>
                 <Label htmlFor="va-ba">Brand Ambassador</Label>
-                <Select id="va-ba" name="ba_id" required>
+                <select id="va-ba" name="ba_id" required className="h-10 w-full rounded-lg border border-ink/15 bg-white px-3 text-sm text-ink">
                   {(bas ?? []).map((b) => (
                     <option key={b.id} value={b.id}>{b.full_name}</option>
                   ))}
-                </Select>
+                </select>
               </div>
-              <div>
-                <Label htmlFor="va-school">School</Label>
-                <Select id="va-school" name="school_id" required>
-                  {(schools ?? []).map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                      {s.region ? ` — ${s.region}` : ''}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+              <fieldset>
+                <legend className="text-sm font-medium text-ink">Regions</legend>
+                {regions.length === 0 ? (
+                  <p className="mt-1 text-sm text-muted">No active schools with regions in this brand yet.</p>
+                ) : (
+                  <div className="mt-1 grid grid-cols-2 gap-2">
+                    {regions.map((region) => (
+                      <label
+                        key={region}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-charcoal has-[:checked]:border-primary has-[:checked]:bg-lavender"
+                      >
+                        <input type="checkbox" name="region" value={region} className="size-4 accent-primary" />
+                        {region}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
               <fieldset>
                 <legend className="text-sm font-medium text-ink">Weekly off-days</legend>
                 <div className="mt-1 grid grid-cols-2 gap-2">
@@ -194,7 +201,9 @@ export default async function BrandAssignmentsPage({
                 <Label htmlFor="va-start">Effective from</Label>
                 <Input id="va-start" name="start_date" type="date" required />
               </div>
-              <Button type="submit" className="w-full">Assign BA</Button>
+              <Button type="submit" className="w-full" disabled={regions.length === 0}>
+                Assign BA
+              </Button>
             </form>
           </CardBody>
         </Card>

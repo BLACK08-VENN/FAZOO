@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { distanceMetres } from '@fazoo/config';
-import type { VedaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
 import { capturePhoto, persistPhoto, photoPath, type CapturedPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
@@ -24,22 +23,13 @@ export default function VedaNewLog() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const params = useLocalSearchParams<{ assignmentId?: string; schoolId?: string; schoolName?: string }>();
-  const [assignmentId, setAssignmentId] = useState<string | null>(params.assignmentId ?? null);
+  const params = useLocalSearchParams<{ schoolId?: string; schoolName?: string }>();
   const [geofenceRadius, setGeofenceRadius] = useState(200);
   const [schoolCoords, setSchoolCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     async function loadSchool() {
       if (!params.schoolId) return;
-      if (!params.assignmentId) {
-        const { data: todayData } = await supabase.rpc('veda_today');
-        if (todayData) {
-          const today = todayData as unknown as VedaTodayResult;
-          const match = today.assignments.find((item) => item.assignment.school_id === params.schoolId);
-          if (match?.assignment.id) setAssignmentId(match.assignment.id);
-        }
-      }
       const { data } = await supabase.from('veda_schools').select('latitude, longitude, geofence_radius_metres').eq('id', params.schoolId).single();
       if (data) {
         setSchoolCoords(data.latitude && data.longitude ? { latitude: data.latitude, longitude: data.longitude } : null);
@@ -94,14 +84,13 @@ export default function VedaNewLog() {
         p_learner_count: Math.max(0, Number(learnerCount) || 0),
         p_notes: notes.trim() || null,
         p_client_request_id: requestId,
-        p_assignment_id: assignmentId,
         p_school_id: params.schoolId,
       };
       await enqueue('veda_checkin', payload, requestId, [
         { localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType },
         { localUri: localDocument, bucket: 'daily-log-photos', remotePath: documentPath, mimeType: document.mimeType },
       ]);
-      router.push({ pathname: '/campaign-logs', params: { kind: 'schools', assignmentId, schoolId: params.schoolId, schoolName: params.schoolName } });
+      router.push({ pathname: '/campaign-logs', params: { kind: 'schools', schoolId: params.schoolId, schoolName: params.schoolName } });
       setTimeout(() => void flushQueue(), 0);
     } catch (err) {
       setBusy(false);
@@ -125,6 +114,12 @@ export default function VedaNewLog() {
             <Text className="font-sans text-base leading-6 text-slate-600">Photograph the stamped document for this school visit.</Text>
             <CaptureBox photo={document} onSnap={() => void snap('document')} hint="Tap to photograph the stamped document" />
           </Card>
+          <GlassCard className="mb-2">
+            <Text className="font-sans text-sm font-semibold text-ink">Before you capture — check for the school stamp</Text>
+            <Text className="font-sans mt-1 text-sm leading-6 text-slate-600">
+              The document must carry the school's official stamp. Make sure it is clearly visible and in focus before uploading.
+            </Text>
+          </GlassCard>
           <PrimaryButton label="Retake" variant="ghost" disabled={!document} onPress={() => void snap('document')} />
           <PrimaryButton label="Continue" disabled={!document} onPress={() => setStep(2)} />
         </>

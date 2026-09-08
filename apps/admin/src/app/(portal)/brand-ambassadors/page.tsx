@@ -12,7 +12,7 @@ export default async function BrandAmbassadorsPage() {
   const { client, profile } = await requireStaff();
   const elevated = isElevated(profile.role);
 
-  const [{ data: bas }, { data: pendingRaw }, { data: schools }] = await Promise.all([
+  const [{ data: bas }, { data: pendingRaw }, { data: regionRows }] = await Promise.all([
     client
       .from('profiles')
       .select('id, full_name, phone, role, account_status, organization_id')
@@ -21,12 +21,14 @@ export default async function BrandAmbassadorsPage() {
     client.rpc('admin_list_pending_memberships'),
     client
       .from('veda_schools')
-      .select('id, name, region')
-      .eq('status', 'active')
-      .order('name'),
+      .select('region')
+      .eq('status', 'active'),
   ]);
 
   const pending = (pendingRaw as PendingMembership[] | null) ?? [];
+  const regions: RegionOption[] = Array.from(
+    new Set(((regionRows ?? []) as Array<{ region: string | null }>).map((s) => s.region ?? '').filter(Boolean)),
+  ).sort().map((region) => ({ region }));
 
   return (
     <>
@@ -66,7 +68,7 @@ export default async function BrandAmbassadorsPage() {
                       {elevated ? (
                         <Td>
                           <div className="flex justify-end gap-2">
-                             <ApproveButtons profileId={p.user_id} schools={(schools ?? []) as SchoolOption[]} />
+                             <ApproveButtons profileId={p.user_id} regions={regions} />
                           </div>
                         </Td>
                       ) : null}
@@ -129,13 +131,11 @@ interface PendingMembership {
   account_status: string;
 }
 
-interface SchoolOption {
-  id: string;
-  name: string;
-  region: string | null;
+interface RegionOption {
+  region: string;
 }
 
-function ApproveButtons({ profileId, schools }: { profileId: string; schools: SchoolOption[] }) {
+function ApproveButtons({ profileId, regions }: { profileId: string; regions: RegionOption[] }) {
   async function act(formData: FormData) {
     'use server';
     const action = String(formData.get('action'));
@@ -143,13 +143,14 @@ function ApproveButtons({ profileId, schools }: { profileId: string; schools: Sc
     const { client: c } = await requireStaff();
     await c.rpc('admin_set_account_status', { p_profile_id: id, p_action: action });
 
-    const schoolId = String(formData.get('school_id') ?? '');
-    if (action === 'approve' && schoolId) {
+    const region = String(formData.get('region') ?? '');
+    if (action === 'approve' && region) {
       await c.rpc('veda_admin_upsert_assignment', {
         p_brand_ambassador_id: id,
-        p_school_id: schoolId,
+        p_region: region,
         p_weekly_off_day: [],
         p_status: 'active',
+        p_start_date: new Date().toISOString().slice(0, 10),
       });
       revalidatePath('/veda-assignments');
     }
@@ -161,17 +162,16 @@ function ApproveButtons({ profileId, schools }: { profileId: string; schools: Sc
       <form action={act}>
         <input type="hidden" name="profile_id" value={profileId} />
         <input type="hidden" name="action" value="approve" />
-        {schools.length > 0 ? (
+        {regions.length > 0 ? (
           <select
-            name="school_id"
+            name="region"
             className="mr-2 rounded-lg border border-ink/10 bg-white px-2 py-1 text-xs"
             defaultValue=""
           >
             <option value="">Approve only</option>
-            {schools.map((school) => (
-              <option key={school.id} value={school.id}>
-                {school.name}
-                {school.region ? ` — ${school.region}` : ''}
+            {regions.map((r) => (
+              <option key={r.region} value={r.region}>
+                {r.region}
               </option>
             ))}
           </select>

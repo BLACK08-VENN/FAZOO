@@ -24,7 +24,7 @@ function Stepper({ label, value, onChange }: { label: string; value: number; onC
 }
 
 export default function VedaActivation() {
-  const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
+  const { school: schoolParam } = useLocalSearchParams<{ school?: string }>();
   const [data, setData] = useState<VedaTodayResult | null>(null);
   const [edited, setEdited] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
@@ -49,10 +49,11 @@ export default function VedaActivation() {
 
   useEffect(() => { void refresh(); }, []);
 
-  const selected = data?.assignments.find((item) => item.assignment.id === assignmentParam) ?? data?.assignments[0] ?? null;
-  const session = selected?.session ?? null;
+  const selectedSchool =
+    data?.regions.flatMap((r) => r.schools).find((s) => s.school_id === schoolParam) ?? null;
+  const session = selectedSchool?.session ?? null;
   const stationeryItems = data?.stationery_items ?? [];
-  const distributions = selected?.distributions ?? [];
+  const distributions = selectedSchool?.distributions ?? [];
   const originalByItem = new Map(distributions.map((d) => [d.stationery_item_id, d.quantity]));
 
   useEffect(() => {
@@ -96,12 +97,12 @@ export default function VedaActivation() {
     return <Screen scroll={false}><View className="flex-1 items-center justify-center"><Text className="font-sans text-muted">Loading today&apos;s visit…</Text></View></Screen>;
   }
 
-  const school = selected?.assignment ?? null;
+  const school = selectedSchool;
 
   return (
     <Screen>
       <HeroCard eyebrow="Today's visit" title={school?.school_name ?? 'No school'} subtitle={school?.school_region ?? undefined} icon="albums" onBack={() => router.back()} />
-      {selected?.is_weekly_off_today ? <StatusPill tone="warn" label="Weekly off" /> : session?.status === 'completed' ? <StatusPill tone="ok" label="Complete" /> : <StatusPill tone="purple" label="In progress" />}
+      {session?.status === 'completed' ? <StatusPill tone="ok" label="Complete" /> : session?.status === 'open' ? <StatusPill tone="purple" label="In progress" /> : <StatusPill tone="warn" label="Not checked in" />}
       {error ? <StatusPill tone="bad" label={error} /> : null}
       {savedMessage ? <StatusPill tone="ok" label={savedMessage} /> : null}
 
@@ -114,7 +115,7 @@ export default function VedaActivation() {
             {stationeryItems.length > 0 ? <PrimaryButton label="Save changes" onPress={() => void saveChanges()} busy={saving} icon="save" /> : null}
           </Card>
           <StatusPill tone="neutral" label={`Checked in · ${session.learner_count} learners`} />
-          <PrimaryButton label="Check Out" onPress={() => router.push({ pathname: '/veda-checkout', params: { assignment: school?.id } })} />
+          <PrimaryButton label="Check Out" onPress={() => router.push({ pathname: '/veda-checkout', params: { school: school?.school_id } })} />
           <PrimaryButton label="Back to Today" variant="ghost" onPress={() => router.back()} />
         </>
       ) : session?.status === 'completed' ? (
@@ -128,7 +129,7 @@ export default function VedaActivation() {
       ) : (
         <View className="mt-6">
           <StatusPill tone="warn" label="This visit hasn't been checked in yet." />
-          <PrimaryButton label="Check In" onPress={() => router.replace({ pathname: '/veda-checkin', params: { assignment: school?.id } })} />
+          <PrimaryButton label="Check In" onPress={() => router.replace({ pathname: '/veda-checkin', params: { school: school?.school_id } })} />
         </View>
       )}
     </Screen>

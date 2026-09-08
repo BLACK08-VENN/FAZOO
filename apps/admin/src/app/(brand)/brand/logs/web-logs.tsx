@@ -20,8 +20,6 @@ type VedaSchool = {
   school_name: string;
   school_region: string | null;
   status: string;
-  locked: boolean;
-  unlocked: boolean;
 };
 
 type LocationFix = {
@@ -133,7 +131,6 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
   const [today, setToday] = useState<VedaTodayResult | null>(null);
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
   const [query, setQuery] = useState('');
-  const [unlockCode, setUnlockCode] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,10 +173,11 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
   }, [query, schools]);
 
   const selectedSchool = schools.find((school) => school.school_id === selectedSchoolId) ?? null;
-  const assignment = today?.assignments.find((row) => row.assignment.school_id === selectedSchoolId)?.assignment ?? null;
-  const existingSession = today?.assignments.find((row) => row.assignment.school_id === selectedSchoolId)?.session ?? null;
-  const existingDistributions = today?.assignments.find((row) => row.assignment.school_id === selectedSchoolId)?.distributions ?? [];
-  const canUseSchool = selectedSchool && (!selectedSchool.locked || selectedSchool.unlocked);
+  const selectedSchoolRow =
+    today?.regions.flatMap((r) => r.schools).find((row) => row.school_id === selectedSchoolId) ?? null;
+  const existingSession = selectedSchoolRow?.session ?? null;
+  const existingDistributions = selectedSchoolRow?.distributions ?? [];
+  const canUseSchool = Boolean(selectedSchool);
 
   const grades = today?.grades ?? [];
   const stationeryItems = today?.stationery_items ?? [];
@@ -194,7 +192,7 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
       .reduce((sum, d) => sum + d.quantity, 0);
 
   async function saveDistributions() {
-    if (!openSession || !assignment) return;
+    if (!openSession) return;
     setSavingDist(true);
     setError(null);
     setSuccess(null);
@@ -239,7 +237,7 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
   }
 
   async function checkout() {
-    if (!openSession || !assignment) return;
+    if (!openSession) return;
     if (!fix) return setError('Capture your location before checking out.');
     setCheckingOut(true);
     setError(null);
@@ -261,23 +259,6 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
     } finally {
       setCheckingOut(false);
     }
-  }
-
-  async function unlockSchool() {
-    if (!selectedSchoolId || !unlockCode.trim()) return;
-    setBusy(true);
-    setError(null);
-    const { error: unlockError } = await client.rpc('ba_unlock_veda_school', {
-      p_school_id: selectedSchoolId,
-      p_code: unlockCode.trim(),
-    });
-    if (unlockError) setError(unlockError.message);
-    else {
-      setUnlockCode('');
-      setSuccess('School unlocked successfully.');
-      await load();
-    }
-    setBusy(false);
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -308,7 +289,6 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
         p_selfie_photo_path: selfiePath,
         p_stamped_document_path: documentPath,
         p_client_request_id: requestId,
-        p_assignment_id: assignment?.id ?? undefined,
         p_school_id: selectedSchool.school_id,
         p_learner_count: count,
         p_notes: notes.trim() || undefined,
@@ -348,7 +328,7 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
               <option value="">{loading ? 'Loading schools…' : 'Select a school'}</option>
               {visibleSchools.map((school) => (
                 <option key={school.school_id} value={school.school_id}>
-                  {school.school_name}{school.school_region ? ` — ${school.school_region}` : ''}{school.locked && !school.unlocked ? ' 🔒' : ''}
+                  {school.school_name}{school.school_region ? ` — ${school.school_region}` : ''}
                 </option>
               ))}
             </Select>
@@ -358,21 +338,9 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
           </div>
         </div>
 
-        {selectedSchool?.locked && !selectedSchool.unlocked ? (
-          <div className="mt-4 rounded-xl border border-ink/10 bg-ink/[0.02] p-4">
-            <p className="text-sm font-medium text-ink">This school requires an access code.</p>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <Input value={unlockCode} onChange={(e) => setUnlockCode(e.target.value)} placeholder="Enter school access code" />
-              <Button type="button" onClick={() => void unlockSchool()} disabled={busy || !unlockCode.trim()}>
-                Unlock school
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {selectedSchool && canUseSchool ? (
+        {selectedSchool ? (
           <p className="mt-3 text-xs font-medium text-ok">
-            Ready: {selectedSchool.school_name}{assignment ? ' · assigned to you today' : ' · self-serve school log'}
+            Ready: {selectedSchool.school_name}{selectedSchoolRow ? ` · in an assigned region` : ' · outside your assigned regions — the server will reject check-in'}
           </p>
         ) : null}
       </Card>
@@ -385,6 +353,7 @@ function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 
           <div>
             <Label htmlFor="stamped-document">Stamped school document</Label>
             <Input id="stamped-document" type="file" accept="image/*" capture="environment" onChange={(e) => setDocument(e.target.files?.[0] ?? null)} />
+            <p className="mt-1 text-xs text-muted">Before you capture — check for the school stamp. The document must carry the school's official stamp and be clearly visible before uploading.</p>
           </div>
           <div>
             <Label htmlFor="veda-selfie">Selfie</Label>

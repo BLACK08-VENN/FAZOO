@@ -27,7 +27,7 @@ interface VedaLog {
 }
 
 export default function CampaignLogs() {
-  const params = useLocalSearchParams<{ kind: string; campaignId?: string; campaignName?: string; storeName?: string; assignmentId?: string; schoolId?: string; schoolName?: string; }>();
+  const params = useLocalSearchParams<{ kind: string; campaignId?: string; campaignName?: string; storeName?: string; schoolId?: string; schoolName?: string; }>();
   const isVeda = params.kind === 'schools';
   const [logs, setLogs] = useState<(RetailLog | VedaLog)[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,15 +84,9 @@ export default function CampaignLogs() {
       {canAddVedaLog ? (
         <PrimaryButton
           label="Add new log"
-          onPress={() => router.push({ pathname: '/veda-new-log', params: { assignmentId: params.assignmentId, schoolId: params.schoolId, schoolName: params.schoolName } })}
+          onPress={() => router.push({ pathname: '/veda-new-log', params: { schoolId: params.schoolId, schoolName: params.schoolName } })}
           icon="add-circle"
         />
-      ) : null}
-
-      {isVeda && !params.assignmentId ? (
-        <Text className="font-sans mb-3 text-sm leading-6 text-muted">
-          No active assignment was found for this school, but you can still start a new school log from here.
-        </Text>
       ) : null}
 
       {loading ? (

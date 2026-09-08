@@ -123,37 +123,52 @@ export interface VedaCheckoutInput {
   client_request_id: Uuid;
 }
 
-/** Result of the `veda_today` RPC — the BA's school-visit dashboard. */
+/** A school within a region card on the Veda BA dashboard. */
+export interface VedaRegionSchool {
+  school_id: Uuid;
+  school_name: string;
+  school_region: string | null;
+  school_latitude: number | null;
+  school_longitude: number | null;
+  geofence_radius_metres: number;
+  session: {
+    id: Uuid;
+    session_date: IsoDate;
+    learner_count: number;
+    status: DailyLogStatus;
+    checkin_at: string | null;
+    checkout_at: string | null;
+    checkin_latitude: number | null;
+    checkin_longitude: number | null;
+    checkin_distance_metres: number | null;
+    notes: string | null;
+  } | null;
+  distributions: Array<{
+    id: Uuid;
+    stationery_item_id: Uuid;
+    item_name: string;
+    item_code: string | null;
+    quantity: number;
+    grade_id: Uuid | null;
+    grade_name: string | null;
+  }>;
+  session_status: DailyLogStatus | null;
+  learner_count: number;
+}
+
+/** One region card on the Veda BA dashboard (a BA's region assignment). */
+export interface VedaRegionAssignment {
+  region: string;
+  assignment_id: Uuid;
+  weekly_off_day: number[] | null;
+  is_weekly_off_today: boolean;
+  schools: VedaRegionSchool[];
+}
+
+/** Result of the `veda_today` RPC — the BA's region-based school dashboard. */
 export interface VedaTodayResult {
   attendance_date: IsoDate;
-  assignments: Array<{
-    assignment: AssignmentToday;
-    weekly_off_day: number[] | null;
-    is_weekly_off_today: boolean;
-    session: {
-      id: Uuid;
-      session_date: IsoDate;
-      learner_count: number;
-      status: DailyLogStatus;
-      checkin_at: string | null;
-      checkout_at: string | null;
-      checkin_latitude: number | null;
-      checkin_longitude: number | null;
-      checkin_distance_metres: number | null;
-      notes: string | null;
-    } | null;
-    distributions: Array<{
-      id: Uuid;
-      stationery_item_id: Uuid;
-      item_name: string;
-      item_code: string | null;
-      quantity: number;
-      grade_id: Uuid | null;
-      grade_name: string | null;
-    }>;
-    session_status: DailyLogStatus | null;
-    learner_count: number;
-  }>;
+  regions: VedaRegionAssignment[];
   stationery_items: Array<{
     id: Uuid;
     name: string;

@@ -51,14 +51,14 @@ export default function VedaToday() {
     );
   }
 
-  const assignments = data?.assignments ?? [];
+  const regions = data?.regions ?? [];
 
   return (
     <Screen bottomInset={false}>
         <HeroCard eyebrow={`Today · ${data?.attendance_date} (Kenya)`} title="Schools dashboard" subtitle="Track active school visits, stationery distribution, and sync health in one place." icon="school" />
 
         <View className="mb-5 flex-row gap-3">
-          <MetricTile label="Assignments" value={assignments.length} />
+          <MetricTile label="Regions" value={regions.length} />
           <MetricTile label="Pending sync" value={counts.pending} tone={counts.pending > 0 ? 'warning' : 'success'} />
         </View>
 
@@ -71,12 +71,6 @@ export default function VedaToday() {
             icon="calendar-clear"
             onPress={() => router.push('/leave')}
           />
-        </Card>
-
-        <Card className="mb-4">
-          <Text className="font-sans text-base font-bold text-ink">Add a log</Text>
-          <Text className="font-sans mb-2 mt-1 text-sm leading-6 text-slate-600">Choose a school, then add a visit log with a document photo and selfie.</Text>
-          <PrimaryButton label="Choose school & add log" onPress={() => router.push('/campaigns')} icon="add-circle" />
         </Card>
 
         {online === false ? (
@@ -94,48 +88,65 @@ export default function VedaToday() {
 
         {error ? <StatusPill tone="bad" label={error} /> : null}
 
-        {assignments.length === 0 ? (
-          <EmptyState title="No school visits yet" body="Contact your supervisor — you'll see your school visits here once assigned." />
+        {regions.length === 0 ? (
+          <EmptyState title="No regions yet" body="Contact your supervisor — your assigned regions and schools will appear here." />
         ) : (
           <View className="mt-2 gap-4">
-            {assignments.map((item) => {
-              const a = item.assignment;
-              const totalItems = (item.distributions ?? []).reduce((sum, d) => sum + d.quantity, 0);
+            {regions.map((region) => {
+              const offToday = region.is_weekly_off_today;
               return (
-                <Card key={a.id}>
-                  <Text className="font-sans text-base font-bold text-ink">{a.school_name}</Text>
-                  {a.school_region ? <Text className="font-sans mt-0.5 text-sm text-slate-500">{a.school_region}</Text> : null}
-                  {item.weekly_off_day && item.weekly_off_day.length > 0 ? <Text className="font-sans mt-1 text-xs uppercase tracking-wide text-slate-500">Weekly off: {weeklyOffDayName(item.weekly_off_day)}</Text> : null}
-                  <View className="mt-4 rounded-3xl bg-slate-100 p-4">
-                    <Text className="font-sans text-xs uppercase tracking-wide text-slate-500">Stationery distributed today</Text>
-                    <Text className="font-sans mt-1 text-3xl font-bold text-indigo-700">{totalItems}<Text className="font-sans text-base font-normal text-slate-500"> units</Text></Text>
-                    {(item.distributions ?? []).length > 0 ? (
-                      <View className="mt-2 gap-1">
-                        {(item.distributions ?? []).map((d) => (
-                          <View key={d.id} className="flex-row justify-between">
-                            <Text className="font-sans text-slate-700">{d.item_name}</Text>
-                            <Text className="font-sans font-medium tabular-nums text-slate-700">×{d.quantity}</Text>
+                <Card key={region.assignment_id}>
+                  <Text className="font-sans text-base font-bold text-ink">{region.region}</Text>
+                  {region.weekly_off_day && region.weekly_off_day.length > 0 ? (
+                    <Text className="font-sans mt-1 text-xs uppercase tracking-wide text-slate-500">Weekly off: {weeklyOffDayName(region.weekly_off_day)}</Text>
+                  ) : null}
+                  <Text className="font-sans mt-1 text-sm text-slate-500">{region.schools.length} school{region.schools.length === 1 ? '' : 's'} in this region</Text>
+
+                  {region.schools.length === 0 ? (
+                    <Text className="font-sans mt-3 text-sm text-muted">No active schools in this region yet.</Text>
+                  ) : (
+                    <View className="mt-3 gap-3">
+                      {region.schools.map((school) => {
+                        const totalItems = school.distributions.reduce((sum, d) => sum + d.quantity, 0);
+                        return (
+                          <View key={school.school_id} className="rounded-3xl bg-slate-100 p-4">
+                            <Text className="font-sans text-base font-semibold text-slate-800">{school.school_name}</Text>
+                            {school.school_region ? <Text className="font-sans mt-0.5 text-sm text-slate-500">{school.school_region}</Text> : null}
+                            <View className="mt-3 rounded-2xl bg-white p-3">
+                              <Text className="font-sans text-xs uppercase tracking-wide text-slate-500">Stationery distributed today</Text>
+                              <Text className="font-sans mt-1 text-2xl font-bold text-indigo-700">{totalItems}<Text className="font-sans text-base font-normal text-slate-500"> units</Text></Text>
+                              {school.distributions.length > 0 ? (
+                                <View className="mt-1 gap-1">
+                                  {school.distributions.map((d) => (
+                                    <View key={d.id} className="flex-row justify-between">
+                                      <Text className="font-sans text-slate-700">{d.item_name}</Text>
+                                      <Text className="font-sans font-medium tabular-nums text-slate-700">×{d.quantity}</Text>
+                                    </View>
+                                  ))}
+                                </View>
+                              ) : (
+                                <Text className="font-sans mt-1 text-slate-500">No distribution recorded yet.</Text>
+                              )}
+                            </View>
+                            <View className="mt-3 gap-2">
+                              {offToday ? (
+                                <StatusPill tone="warn" label="Today is your weekly off — enjoy the day!" />
+                              ) : !school.session ? (
+                                <PrimaryButton label="Check In" onPress={() => router.push({ pathname: '/veda-checkin', params: { school: school.school_id } })} />
+                              ) : school.session.status === 'open' ? (
+                                <>
+                                  <PrimaryButton label="Manage Stationery" onPress={() => router.push({ pathname: '/veda-activation', params: { school: school.school_id } })} />
+                                  <PrimaryButton label="Check Out" onPress={() => router.push({ pathname: '/veda-checkout', params: { school: school.school_id } })} />
+                                </>
+                              ) : (
+                                <StatusPill tone="ok" label="Visit complete. Well done!" />
+                              )}
+                            </View>
                           </View>
-                        ))}
-                      </View>
-                    ) : (
-                      <Text className="font-sans mt-1 text-slate-500">No distribution recorded yet.</Text>
-                    )}
-                  </View>
-                  <View className="mt-4 gap-2">
-                    {item.is_weekly_off_today ? (
-                      <StatusPill tone="warn" label="Today is your weekly off — enjoy the day!" />
-                    ) : !item.session ? (
-                      <PrimaryButton label="Check In" onPress={() => router.push({ pathname: '/veda-checkin', params: { assignment: a.id } })} />
-                    ) : item.session.status === 'open' ? (
-                      <>
-                        <PrimaryButton label="Manage Stationery" onPress={() => router.push({ pathname: '/veda-activation', params: { assignment: a.id } })} />
-                        <PrimaryButton label="Check Out" onPress={() => router.push({ pathname: '/veda-checkout', params: { assignment: a.id } })} />
-                      </>
-                    ) : (
-                      <StatusPill tone="ok" label="Visit complete. Well done!" />
-                    )}
-                  </View>
+                        );
+                      })}
+                    </View>
+                  )}
                 </Card>
               );
             })}

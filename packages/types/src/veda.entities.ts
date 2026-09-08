@@ -32,12 +32,13 @@ export interface VedaSchool {
   updated_at: IsoTimestamp;
 }
 
-/** A BA ↔ school visit plan with a weekly rest day and validity window. */
+/** A BA ↔ region visit plan with weekly rest days and validity window. A BA is
+ *  assigned to one or more regions and may visit any active school inside them. */
 export interface VedaAssignment {
   id: Uuid;
   organization_id: Uuid;
   brand_ambassador_id: Uuid;
-  school_id: Uuid;
+  region: string;
   weekly_off_day: number[] | null;
   start_date: IsoDate;
   end_date: IsoDate | null;
