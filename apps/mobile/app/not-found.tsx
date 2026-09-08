@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { Text } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
-import { HeroCard, Screen, GlassCard } from '@/components/ui';
+import { HeroCard, Page, GlassCard } from '@/components/ui';
 
 export default function NotFound() {
   return (
-    <Screen scroll={false}>
+    <Page scroll={false}>
       <HeroCard
         eyebrow="Navigation"
         title="Page not found"
@@ -18,6 +18,6 @@ export default function NotFound() {
         </Text>
       </GlassCard>
       <PrimaryButton label="Go to Today" onPress={() => router.replace('/today')} icon="arrow-forward" />
-    </Screen>
+    </Page>
   );
 }

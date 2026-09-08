@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { PASSWORD_MIN_LENGTH } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/primary-button';
-import { HeroCard, Screen, SectionLabel, Field } from '@/components/ui';
+import { HeroCard, Page, SectionLabel, Field } from '@/components/ui';
 
 export default function UpdatePassword() {
   const [password, setPassword] = useState('');
@@ -33,7 +33,7 @@ export default function UpdatePassword() {
   }
 
   return (
-    <Screen contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+    <Page contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
       <HeroCard
         eyebrow="Account recovery"
         title="Choose a new password"
@@ -71,6 +71,6 @@ export default function UpdatePassword() {
         variant="ghost"
         onPress={() => router.replace('/sign-in')}
       />
-    </Screen>
+    </Page>
   );
 }

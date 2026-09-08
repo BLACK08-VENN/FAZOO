@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useOrgKind } from '@/lib/org-kind';
 import { PrimaryButton } from '@/components/primary-button';
-import { Screen, ScreenHeader, Card, GlassCard, EmptyState, Field } from '@/components/ui';
+import { Page, ScreenHeader, Card, GlassCard, EmptyState, Field } from '@/components/ui';
 
 interface RetailCampaign {
   campaign_id: string;
@@ -197,7 +197,7 @@ export default function Campaigns() {
 
   if (kindLoading || loading) {
     return (
-      <Screen scroll={false}>
+      <Page scroll={false}>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#7B2FBE" />
         </View>
@@ -206,7 +206,7 @@ export default function Campaigns() {
   }
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
+    <Page refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <ScreenHeader
         eyebrow="Add a log"
         title={kind === 'schools' ? 'Choose a school' : 'Choose a campaign'}
@@ -234,6 +234,6 @@ export default function Campaigns() {
       )}
 
       <PrimaryButton label="Back" variant="ghost" onPress={() => router.back()} />
-    </Screen>
+    </Page>
   );
 }

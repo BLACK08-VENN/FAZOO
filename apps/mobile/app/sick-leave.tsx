@@ -6,7 +6,7 @@ import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { HeroCard, Screen, SectionLabel, MultilineField, GlassCard } from '@/components/ui';
+import { HeroCard, Page, SectionLabel, MultilineField, GlassCard } from '@/components/ui';
 
 export default function SickLeave() {
   const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
@@ -54,7 +54,7 @@ export default function SickLeave() {
   }
 
   return (
-    <Screen>
+    <Page>
       <HeroCard
         eyebrow="Attendance status"
         title="Mark sick leave"
@@ -83,6 +83,6 @@ export default function SickLeave() {
 
       <PrimaryButton label="Confirm sick leave" variant="danger" onPress={confirmDialog} busy={busy} icon="warning" />
       <PrimaryButton label="Cancel" variant="ghost" onPress={() => router.back()} />
-    </Screen>
+    </Page>
   );
 }

@@ -11,7 +11,7 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { readCachedProfile, readCachedToday, writeCachedToday } from '@/lib/cache';
-import { Screen, ScreenHeader, Card, MultilineField, GlassCard } from '@/components/ui';
+import { Page, ScreenHeader, Card, MultilineField, GlassCard } from '@/components/ui';
 
 export default function CheckIn() {
   const [step, setStep] = useState(1);
@@ -101,7 +101,7 @@ export default function CheckIn() {
   const stepTitle = ['Store & location', 'Stock on shelf', 'Uniform selfie'][step - 1] ?? 'Check in';
 
   return (
-    <Screen>
+    <Page>
       <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Follow each step to verify location and capture the required evidence." onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
         {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
@@ -154,7 +154,7 @@ export default function CheckIn() {
           <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(2)} />
         </>
       ) : null}
-    </Screen>
+    </Page>
   );
 }
 

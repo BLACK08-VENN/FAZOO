@@ -10,7 +10,7 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { readCachedProfile, readCachedToday } from '@/lib/cache';
-import { Screen, ScreenHeader, Card, GlassCard } from '@/components/ui';
+import { Page, ScreenHeader, Card, GlassCard } from '@/components/ui';
 
 export default function Checkout() {
   const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
@@ -91,7 +91,7 @@ export default function Checkout() {
   const stepTitle = ['Summary & lock', 'Stock on shelf', 'Uniform selfie'][step - 1] ?? 'Checkout';
 
   return (
-    <Screen>
+    <Page>
       <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Review totals, capture fresh evidence, and lock the day." onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
         {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
@@ -146,7 +146,7 @@ export default function Checkout() {
           <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(2)} />
         </>
       ) : null}
-    </Screen>
+    </Page>
   );
 }
 

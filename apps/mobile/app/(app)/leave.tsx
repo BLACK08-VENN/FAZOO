@@ -9,7 +9,7 @@ import { PrimaryButton } from '@/components/primary-button';
 import { enqueue, newRequestId } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { supabase } from '@/lib/supabase';
-import { Screen, Card, HeroCard, SectionLabel, MultilineField, GlassCard, EmptyState } from '@/components/ui';
+import { Page, Card, HeroCard, SectionLabel, MultilineField, GlassCard, EmptyState } from '@/components/ui';
 
 type LeaveRow = {
   id: string;
@@ -180,7 +180,7 @@ export default function LeavePage() {
   }
 
   return (
-    <Screen bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadRequests(); }} />}>
+    <Page bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadRequests(); }} />}>
       <HeroCard eyebrow="Time away" title="Leave request" subtitle="Your verified profile and assignment determine how this request is reviewed. Complete the details carefully." icon="calendar-clear" onBack={() => router.back()} />
 
       <SectionLabel>Assignment</SectionLabel>
@@ -258,6 +258,6 @@ export default function LeavePage() {
           {request.review_note ? <Text className="font-sans mt-3 border-t border-slate-200 pt-3 text-sm leading-6 text-slate-600">Admin note: {request.review_note}</Text> : null}
         </Card>
       ))}
-    </Screen>
+    </Page>
   );
 }

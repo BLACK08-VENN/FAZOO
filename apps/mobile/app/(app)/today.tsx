@@ -10,7 +10,7 @@ import { operationCounts, retryTerminal } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { Card, HeroCard, MetricTile, Screen } from '@/components/ui';
+import { Card, HeroCard, MetricTile, Page } from '@/components/ui';
 import VedaToday from '@/components/veda-today';
 
 /**
@@ -76,7 +76,7 @@ function RetailToday() {
   const assignments = data?.assignments ?? [];
 
   return (
-    <Screen bottomInset={false}>
+    <Page bottomInset={false}>
       <HeroCard
         eyebrow={`Today · ${lagosDate()} (Nigeria)`}
         title={data?.attendance_date ?? 'Today'}
@@ -228,7 +228,7 @@ function RetailToday() {
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
       <Text className="font-sans mt-10 text-center text-xs text-muted">Fazoo · v0.1</Text>
-    </Screen>
+    </Page>
   );
 }
 

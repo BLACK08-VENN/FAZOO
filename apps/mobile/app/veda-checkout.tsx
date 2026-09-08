@@ -10,7 +10,7 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { readCachedVedaToday, writeCachedVedaToday } from '@/lib/cache';
-import { Screen, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
+import { Page, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
 
 export default function VedaCheckout() {
   const { school: schoolParam } = useLocalSearchParams<{ school?: string }>();
@@ -85,7 +85,7 @@ export default function VedaCheckout() {
   const insideGeofence = distance !== null && distance <= radius;
 
   return (
-    <Screen>
+    <Page>
       <ScreenHeader eyebrow="Check out" title="Complete today's visit" subtitle="Confirm totals, verify presence at the school, and close the session." onBack={() => router.back()} />
       {error ? <StatusPill tone="bad" label={error} /> : null}
       <Card>
@@ -114,6 +114,6 @@ export default function VedaCheckout() {
       </GlassCard>
       <PrimaryButton label="Check Out" onPress={() => void submit()} busy={busy} disabled={!confirmed || !fix || !insideGeofence || !session} icon="log-out" />
       <PrimaryButton label="Not yet" variant="ghost" onPress={() => router.back()} />
-    </Screen>
+    </Page>
   );
 }

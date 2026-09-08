@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { normalizeInternationalPhone, phoneToAuthEmail } from '@fazoo/validation';
 import { PrimaryButton } from '@/components/primary-button';
-import { Field, Screen, ScreenHeader, GlassCard } from '@/components/ui';
+import { Field, Page, ScreenHeader, GlassCard } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 export default function ForgotPassword() {
@@ -34,7 +34,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <Screen scroll={false}>
+    <Page scroll={false}>
       <View className="flex-1 justify-center">
         <ScreenHeader
           eyebrow="Account recovery"
@@ -72,6 +72,6 @@ export default function ForgotPassword() {
           <PrimaryButton label="Back to sign in" variant="ghost" onPress={() => router.back()} />
         </GlassCard>
       </View>
-    </Screen>
+    </Page>
   );
 }

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/primary-button';
 import { BrandLogo } from '@/components/brand-logo';
-import { HeroCard, Screen, Card, GlassCard, EmptyState, Field, SectionLabel } from '@/components/ui';
+import { HeroCard, Page, Card, GlassCard, EmptyState, Field, SectionLabel } from '@/components/ui';
 
 interface Membership {
   organization_id: string;
@@ -89,7 +89,7 @@ export default function BrandSelect() {
 
   if (loading) {
     return (
-      <Screen scroll={false}>
+      <Page scroll={false}>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#7B2FBE" />
         </View>
@@ -99,7 +99,7 @@ export default function BrandSelect() {
 
   if (!memberships || memberships.length === 0) {
     return (
-      <Screen contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+      <Page contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
         <HeroCard
           eyebrow="Workspace"
           title="No active brands"
@@ -115,7 +115,7 @@ export default function BrandSelect() {
   const others = memberships.filter((m) => m.account_status !== 'approved');
 
   return (
-    <Screen>
+    <Page>
       <HeroCard
         eyebrow="Workspace"
         title="Choose a brand"
@@ -181,6 +181,6 @@ export default function BrandSelect() {
           </GlassCard>
         </>
       ) : null}
-    </Screen>
+    </Page>
   );
 }

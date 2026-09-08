@@ -11,7 +11,7 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { readCachedProfile, readCachedVedaToday, writeCachedVedaToday } from '@/lib/cache';
-import { Screen, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
+import { Page, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
 
 export default function VedaCheckIn() {
   const [step, setStep] = useState(1);
@@ -105,7 +105,7 @@ export default function VedaCheckIn() {
   const stepTitle = ['School & location', 'Site selfie', 'Stamped document'][step - 1] ?? 'Check-in';
 
   return (
-    <Screen>
+    <Page>
       <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Verify your location, capture school evidence, and record the learner count." onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
         {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
@@ -157,7 +157,7 @@ export default function VedaCheckIn() {
           <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(2)} />
         </>
       ) : null}
-    </Screen>
+    </Page>
   );
 }
 

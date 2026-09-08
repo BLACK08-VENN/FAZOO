@@ -10,7 +10,7 @@ import { classifySyncError } from '@/lib/offline/errors';
 import { readCachedToday } from '@/lib/cache';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { Screen, ScreenHeader, Card, Field, EmptyState } from '@/components/ui';
+import { Page, ScreenHeader, Card, Field, EmptyState } from '@/components/ui';
 
 export default function Sales() {
   const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
@@ -93,7 +93,7 @@ export default function Sales() {
   const logOpen = selected?.log?.status === 'open';
 
   return (
-    <Screen bottomInset={false}>
+    <Page bottomInset={false}>
       <ScreenHeader eyebrow="Record a sale" title={`Today: ${selected?.total_units_today ?? 0} units`} subtitle={selected ? `${selected.assignment.store_name || selected.assignment.campaign_name}${selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}` : 'Choose an active assignment to record units sold.'} onBack={() => router.back()} />
 
       {skus.length === 0 ? (
@@ -147,6 +147,6 @@ export default function Sales() {
       ) : null}
 
       <PrimaryButton label="Back to today" variant="ghost" onPress={() => router.back()} />
-    </Screen>
+    </Page>
   );
 }

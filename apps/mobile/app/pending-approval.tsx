@@ -2,13 +2,13 @@ import { Text } from 'react-native';
 import { router } from 'expo-router';
 import { signOut, useSessionProfile } from '@/lib/session';
 import { PrimaryButton } from '@/components/primary-button';
-import { HeroCard, Screen, GlassCard } from '@/components/ui';
+import { HeroCard, Page, GlassCard } from '@/components/ui';
 
 export default function PendingApproval() {
   const { profile } = useSessionProfile();
 
   return (
-    <Screen contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+    <Page contentStyle={{ flexGrow: 1, justifyContent: 'center' }}>
       <HeroCard
         eyebrow="Application status"
         title="Waiting for approval"
@@ -38,6 +38,6 @@ export default function PendingApproval() {
           })();
         }}
       />
-    </Screen>
+    </Page>
   );
 }

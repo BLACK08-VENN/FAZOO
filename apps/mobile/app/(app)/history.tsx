@@ -3,7 +3,7 @@ import { ActivityIndicator, Image, RefreshControl, Text, View } from 'react-nati
 import { formatLagosDisplay } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@fazoo/database/database.types';
-import { Screen, ScreenHeader, Card, EmptyState } from '@/components/ui';
+import { Page, ScreenHeader, Card, EmptyState } from '@/components/ui';
 
 type Log = Database['public']['Tables']['daily_logs']['Row'];
 type Photo = Database['public']['Tables']['daily_log_photos']['Row'];
@@ -53,7 +53,7 @@ export default function History() {
   }
 
   return (
-    <Screen bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
+    <Page bottomInset={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <ScreenHeader eyebrow="History" title="Your activity" subtitle="Attendance records, timings, and submitted evidence from recent days." />
       {loading ? <Text className="font-sans text-muted">Loading…</Text> : null}
       {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
@@ -76,7 +76,7 @@ export default function History() {
           <PhotoThumbnails photos={photosByLog.get(l.id) ?? []} />
         </Card>
       ))}
-    </Screen>
+    </Page>
   );
 }
 

@@ -6,7 +6,7 @@ import { PASSWORD_MIN_LENGTH } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import { signOut, useSessionProfile } from '@/lib/session';
 import { PrimaryButton } from '@/components/primary-button';
-import { Card, Field, HeroCard, MetricTile, Screen, SectionLabel } from '@/components/ui';
+import { Card, Field, HeroCard, MetricTile, Page, SectionLabel } from '@/components/ui';
 
 export default function Profile() {
   const { profile, loading } = useSessionProfile();
@@ -50,7 +50,7 @@ export default function Profile() {
   }
 
   return (
-    <Screen bottomInset={false}>
+    <Page bottomInset={false}>
       <HeroCard
         eyebrow="Profile"
         title={loading ? 'Loading…' : (profile?.full_name ?? '')}
@@ -124,6 +124,6 @@ export default function Profile() {
           </View>
         </>
       )}
-    </Screen>
+    </Page>
   );
 }

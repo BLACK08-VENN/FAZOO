@@ -10,7 +10,7 @@ import { flushQueue } from '@/lib/offline/sync';
 import { readCachedProfile } from '@/lib/cache';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { Screen, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
+import { Page, ScreenHeader, Card, Field, GlassCard } from '@/components/ui';
 
 export default function VedaNewLog() {
   const [step, setStep] = useState(1);
@@ -101,7 +101,7 @@ export default function VedaNewLog() {
   const stepTitle = step === 1 ? 'School list document' : 'Your selfie';
 
   return (
-    <Screen>
+    <Page>
       <ScreenHeader eyebrow={`Step ${step} of 2`} title={stepTitle} subtitle={params.schoolName} onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
         {[1, 2].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
@@ -143,7 +143,7 @@ export default function VedaNewLog() {
           <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(1)} />
         </>
       ) : null}
-    </Screen>
+    </Page>
   );
 }
 

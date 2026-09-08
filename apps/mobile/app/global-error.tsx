@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Text } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { PrimaryButton } from '@/components/primary-button';
-import { HeroCard, Screen, GlassCard } from '@/components/ui';
+import { HeroCard, Page, GlassCard } from '@/components/ui';
 
 export default function GlobalError({
   error,
@@ -18,7 +18,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <Screen scroll={false}>
+    <Page scroll={false}>
       <HeroCard
         eyebrow="Unexpected problem"
         title="Something went wrong"
@@ -31,6 +31,6 @@ export default function GlobalError({
         </Text>
       </GlassCard>
       <PrimaryButton label="Try again" onPress={reset} icon="refresh" />
-    </Screen>
+    </Page>
   );
 }

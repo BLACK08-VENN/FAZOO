@@ -8,7 +8,7 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { readCachedVedaToday, writeCachedVedaToday } from '@/lib/cache';
-import { Screen, Card, HeroCard, EmptyState } from '@/components/ui';
+import { Page, Card, HeroCard, EmptyState } from '@/components/ui';
 
 function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (next: number) => void }) {
   return (
@@ -94,13 +94,13 @@ export default function VedaActivation() {
   }
 
   if (data === null) {
-    return <Screen scroll={false}><View className="flex-1 items-center justify-center"><Text className="font-sans text-muted">Loading today&apos;s visit…</Text></View></Screen>;
+    return <Page scroll={false}><View className="flex-1 items-center justify-center"><Text className="font-sans text-muted">Loading today&apos;s visit…</Text></View></Page>;
   }
 
   const school = selectedSchool;
 
   return (
-    <Screen>
+    <Page>
       <HeroCard eyebrow="Today's visit" title={school?.school_name ?? 'No school'} subtitle={school?.school_region ?? undefined} icon="albums" onBack={() => router.back()} />
       {session?.status === 'completed' ? <StatusPill tone="ok" label="Complete" /> : session?.status === 'open' ? <StatusPill tone="purple" label="In progress" /> : <StatusPill tone="warn" label="Not checked in" />}
       {error ? <StatusPill tone="bad" label={error} /> : null}
@@ -132,6 +132,6 @@ export default function VedaActivation() {
           <PrimaryButton label="Check In" onPress={() => router.replace({ pathname: '/veda-checkin', params: { school: school?.school_id } })} />
         </View>
       )}
-    </Screen>
+    </Page>
   );
 }

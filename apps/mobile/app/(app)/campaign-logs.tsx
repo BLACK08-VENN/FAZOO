@@ -4,7 +4,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { formatLagosDisplay } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/primary-button';
-import { Screen, ScreenHeader, Card, EmptyState } from '@/components/ui';
+import { Page, ScreenHeader, Card, EmptyState } from '@/components/ui';
 
 interface RetailLog {
   id: string;
@@ -76,7 +76,7 @@ export default function CampaignLogs() {
   const canAddVedaLog = isVeda && Boolean(params.schoolId);
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
+    <Page refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
       <ScreenHeader eyebrow="Logs" title={headerTitle ?? ''} subtitle={headerSubtitle ?? undefined} onBack={() => router.back()} />
 
       {error ? <Text role="alert" className="font-sans mb-3 text-sm font-medium text-bad">{error}</Text> : null}
@@ -139,6 +139,6 @@ export default function CampaignLogs() {
       )}
 
       <PrimaryButton label="Back" variant="ghost" onPress={() => router.back()} />
-    </Screen>
+    </Page>
   );
 }
