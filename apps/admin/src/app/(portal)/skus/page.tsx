@@ -16,7 +16,7 @@ export default async function SkusPage() {
 
   return (
     <>
-      <PageHeader title="SKUs" description="Products available for sales recording. Add new products or remove ones you no longer track." />
+      <PageHeader title="SKUs" description="Products available for sales recording. Add, update, or remove products." />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <TableWrap>
@@ -31,25 +31,7 @@ export default async function SkusPage() {
             </thead>
             <tbody>
               {(skus ?? []).map((s) => (
-                <tr key={s.id}>
-                  <Td className="font-medium">{s.name}</Td>
-                  <Td className="font-mono text-xs">{s.code}</Td>
-                  <Td>{s.status}</Td>
-                  <Td className="text-right">
-                    <form
-                      action={async () => {
-                        'use server';
-                        const { client: c } = await requireStaff();
-                        await c.rpc('admin_delete_sku' as never, { p_sku_id: s.id } as never);
-                        revalidatePath('/skus');
-                      }}
-                    >
-                      <Button type="submit" variant="destructive" className="h-8 px-3 text-xs">
-                        Delete
-                      </Button>
-                    </form>
-                  </Td>
-                </tr>
+                <EditSkuRow key={s.id} sku={s} />
               ))}
             </tbody>
           </Table>
@@ -97,5 +79,79 @@ export default async function SkusPage() {
         </Card>
       </div>
     </>
+  );
+}
+
+type SkuRow = {
+  id: string;
+  organization_id: string;
+  campaign_id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  status: 'active' | 'inactive';
+};
+
+async function EditSkuRow({ sku }: { sku: SkuRow }) {
+  return (
+    <tr>
+      <Td colSpan={3}>
+        <form
+          id={`sku-edit-${sku.id}`}
+          action={async (formData: FormData) => {
+            'use server';
+            const parsed = skuInputSchema.safeParse({
+              campaign_id: sku.campaign_id,
+              name: formData.get('name'),
+              code: formData.get('code'),
+              description: formData.get('description') || null,
+              status: formData.get('status'),
+            });
+            if (!parsed.success) return;
+            const { client: c } = await requireStaff();
+            await c.from('skus').update({
+              name: parsed.data.name,
+              code: parsed.data.code,
+              description: parsed.data.description,
+              status: parsed.data.status,
+            }).eq('id', sku.id);
+            revalidatePath('/skus');
+          }}
+          className="flex flex-wrap items-end gap-3"
+        >
+          <input type="hidden" name="description" value={sku.description ?? ''} />
+          <div className="min-w-40 flex-1">
+            <Label htmlFor={`s-name-${sku.id}`}>Name</Label>
+            <Input id={`s-name-${sku.id}`} name="name" defaultValue={sku.name} required />
+          </div>
+          <div className="min-w-28">
+            <Label htmlFor={`s-code-${sku.id}`}>Code</Label>
+            <Input id={`s-code-${sku.id}`} name="code" defaultValue={sku.code} required pattern="[A-Za-z0-9._-]{2,40}" className="font-mono text-xs" />
+          </div>
+          <div>
+            <Label htmlFor={`s-status-${sku.id}`}>Status</Label>
+            <Select id={`s-status-${sku.id}`} name="status" defaultValue={sku.status}>
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </Select>
+          </div>
+        </form>
+      </Td>
+      <Td className="text-right">
+        <div className="flex flex-col items-end gap-1">
+          <Button type="submit" form={`sku-edit-${sku.id}`} className="h-8 px-3 text-xs">Update</Button>
+          <form
+            action={async () => {
+              'use server';
+              const { client: c } = await requireStaff();
+              await c.rpc('admin_delete_sku' as never, { p_sku_id: sku.id } as never);
+              revalidatePath('/skus');
+            }}
+          >
+            <Button type="submit" variant="destructive" className="h-8 px-3 text-xs">Delete</Button>
+          </form>
+        </div>
+      </Td>
+    </tr>
   );
 }

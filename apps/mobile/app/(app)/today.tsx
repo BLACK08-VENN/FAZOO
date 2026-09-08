@@ -100,6 +100,19 @@ function RetailToday() {
         </View>
       </Card>
 
+      <Card className="mb-4">
+        <View className="mb-2 flex-row items-center justify-between">
+          <Text className="font-sans text-base font-bold text-ink">Need time off?</Text>
+        </View>
+        <Text className="font-sans mb-3 text-sm leading-6 text-muted">Request annual, sick, or other leave that an admin will review.</Text>
+        <PrimaryButton
+          label="Apply for leave"
+          variant="secondary"
+          icon="calendar-clear"
+          onPress={() => router.push('/leave')}
+        />
+      </Card>
+
       {counts.failed > 0 ? (
         <Card className="mb-4 border-bad/25 bg-red-50">
           <View className="flex-row items-center justify-between gap-4">

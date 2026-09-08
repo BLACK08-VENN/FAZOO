@@ -63,6 +63,17 @@ export default function VedaToday() {
         </View>
 
         <Card className="mb-4">
+          <Text className="font-sans mb-2 text-base font-bold text-ink">Need time off?</Text>
+          <Text className="font-sans mb-3 text-sm leading-6 text-slate-600">Request annual, sick, or other leave that an admin will review.</Text>
+          <PrimaryButton
+            label="Apply for leave"
+            variant="secondary"
+            icon="calendar-clear"
+            onPress={() => router.push('/leave')}
+          />
+        </Card>
+
+        <Card className="mb-4">
           <Text className="font-sans text-base font-bold text-ink">Add a log</Text>
           <Text className="font-sans mb-2 mt-1 text-sm leading-6 text-slate-600">Choose a school, then add a visit log with a document photo and selfie.</Text>
           <PrimaryButton label="Choose school & add log" onPress={() => router.push('/campaigns')} icon="add-circle" />
