@@ -71,7 +71,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   p          public.profiles;
   prior      jsonb;
-  lagos_d    date;
+  nairobi_d  date;
   dow        int;
   a          record;
   dist       double precision;
@@ -94,8 +94,8 @@ begin
     return prior;
   end if;
 
-  lagos_d := (now() at time zone 'Africa/Lagos')::date;
-  dow     := extract(dow from lagos_d)::int;
+  nairobi_d := (now() at time zone 'Africa/Nairobi')::date;
+  dow       := extract(dow from nairobi_d)::int;
 
   if p_assignment_id is not null then
     select va.*, sch.name as school_name, sch.latitude as school_latitude,
@@ -107,8 +107,8 @@ begin
       and va.brand_ambassador_id = p.id
       and va.organization_id = p.organization_id
       and va.status = 'active'
-      and va.start_date <= lagos_d
-      and (va.end_date is null or va.end_date >= lagos_d);
+      and va.start_date <= nairobi_d
+      and (va.end_date is null or va.end_date >= nairobi_d);
 
     if a.id is null then
       raise exception 'You have no active school visit today. Please contact your supervisor.';
@@ -144,7 +144,7 @@ begin
 
   perform 1 from public.veda_sessions
    where brand_ambassador_id = p.id and school_id = a.school_id
-     and session_date = lagos_d and status <> 'cancelled'
+     and session_date = nairobi_d and status <> 'cancelled'
    limit 1;
   if found then
     raise exception 'You have already checked in for this school visit today.';
@@ -163,7 +163,7 @@ begin
     checkin_latitude, checkin_longitude, checkin_distance_metres,
     notes, client_request_id
   ) values (
-    p.organization_id, a.school_id, p.id, lagos_d,
+    p.organization_id, a.school_id, p.id, nairobi_d,
     greatest(0, coalesce(p_learner_count, 0)), 'open', now(),
     p_latitude, p_longitude, round(dist::numeric, 1),
     nullif(p_notes, ''), p_client_request_id
