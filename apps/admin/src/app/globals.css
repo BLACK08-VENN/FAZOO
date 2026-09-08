@@ -22,6 +22,7 @@ body {
     linear-gradient(135deg, #f8f5fb 0%, #f3edf8 52%, #f8f5fb 100%);
   background-attachment: fixed;
   font-family:
+    var(--font-sora),
     Inter,
     ui-sans-serif,
     system-ui,
