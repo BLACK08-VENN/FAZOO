@@ -87,6 +87,28 @@ export function Screen({
   );
 }
 
+export function Page({
+  children,
+  scroll = true,
+  bottomInset = true,
+  style,
+  contentStyle,
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  bottomInset?: boolean;
+  style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <Screen scroll={scroll} bottomInset={bottomInset} style={style} contentStyle={contentStyle}>
+      <View style={{ alignItems: 'center' }}>
+        <View style={{ width: '100%', maxWidth: 720 }}>{children}</View>
+      </View>
+    </Screen>
+  );
+}
+
 export function GlassCard({
   children,
   className = '',

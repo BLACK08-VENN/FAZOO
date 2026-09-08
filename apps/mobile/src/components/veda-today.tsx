@@ -8,7 +8,7 @@ import { operationCounts, retryTerminal } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { Card, Screen, HeroCard, MetricTile, EmptyState } from '@/components/ui';
+import { Card, Screen, HeroCard, MetricTile, EmptyState, Page } from '@/components/ui';
 
 export default function VedaToday() {
   const { data, loading, error, refresh } = useVedaToday();
@@ -54,13 +54,13 @@ export default function VedaToday() {
   const regions = data?.regions ?? [];
 
   return (
-    <Screen bottomInset={false}>
-        <HeroCard eyebrow={`Today · ${data?.attendance_date} (Kenya)`} title="Schools dashboard" subtitle="Track active school visits, stationery distribution, and sync health in one place." icon="school" />
+    <Page bottomInset={false}>
+      <HeroCard eyebrow={`Today · ${data?.attendance_date} (Kenya)`} title="Schools dashboard" subtitle="Track active school visits, stationery distribution, and sync health in one place." icon="school" />
 
-        <View className="mb-5 flex-row gap-3">
-          <MetricTile label="Regions" value={regions.length} />
-          <MetricTile label="Pending sync" value={counts.pending} tone={counts.pending > 0 ? 'warning' : 'success'} />
-        </View>
+      <View className="mb-5 flex-row gap-3">
+        <MetricTile label="Regions" value={regions.length} />
+        <MetricTile label="Pending sync" value={counts.pending} tone={counts.pending > 0 ? 'warning' : 'success'} />
+      </View>
 
         <Card className="mb-4">
           <Text className="font-sans mb-2 text-base font-bold text-ink">Need time off?</Text>
@@ -153,7 +153,7 @@ export default function VedaToday() {
           </View>
         )}
 
-        <Text className="font-sans mt-10 text-center text-xs text-muted">Fazoo · v0.1</Text>
-    </Screen>
+      <Text className="font-sans mt-10 text-center text-xs text-muted">Fazoo · v0.1</Text>
+    </Page>
   );
 }
