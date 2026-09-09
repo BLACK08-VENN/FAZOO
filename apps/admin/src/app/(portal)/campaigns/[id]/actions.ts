@@ -19,7 +19,7 @@ export async function addBaToCampaignAction(formData: FormData): Promise<void> {
   });
   if (!parsed.success) return;
 
-  const storeId = parsed.data.store_id || undefined;
+  const storeId = parsed.data.store_id || null;
   await client.rpc('admin_upsert_assignment', {
     p_brand_ambassador_id: parsed.data.brand_ambassador_id,
     p_campaign_id: parsed.data.campaign_id,

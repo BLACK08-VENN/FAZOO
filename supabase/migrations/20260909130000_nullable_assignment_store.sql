@@ -19,7 +19,7 @@ drop function if exists public.admin_upsert_assignment(uuid, uuid, uuid, smallin
 create function public.admin_upsert_assignment(
   p_brand_ambassador_id uuid,
   p_campaign_id        uuid,
-  p_store_id           uuid default null,
+  p_store_id           uuid,
   p_weekly_off_day     smallint[],
   p_start_date         date,
   p_end_date           date default null,

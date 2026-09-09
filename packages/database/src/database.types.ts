@@ -1477,7 +1477,7 @@ export type Database = {
           p_end_date?: string
           p_start_date: string
           p_status?: Database["public"]["Enums"]["assignment_status"]
-          p_store_id?: string
+          p_store_id: string | null
           p_weekly_off_day: number[]
         }
         Returns: string
