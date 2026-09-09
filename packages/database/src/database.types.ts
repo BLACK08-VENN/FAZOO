@@ -953,7 +953,7 @@ export type Database = {
           end_date: string | null
           id: string
           organization_id: string
-          region: string
+          region: string | null
           start_date: string
           status: Database["public"]["Enums"]["assignment_status"]
           updated_at: string
@@ -965,7 +965,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           organization_id: string
-          region: string
+          region?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["assignment_status"]
           updated_at?: string
@@ -977,7 +977,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           organization_id?: string
-          region?: string
+          region?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["assignment_status"]
           updated_at?: string

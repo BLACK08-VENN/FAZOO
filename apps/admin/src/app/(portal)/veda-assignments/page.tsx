@@ -15,7 +15,7 @@ interface AssignmentRow {
   end_date: string | null;
   status: string;
   weekly_off_day: number[];
-  region: string;
+  region: string | null;
   profiles: { full_name: string } | null;
 }
 
@@ -104,7 +104,9 @@ export default async function BrandAssignmentsPage({
                 rows.map((a) => (
                   <tr key={a.id}>
                     <Td className="font-medium">{a.profiles?.full_name ?? 'Unknown'}</Td>
-                    <Td className="text-xs font-semibold uppercase">{a.region}</Td>
+                    <Td className="text-xs font-semibold uppercase">
+                      {a.region ?? <span className="text-muted italic normal-case">N/A</span>}
+                    </Td>
                     <Td>{weeklyOffDayName(a.weekly_off_day)}</Td>
                     <Td className="text-xs">
                       {a.start_date} → {a.end_date ?? 'open'}
@@ -132,20 +134,36 @@ export default async function BrandAssignmentsPage({
                   .map((d) => Number(d))
                   .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
                 const startDate = String(formData.get('start_date') ?? '');
-                const regions = formData.getAll('region').map((r) => String(r).trim()).filter(Boolean);
+                const allRegions = formData.getAll('region').map((r) => String(r).trim());
+                const hasNa = allRegions.includes('');
+                const realRegions = allRegions.filter(Boolean);
                 const baId = String(formData.get('ba_id') ?? '');
-                if (!baId || !startDate || regions.length === 0) return;
+                if (!baId || !startDate) return;
+                if (realRegions.length === 0 && !hasNa) return;
 
                 const { client: c, profile: actor } = await requireStaff();
                 if (actor.role === 'supervisor') return;
-                for (const region of regions) {
+
+                // "Not applicable" = assign with null region
+                if (hasNa && realRegions.length === 0) {
                   await c.rpc('veda_admin_upsert_assignment', {
                     p_brand_ambassador_id: baId,
-                    p_region: region,
+                    p_region: '',
                     p_weekly_off_day: offDays,
                     p_start_date: startDate,
                     p_status: 'active',
                   });
+                } else {
+                  // Assign to each selected real region
+                  for (const region of realRegions) {
+                    await c.rpc('veda_admin_upsert_assignment', {
+                      p_brand_ambassador_id: baId,
+                      p_region: region,
+                      p_weekly_off_day: offDays,
+                      p_start_date: startDate,
+                      p_status: 'active',
+                    });
+                  }
                 }
                 revalidatePath('/veda-assignments');
                 revalidatePath('/veda-activations');
@@ -162,11 +180,11 @@ export default async function BrandAssignmentsPage({
               </div>
               <fieldset>
                 <legend className="text-sm font-medium text-ink">Regions</legend>
-                {regions.length === 0 ? (
-                  <p className="mt-1 text-sm text-muted">No active schools with regions in this brand yet.</p>
-                ) : (
-                  <div className="mt-1 grid grid-cols-2 gap-2">
-                    {regions.map((region) => (
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  {regions.length === 0 ? (
+                    <p className="col-span-2 text-sm text-muted">No active schools with regions in this brand yet.</p>
+                  ) : (
+                    regions.map((region) => (
                       <label
                         key={region}
                         className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-charcoal has-[:checked]:border-primary has-[:checked]:bg-lavender"
@@ -174,9 +192,13 @@ export default async function BrandAssignmentsPage({
                         <input type="checkbox" name="region" value={region} className="size-4 accent-primary" />
                         {region}
                       </label>
-                    ))}
-                  </div>
-                )}
+                    ))
+                  )}
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm text-charcoal has-[:checked]:border-primary has-[:checked]:bg-lavender">
+                    <input type="checkbox" name="region" value="" className="size-4 accent-primary" />
+                    <span className="text-muted italic">Not applicable</span>
+                  </label>
+                </div>
               </fieldset>
               <fieldset>
                 <legend className="text-sm font-medium text-ink">Weekly off-days</legend>
@@ -201,7 +223,7 @@ export default async function BrandAssignmentsPage({
                 <Label htmlFor="va-start">Effective from</Label>
                 <Input id="va-start" name="start_date" type="date" required />
               </div>
-              <Button type="submit" className="w-full" disabled={regions.length === 0}>
+              <Button type="submit" className="w-full">
                 Assign BA
               </Button>
             </form>

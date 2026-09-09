@@ -145,9 +145,10 @@ function ApproveButtons({ profileId, regions }: { profileId: string; regions: Re
 
     const region = String(formData.get('region') ?? '');
     if (action === 'approve' && region) {
+      const isNa = region === '__na__';
       await c.rpc('veda_admin_upsert_assignment', {
         p_brand_ambassador_id: id,
-        p_region: region,
+        p_region: isNa ? '' : region,
         p_weekly_off_day: [],
         p_status: 'active',
         p_start_date: new Date().toISOString().slice(0, 10),
@@ -169,6 +170,7 @@ function ApproveButtons({ profileId, regions }: { profileId: string; regions: Re
             defaultValue=""
           >
             <option value="">Approve only</option>
+            <option value="__na__">Not applicable</option>
             {regions.map((r) => (
               <option key={r.region} value={r.region}>
                 {r.region}
