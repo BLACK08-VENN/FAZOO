@@ -1503,6 +1503,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ba_brand_options: { Args: never; Returns: Json }
       ba_checkin: {
         Args: {
           p_accuracy_metres?: number
