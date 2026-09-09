@@ -180,8 +180,8 @@ export default function Campaigns() {
               <Text className="font-sans text-xl font-bold text-ink">{item.title}</Text>
               {item.subtitle ? <Text className="font-sans mt-2 text-sm leading-6 text-muted">{item.subtitle}</Text> : null}
             </View>
-            <View className={`rounded-full px-3 py-1 ${item.locked ? 'bg-lavender' : 'bg-emerald-50'}`}>
-              <Text className={`font-sans text-xs font-semibold uppercase ${item.locked ? (item.unlocked ? 'text-emerald-700' : 'text-muted') : 'text-emerald-700'}`}>
+            <View className={`rounded-full px-3 py-1 ${item.locked ? 'bg-lavender' : 'bg-ok/12'}`}>
+              <Text className={`font-sans text-xs font-semibold uppercase ${item.locked ? (item.unlocked ? 'text-ok' : 'text-muted') : 'text-ok'}`}>
                 {item.locked ? (item.unlocked ? 'Unlocked' : 'Locked') : 'Open'}
               </Text>
             </View>
@@ -195,7 +195,7 @@ export default function Campaigns() {
         </TouchableOpacity>
 
         {needsCode && codeOpen === item.id ? (
-          <View className="mt-4 border-t border-ink/10 pt-4">
+          <View className="mt-4 border-t border-edge pt-4">
             <Field
               label="Access code"
               placeholder="Enter access code"

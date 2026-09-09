@@ -18,7 +18,7 @@ export function BrandLogo({
   if (!logoUrl) return null;
 
   return (
-    <View className="h-16 overflow-hidden rounded-xl border border-ink/5 bg-white">
+    <View className="h-16 overflow-hidden rounded-xl border border-edge bg-white">
       <Image
         source={{ uri: logoUri(logoUrl) }}
         accessibilityLabel={`${name} logo`}

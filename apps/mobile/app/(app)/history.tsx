@@ -65,13 +65,13 @@ export default function History() {
           <View className="flex-row justify-between gap-4">
             <View className="flex-1">
               <Text className="font-sans text-lg font-bold text-ink">{l.attendance_date}</Text>
-              <Text className="font-sans mt-1 capitalize text-slate-600">
+              <Text className="font-sans mt-1 capitalize text-muted">
                 {l.attendance_status.replace('_', ' ')}
                 {l.checkin_at ? ` · in ${formatLagosDisplay(l.checkin_at)}` : ''}
                 {l.checkout_at ? ` · out ${formatLagosDisplay(l.checkout_at)}` : ''}
               </Text>
             </View>
-            <Text className="font-sans rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold text-slate-600">{l.status}</Text>
+            <Text className="font-sans rounded-full bg-lavender px-3 py-1 text-xs font-semibold text-ink/80">{l.status}</Text>
           </View>
           <PhotoThumbnails photos={photosByLog.get(l.id) ?? []} />
         </Card>
@@ -112,7 +112,7 @@ function PhotoThumbnails({ photos }: { photos: Photo[] }) {
         const isFailed = failed[photo.storage_path];
         if (!url) {
           return (
-            <View key={photo.id} className="h-20 w-20 items-center justify-center rounded-2xl bg-slate-100">
+            <View key={photo.id} className="h-20 w-20 items-center justify-center rounded-2xl bg-white">
               <ActivityIndicator size="small" color="#7B2FBE" />
             </View>
           );
@@ -121,12 +121,12 @@ function PhotoThumbnails({ photos }: { photos: Photo[] }) {
           <View key={photo.id} className="w-20">
             <Image
               source={{ uri: url }}
-              className={`h-20 w-20 rounded-2xl bg-slate-100 ${isFailed ? 'opacity-40' : ''}`}
+              className={`h-20 w-20 rounded-2xl bg-white ${isFailed ? 'opacity-40' : ''}`}
               resizeMode="cover"
               accessibilityLabel={PHOTO_TYPE_LABELS[photo.photo_type]}
               onError={() => setFailed((prev) => ({ ...prev, [photo.storage_path]: true }))}
             />
-            <Text className="font-sans mt-1 text-center text-[10px] text-slate-500">{PHOTO_TYPE_LABELS[photo.photo_type]}</Text>
+            <Text className="font-sans mt-1 text-center text-[10px] text-muted">{PHOTO_TYPE_LABELS[photo.photo_type]}</Text>
           </View>
         );
       })}

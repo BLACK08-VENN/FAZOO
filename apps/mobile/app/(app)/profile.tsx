@@ -99,7 +99,7 @@ export default function Profile() {
               </Text>
             ) : null}
             {message ? (
-              <Text role="status" className="font-sans mt-2 font-medium text-emerald-700">
+              <Text role="status" className="font-sans mt-2 font-medium text-ok">
                 {message}
               </Text>
             ) : null}

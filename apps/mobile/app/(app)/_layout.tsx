@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const ACTIVE = '#7B2FBE';
-const INACTIVE = 'rgba(23, 23, 28, 0.42)';
+const INACTIVE = 'rgba(27, 22, 35, 0.42)';
 const TAB_BAR_HEIGHT = 82;
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -40,7 +40,7 @@ function FancyTabIcon({ name, focused }: { name: IconName; focused: boolean }) {
           borderRadius: 19,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(123,47,190,0.05)',
+          backgroundColor: 'rgba(123,47,190,0.08)',
           transform: [{ scale }],
         }}
       >
@@ -52,7 +52,7 @@ function FancyTabIcon({ name, focused }: { name: IconName; focused: boolean }) {
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
       <LinearGradient
-        colors={['#A557E0', '#7B2FBE', '#5A1E82']}
+        colors={['#9B4FE8', '#7B2FBE', '#5A1E82']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
@@ -62,12 +62,12 @@ function FancyTabIcon({ name, focused }: { name: IconName; focused: boolean }) {
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.72)',
-          shadowColor: '#5A1E82',
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 5,
+          borderColor: 'rgba(255,255,255,0.85)',
+          shadowColor: '#7B2FBE',
+          shadowOpacity: 0.4,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 5 },
+          elevation: 6,
         }}
       >
         {icon}
@@ -83,11 +83,11 @@ function FancyTabIcon({ name, focused }: { name: IconName; focused: boolean }) {
 }
 
 const toggleShadow = {
-  shadowColor: '#23122C',
-  shadowOpacity: 0.28,
+  shadowColor: '#7B2FBE',
+  shadowOpacity: 0.18,
   shadowRadius: 20,
   shadowOffset: { width: 0, height: 10 },
-  elevation: 12,
+  elevation: 8,
 } as const;
 
 function HamburgerIcon() {
@@ -100,7 +100,7 @@ function HamburgerIcon() {
             width: 30,
             height: 4,
             borderRadius: 2,
-            backgroundColor: '#0B0B0F',
+            backgroundColor: '#1B1623',
           }}
         />
       ))}
@@ -122,14 +122,14 @@ export default function AppLayout() {
           tabBarHideOnKeyboard: true,
           tabBarBackground: () => (
             <LinearGradient
-              colors={['rgba(255,255,255,0.99)', 'rgba(250,246,253,0.98)', 'rgba(244,235,250,0.98)']}
+              colors={['rgba(255,255,255,0.96)', 'rgba(255,255,255,0.92)', 'rgba(255,255,255,0.98)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{
                 flex: 1,
                 borderRadius: 32,
                 borderWidth: 1,
-                borderColor: 'rgba(123,47,190,0.18)',
+                borderColor: 'rgba(123,47,190,0.20)',
               }}
             />
           ),
@@ -147,7 +147,7 @@ export default function AppLayout() {
                 paddingTop: 8,
                 paddingBottom: 8,
                 elevation: 10,
-                shadowColor: '#23122C',
+                shadowColor: '#7B2FBE',
                 shadowOpacity: 0.18,
                 shadowRadius: 22,
                 shadowOffset: { width: 0, height: 10 },
@@ -206,8 +206,8 @@ export default function AppLayout() {
               width: 64,
               borderRadius: 32,
               backgroundColor: '#FFFFFF',
-              borderWidth: 3,
-              borderColor: '#0B0B0F',
+              borderWidth: 1,
+              borderColor: 'rgba(123,47,190,0.28)',
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.85 : 1,
@@ -232,8 +232,8 @@ export default function AppLayout() {
               width: 44,
               borderRadius: 22,
               backgroundColor: '#FFFFFF',
-              borderWidth: 3,
-              borderColor: '#0B0B0F',
+              borderWidth: 1,
+              borderColor: 'rgba(123,47,190,0.28)',
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.8 : 1,
@@ -241,7 +241,7 @@ export default function AppLayout() {
             toggleShadow,
           ]}
         >
-          <Ionicons name="chevron-down" size={26} color="#0B0B0F" />
+          <Ionicons name="chevron-down" size={26} color="#1B1623" />
         </Pressable>
       )}
     </>

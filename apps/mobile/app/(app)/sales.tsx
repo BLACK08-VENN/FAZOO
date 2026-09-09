@@ -103,9 +103,9 @@ export default function Sales() {
           <Card className="mb-4">
             <Text className="font-sans mb-3 text-lg font-bold text-ink">Choose SKU</Text>
             {skus.map((s) => (
-              <Pressable key={s.id} onPress={() => setSkuId(s.id)} accessibilityRole="button" className={`mb-2 rounded-2xl border px-4 py-4 ${skuId === s.id ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white'}`}>
-                <Text className="font-sans text-base font-semibold text-slate-800">{s.name}</Text>
-                <Text className="font-sans mt-1 text-sm text-slate-500">{s.code}{skuId === s.id ? ' · selected' : ''}</Text>
+              <Pressable key={s.id} onPress={() => setSkuId(s.id)} accessibilityRole="button" className={`mb-2 rounded-2xl border px-4 py-4 ${skuId === s.id ? 'border-primary/40 bg-primary/15' : 'border-edge bg-white'}`}>
+                <Text className="font-sans text-base font-semibold text-ink">{s.name}</Text>
+                <Text className="font-sans mt-1 text-sm text-muted">{s.code}{skuId === s.id ? ' · selected' : ''}</Text>
               </Pressable>
             ))}
           </Card>
@@ -120,10 +120,10 @@ export default function Sales() {
         <Card className="mt-6">
           <Text className="font-sans mb-2 text-lg font-bold text-ink">Recorded today</Text>
           {(selected?.sales ?? []).map((s, index, arr) => (
-            <View key={s.id} className={`py-3 ${index < arr.length - 1 ? 'border-b border-slate-200' : ''}`}>
+            <View key={s.id} className={`py-3 ${index < arr.length - 1 ? 'border-b border-edge' : ''}`}>
               <View className="flex-row items-center justify-between">
-                <Text className="font-sans flex-1 text-base font-medium text-slate-800">{s.sku_name}</Text>
-                <Text className="font-sans tabular-nums text-base text-slate-700">×{s.quantity}</Text>
+                <Text className="font-sans flex-1 text-base font-medium text-ink">{s.sku_name}</Text>
+                <Text className="font-sans tabular-nums text-base text-ink/70">×{s.quantity}</Text>
               </View>
               {logOpen ? (
                 editingId === s.id ? (

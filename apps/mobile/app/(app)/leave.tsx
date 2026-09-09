@@ -54,8 +54,8 @@ const initialForm: LeaveFormState = {
 
 function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} className={`mb-2 mr-2 rounded-full border px-4 py-2 ${selected ? 'border-primary/40 bg-primary/10' : 'border-ink/12 bg-white'}`}>
-      <Text className={`font-sans font-medium ${selected ? 'text-primary' : 'text-muted'}`}>{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} className={`mb-2 mr-2 rounded-full border px-4 py-2 ${selected ? 'border-primary/40 bg-primary/15' : 'border-edge bg-white'}`}>
+      <Text className={`font-sans font-medium ${selected ? 'text-primaryText' : 'text-muted'}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -83,12 +83,12 @@ function DateField({ label, value, onChange, minimumDate, icon = 'calendar' }: {
   return (
     <View className="mb-4">
       <Text className="font-sans mb-2 text-sm font-medium text-ink">{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value || 'not set'}`} onPress={() => setShow((open) => !open)} className="h-14 flex-row items-center justify-between rounded-2xl border border-ink/12 bg-white px-4">
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${value || 'not set'}`} onPress={() => setShow((open) => !open)} className="h-14 flex-row items-center justify-between rounded-2xl border border-edge bg-white px-4">
         <Text className={value ? 'text-ink' : 'text-muted'}>{value || 'Pick a date'}</Text>
         <Ionicons name={icon} size={18} color="#7B2FBE" />
       </Pressable>
       {show ? (
-        <View className="mt-2 overflow-hidden rounded-2xl border border-ink/12 bg-white">
+        <View className="mt-2 overflow-hidden rounded-2xl border border-edge bg-white">
           <DateTimePicker value={toDate(value)} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} minimumDate={minimumDate} onChange={onEvent} />
         </View>
       ) : null}
@@ -210,10 +210,10 @@ export default function LeavePage() {
 
       <SectionLabel>2. Communication</SectionLabel>
       <Card className="mb-4">
-        <View className="mb-4 flex-row items-center justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-4">
+        <View className="mb-4 flex-row items-center justify-between gap-4 rounded-2xl bg-white px-4 py-4">
           <View className="flex-1">
-            <Text className="font-sans font-semibold text-slate-800">Supervisor informed</Text>
-            <Text className="font-sans mt-1 text-sm leading-6 text-slate-500">Confirm you have discussed this request.</Text>
+            <Text className="font-sans font-semibold text-ink">Supervisor informed</Text>
+            <Text className="font-sans mt-1 text-sm leading-6 text-muted">Confirm you have discussed this request.</Text>
           </View>
           <Switch value={form.supervisor_informed} onValueChange={(value) => setForm((v) => ({ ...v, supervisor_informed: value }))} trackColor={{ true: '#7B2FBE' }} />
         </View>
@@ -240,7 +240,7 @@ export default function LeavePage() {
         </View>
       </GlassCard>
 
-      {message ? <Text accessibilityRole="alert" className={`font-sans mb-3 mt-4 text-sm font-medium ${message.tone === 'ok' ? 'text-emerald-700' : 'text-bad'}`}>{message.text}</Text> : null}
+      {message ? <Text accessibilityRole="alert" className={`font-sans mb-3 mt-4 text-sm font-medium ${message.tone === 'ok' ? 'text-ok' : 'text-bad'}`}>{message.text}</Text> : null}
       <PrimaryButton label="Send leave request" busy={busy} onPress={() => void submit()} icon="send" />
 
       <SectionLabel>My requests</SectionLabel>
@@ -251,11 +251,11 @@ export default function LeavePage() {
           <View className="flex-row items-start justify-between gap-4">
             <View className="flex-1">
               <Text className="font-sans text-lg font-bold capitalize text-ink">{request.leave_type.replaceAll('_', ' ')}</Text>
-              <Text className="font-sans mt-1 text-sm text-slate-500">{request.start_date} — {request.end_date}</Text>
+              <Text className="font-sans mt-1 text-sm text-muted">{request.start_date} — {request.end_date}</Text>
             </View>
-            <Text className={`font-sans rounded-full px-3 py-1 text-xs font-bold uppercase ${request.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : request.status === 'denied' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{request.status}</Text>
+            <Text className={`font-sans rounded-full px-3 py-1 text-xs font-bold uppercase ${request.status === 'approved' ? 'bg-ok/15 text-ok' : request.status === 'denied' ? 'bg-bad/15 text-bad' : 'bg-warn/15 text-warn'}`}>{request.status}</Text>
           </View>
-          {request.review_note ? <Text className="font-sans mt-3 border-t border-slate-200 pt-3 text-sm leading-6 text-slate-600">Admin note: {request.review_note}</Text> : null}
+          {request.review_note ? <Text className="font-sans mt-3 border-t border-edge pt-3 text-sm leading-6 text-muted">Admin note: {request.review_note}</Text> : null}
         </Card>
       ))}
     </Page>

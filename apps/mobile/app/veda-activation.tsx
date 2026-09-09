@@ -12,11 +12,11 @@ import { Page, Card, HeroCard, EmptyState } from '@/components/ui';
 
 function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (next: number) => void }) {
   return (
-    <View className="my-1.5 flex-row items-center justify-between rounded-2xl bg-slate-100 px-4 py-3">
-      <Text className="font-sans flex-1 pr-3 text-slate-700">{label}</Text>
+    <View className="my-1.5 flex-row items-center justify-between rounded-2xl bg-white px-4 py-3">
+      <Text className="font-sans flex-1 pr-3 text-ink/80">{label}</Text>
       <View className="flex-row items-center gap-2">
         <PrimaryButton label="−" variant="secondary" onPress={() => onChange(Math.max(0, value - 1))} disabled={value <= 0} accessibilityLabel={`Reduce ${label}`} />
-        <Text className="font-sans min-w-10 text-center text-lg font-bold tabular-nums text-slate-800">{value}</Text>
+        <Text className="font-sans min-w-10 text-center text-lg font-bold tabular-nums text-ink">{value}</Text>
         <PrimaryButton label="+" variant="secondary" onPress={() => onChange(Math.min(100000, value + 1))} accessibilityLabel={`Increase ${label}`} />
       </View>
     </View>
@@ -110,7 +110,7 @@ export default function VedaActivation() {
         <>
           <Card>
             <Text className="font-sans mb-1 text-lg font-bold text-ink">Stationery distributed</Text>
-            <Text className="font-sans mb-4 text-sm leading-6 text-slate-600">Update the quantities distributed to learners for this visit.</Text>
+            <Text className="font-sans mb-4 text-sm leading-6 text-muted">Update the quantities distributed to learners for this visit.</Text>
             {stationeryItems.length === 0 ? <EmptyState title="No stationery items yet" body="Ask your administrator to configure stationery items for this programme." /> : stationeryItems.map((item) => <Stepper key={item.id} label={item.name} value={edited[item.id] ?? 0} onChange={(next) => setEdited((current) => ({ ...current, [item.id]: next }))} />)}
             {stationeryItems.length > 0 ? <PrimaryButton label="Save changes" onPress={() => void saveChanges()} busy={saving} icon="save" /> : null}
           </Card>
@@ -121,8 +121,8 @@ export default function VedaActivation() {
       ) : session?.status === 'completed' ? (
         <>
           <Card>
-            <Text className="font-sans text-xs uppercase tracking-wide text-slate-500">Stationery distributed</Text>
-            {distributions.length === 0 ? <Text className="font-sans mt-2 text-slate-500">Nothing was recorded.</Text> : distributions.map((d) => <View key={d.id} className="mt-2 flex-row justify-between"><Text className="font-sans text-slate-700">{d.item_name}</Text><Text className="font-sans tabular-nums text-slate-700">×{d.quantity}</Text></View>)}
+            <Text className="font-sans text-xs uppercase tracking-wide text-muted">Stationery distributed</Text>
+            {distributions.length === 0 ? <Text className="font-sans mt-2 text-muted">Nothing was recorded.</Text> : distributions.map((d) => <View key={d.id} className="mt-2 flex-row justify-between"><Text className="font-sans text-ink/70">{d.item_name}</Text><Text className="font-sans tabular-nums text-ink/70">×{d.quantity}</Text></View>)}
           </Card>
           <PrimaryButton label="Done" variant="ghost" onPress={() => router.back()} />
         </>

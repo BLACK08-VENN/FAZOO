@@ -102,8 +102,8 @@ export default function Register() {
             subtitle="Create your account in one quick step and wait for an administrator to approve it."
             icon="person-add"
           />
-          <View className="mb-4 rounded-3xl border border-ink/10 bg-white px-4 py-4">
-            <Text className="font-sans text-sm leading-6 text-charcoal">
+          <View className="mb-4 rounded-3xl border border-edge bg-white px-4 py-4">
+            <Text className="font-sans text-sm leading-6 text-muted">
               Sign up first. Your administrator will connect you to the right brand and assign your stores or schools.
             </Text>
           </View>

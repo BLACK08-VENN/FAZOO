@@ -90,13 +90,13 @@ export default function VedaCheckout() {
       {error ? <StatusPill tone="bad" label={error} /> : null}
       <Card>
         <Text className="font-sans text-lg font-bold text-ink">{assignment?.school_name ?? 'Loading…'}</Text>
-        <Text className="font-sans text-sm text-slate-500">{assignment?.school_region}</Text>
+        <Text className="font-sans text-sm text-muted">{assignment?.school_region}</Text>
         <View className="mt-4 flex-row justify-between">
-          <Text className="font-sans text-slate-500">Stationery distributed</Text>
-          <Text className="font-sans font-bold tabular-nums text-indigo-700">{totalItems} units</Text>
+          <Text className="font-sans text-muted">Stationery distributed</Text>
+          <Text className="font-sans font-bold tabular-nums text-primaryText">{totalItems} units</Text>
         </View>
-        {(schoolRow?.distributions ?? []).map((d) => <View key={d.id} className="mt-2 flex-row justify-between"><Text className="font-sans text-slate-700">{d.item_name}</Text><Text className="font-sans tabular-nums text-slate-700">×{d.quantity}</Text></View>)}
-        {(schoolRow?.distributions ?? []).length === 0 ? <Text className="font-sans mt-2 text-slate-500">No stationery was recorded.</Text> : null}
+        {(schoolRow?.distributions ?? []).map((d) => <View key={d.id} className="mt-2 flex-row justify-between"><Text className="font-sans text-ink/70">{d.item_name}</Text><Text className="font-sans tabular-nums text-ink/70">×{d.quantity}</Text></View>)}
+        {(schoolRow?.distributions ?? []).length === 0 ? <Text className="font-sans mt-2 text-muted">No stationery was recorded.</Text> : null}
       </Card>
       <GlassCard className="mt-4">
         <Text className="font-sans mb-3 font-medium text-ink">Verify you are still at the school</Text>

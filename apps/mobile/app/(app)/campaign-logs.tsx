@@ -127,15 +127,15 @@ export default function CampaignLogs() {
                   <View className="flex-row items-start justify-between gap-4">
                     <View className="flex-1">
                       <Text className="font-sans text-lg font-bold text-ink">{v.session_date}</Text>
-                      <Text className="font-sans mt-1 text-sm leading-6 text-slate-600">
+                      <Text className="font-sans mt-1 text-sm leading-6 text-muted">
                         Learners: {v.learner_count}
                         {v.checkin_at ? ` · in ${formatLagosDisplay(v.checkin_at)}` : ''}
                         {v.checkout_at ? ` · out ${formatLagosDisplay(v.checkout_at)}` : ''}
                       </Text>
                     </View>
-                    <Text className="font-sans rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{v.status}</Text>
+                    <Text className="font-sans rounded-full bg-lavender px-3 py-1 text-xs font-semibold capitalize text-ink/80">{v.status}</Text>
                   </View>
-                  {v.notes ? <Text className="font-sans mt-3 text-sm leading-6 text-slate-600">{v.notes}</Text> : null}
+                  {v.notes ? <Text className="font-sans mt-3 text-sm leading-6 text-muted">{v.notes}</Text> : null}
                 </Card>
               );
             }
@@ -145,15 +145,15 @@ export default function CampaignLogs() {
                 <View className="flex-row items-start justify-between gap-4">
                   <View className="flex-1">
                     <Text className="font-sans text-lg font-bold text-ink">{r.attendance_date}</Text>
-                    <Text className="font-sans mt-1 text-sm capitalize leading-6 text-slate-600">
+                    <Text className="font-sans mt-1 text-sm capitalize leading-6 text-muted">
                       {r.attendance_status.replace('_', ' ')}
                       {r.checkin_at ? ` · in ${formatLagosDisplay(r.checkin_at)}` : ''}
                       {r.checkout_at ? ` · out ${formatLagosDisplay(r.checkout_at)}` : ''}
                     </Text>
                   </View>
-                  <Text className="font-sans rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold capitalize text-slate-600">{r.status}</Text>
+                  <Text className="font-sans rounded-full bg-lavender px-3 py-1 text-xs font-semibold capitalize text-ink/80">{r.status}</Text>
                 </View>
-                {r.notes ? <Text className="font-sans mt-3 text-sm leading-6 text-slate-600">{r.notes}</Text> : null}
+                {r.notes ? <Text className="font-sans mt-3 text-sm leading-6 text-muted">{r.notes}</Text> : null}
               </Card>
             );
           })}

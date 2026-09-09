@@ -134,8 +134,8 @@ export default function BrandSelect() {
             </View>
           ) : null}
           <Text className="font-sans text-xl font-bold text-ink">{m.organization_name}</Text>
-          <Text className="font-sans mt-1 text-sm text-slate-500">{m.organization_slug}</Text>
-          <Text className="font-sans mt-3 text-sm leading-6 text-slate-600">
+          <Text className="font-sans mt-1 text-sm text-muted">{m.organization_slug}</Text>
+          <Text className="font-sans mt-3 text-sm leading-6 text-muted">
             {!m.assigned
               ? 'Not assigned — contact your administrator if you should work on this brand.'
               : m.has_code_gate
@@ -173,7 +173,7 @@ export default function BrandSelect() {
           <SectionLabel>Pending memberships</SectionLabel>
           <GlassCard>
             {others.map((m) => (
-              <View key={m.organization_id} className="border-b border-ink/10 py-3 last:border-b-0">
+              <View key={m.organization_id} className="border-b border-edge py-3 last:border-b-0">
                 <Text className="font-sans text-base font-semibold text-ink">{m.organization_name}</Text>
                 <Text className="font-sans mt-1 text-sm capitalize text-muted">{m.account_status.replace(/_/g, ' ')}</Text>
               </View>

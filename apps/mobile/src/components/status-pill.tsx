@@ -12,17 +12,17 @@ export function StatusPill({
   label: string;
 }) {
   const map = {
-    ok: 'bg-emerald-50 border-ok/30',
-    warn: 'bg-amber-50 border-warn/30',
-    bad: 'bg-red-50 border-bad/30',
-    purple: 'bg-primary/10 border-primary/25',
-    neutral: 'bg-lavender border-ink/10',
+    ok: 'bg-ok/12 border-ok/30',
+    warn: 'bg-warn/12 border-warn/30',
+    bad: 'bg-bad/12 border-bad/30',
+    purple: 'bg-primary/15 border-primary/40',
+    neutral: 'bg-lavender border-edge',
   } as const;
   const textClass = {
-    ok: 'text-emerald-700',
-    warn: 'text-amber-700',
-    bad: 'text-red-700',
-    purple: 'text-primary',
+    ok: 'text-ok',
+    warn: 'text-warn',
+    bad: 'text-bad',
+    purple: 'text-primaryText',
     neutral: 'text-ink',
   } as const;
   return (

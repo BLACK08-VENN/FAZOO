@@ -103,14 +103,14 @@ export default function Checkout() {
         <>
           {selected ? <Text className="font-sans mb-3 text-sm text-muted">{selected.assignment.store_name || selected.assignment.campaign_name}{selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}</Text> : null}
           <Card>
-            <Text className="font-sans text-4xl font-bold text-indigo-700">{selected?.total_units_today ?? 0}<Text className="font-sans text-base font-normal text-slate-500"> units today</Text></Text>
+            <Text className="font-sans text-4xl font-bold text-primaryText">{selected?.total_units_today ?? 0}<Text className="font-sans text-base font-normal text-muted"> units today</Text></Text>
             {(selected?.sales ?? []).map((s) => (
               <View key={s.id} className="mt-2 flex-row justify-between">
-                <Text className="font-sans text-slate-700">{s.sku_name}</Text>
-                <Text className="font-sans tabular-nums text-slate-700">×{s.quantity}</Text>
+                <Text className="font-sans text-ink/70">{s.sku_name}</Text>
+                <Text className="font-sans tabular-nums text-ink/70">×{s.quantity}</Text>
               </View>
             ))}
-            {(selected?.sales ?? []).length === 0 ? <Text className="font-sans mt-2 text-slate-500">No sales were recorded.</Text> : null}
+            {(selected?.sales ?? []).length === 0 ? <Text className="font-sans mt-2 text-muted">No sales were recorded.</Text> : null}
           </Card>
           <GlassCard className="mt-4">
             <View className="flex-row items-center justify-between gap-4">
@@ -126,7 +126,7 @@ export default function Checkout() {
       {step === 2 ? (
         <>
           <Card>
-            <Text className="font-sans text-base leading-6 text-slate-600">Take a clear photo of the Lenovo product or stock evidence for this completed visit.</Text>
+            <Text className="font-sans text-base leading-6 text-muted">Take a clear photo of the Lenovo product or stock evidence for this completed visit.</Text>
             <CaptureBox photo={stock} onSnap={() => void snap('stock')} hint="Tap to take the product photo" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!stock} onPress={() => void snap('stock')} />
@@ -138,7 +138,7 @@ export default function Checkout() {
       {step === 3 ? (
         <>
           <Card>
-            <Text className="font-sans text-base leading-6 text-slate-600">Take a clear selfie of yourself for this Lenovo checkout.</Text>
+            <Text className="font-sans text-base leading-6 text-muted">Take a clear selfie of yourself for this Lenovo checkout.</Text>
             <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your selfie" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />

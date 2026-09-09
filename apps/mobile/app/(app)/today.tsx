@@ -116,11 +116,11 @@ function RetailToday() {
       </Card>
 
       {counts.failed > 0 ? (
-        <Card className="mb-4 border-bad/25 bg-red-50">
+        <Card className="mb-4 border-bad/25 bg-bad/10">
           <View className="flex-row items-center justify-between gap-4">
             <View className="flex-1">
-              <Text className="font-sans text-base font-semibold text-red-700">{counts.failed} action{counts.failed > 1 ? 's' : ''} failed to sync</Text>
-              <Text className="font-sans mt-1 text-sm leading-6 text-red-600">
+              <Text className="font-sans text-base font-semibold text-bad">{counts.failed} action{counts.failed > 1 ? 's' : ''} failed to sync</Text>
+              <Text className="font-sans mt-1 text-sm leading-6 text-bad/80">
                 Retry now when you have a stable connection.
               </Text>
             </View>
@@ -157,19 +157,19 @@ function RetailToday() {
                   ) : null}
                 </View>
 
-                <View className="mt-3 rounded-xl bg-lavender p-3">
+                <View className="mt-3 rounded-2xl bg-lavender p-3">
                   <Text className="font-sans text-xs uppercase tracking-wide text-muted">
                     Units sold today
                   </Text>
-                  <Text className="font-sans mt-1 text-3xl font-bold tabular-nums text-indigo-700">
+                  <Text className="font-sans mt-1 text-3xl font-bold tabular-nums text-primaryText">
                     {item.total_units_today ?? 0}
                   </Text>
                   {(item.sales ?? []).length > 0 ? (
                     <View className="mt-2 space-y-1">
                       {(item.sales ?? []).map((sale: NonNullable<BaTodayResult['assignments'][number]['sales']>[number]) => (
                         <View key={sale.id} className="flex-row justify-between">
-                          <Text className="font-sans text-slate-700">{sale.sku_name}</Text>
-                          <Text className="font-sans font-medium tabular-nums text-slate-700">{sale.quantity}</Text>
+                          <Text className="font-sans text-ink/70">{sale.sku_name}</Text>
+                          <Text className="font-sans font-medium tabular-nums text-ink/70">{sale.quantity}</Text>
                         </View>
                       ))}
                     </View>

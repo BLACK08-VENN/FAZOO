@@ -25,15 +25,15 @@ export function AppBackdrop({
   children: ReactNode;
 }) {
   return (
-    <View className="flex-1 bg-lavender">
+    <View className="flex-1 bg-backdrop">
       <LinearGradient
-        colors={['rgba(139,47,209,0.12)', 'rgba(90,30,130,0.06)', 'rgba(246,242,250,0)']}
+        colors={['rgba(165,87,224,0.16)', 'rgba(139,47,209,0.06)', 'rgba(246,244,251,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="absolute inset-0"
       />
       <LinearGradient
-        colors={['rgba(139,47,209,0.07)', 'rgba(246,242,250,0)']}
+        colors={['rgba(123,47,190,0.10)', 'rgba(246,244,251,0)']}
         start={{ x: 1, y: 1 }}
         end={{ x: 0, y: 0 }}
         className="absolute inset-0"
@@ -120,8 +120,8 @@ export function GlassCard({
 }) {
   return (
     <View
-      className={`overflow-hidden rounded-[32px] border border-ink/10 bg-white p-5 ${className}`}
-      style={{ shadowColor: '#23122C', shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 4 }}
+      className={`overflow-hidden rounded-[32px] border border-edge bg-surface p-5 ${className}`}
+      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 4 }}
     >
       {children}
     </View>
@@ -137,8 +137,8 @@ export function Card({
 }) {
   return (
     <View
-      className={`overflow-hidden rounded-[28px] border border-ink/10 bg-white p-5 ${className}`}
-      style={{ shadowColor: '#23122C', shadowOpacity: 0.06, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 3 }}
+      className={`overflow-hidden rounded-[28px] border border-edge bg-surface p-5 ${className}`}
+      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.10, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 3 }}
     >
       {children}
     </View>
@@ -165,16 +165,16 @@ export function HeroCard({
       <View className="flex-row items-start justify-between gap-4">
         {onBack ? (
           <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
-            <Ionicons name="chevron-back" size={22} color="#0B0B0F" />
+            <Ionicons name="chevron-back" size={22} color="#1B1623" />
           </TouchableOpacity>
         ) : null}
         <View className="flex-1">
           {eyebrow ? (
-            <Text className="font-sans text-xs uppercase tracking-[2px] text-primary">{eyebrow}</Text>
+            <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">{eyebrow}</Text>
           ) : null}
           <View className="mt-2 flex-row items-center gap-3">
             {icon ? (
-              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+              <View className="h-12 w-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/15">
                 <Ionicons name={icon} size={20} color="#7B2FBE" />
               </View>
             ) : null}
@@ -207,12 +207,12 @@ export function ScreenHeader({
     <View className="mb-5 flex-row items-start justify-between gap-4">
       {onBack ? (
         <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
-          <Ionicons name="chevron-back" size={22} color="#0B0B0F" />
+          <Ionicons name="chevron-back" size={22} color="#1B1623" />
         </TouchableOpacity>
       ) : null}
       <View className="flex-1">
         {eyebrow ? (
-          <Text className="font-sans text-xs uppercase tracking-[2px] text-primary">{eyebrow}</Text>
+          <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">{eyebrow}</Text>
         ) : null}
         <Text className="font-sans mt-2 font-sans text-[28px] font-bold leading-9 text-ink">{title}</Text>
         {subtitle ? <Text className="font-sans mt-2 text-base leading-7 text-muted">{subtitle}</Text> : null}
@@ -239,10 +239,10 @@ export function MetricTile({
 }) {
   const toneClass =
     tone === 'success'
-      ? 'border-ok/25 bg-emerald-50'
+      ? 'border-ok/25 bg-ok/10'
       : tone === 'warning'
-        ? 'border-warn/30 bg-amber-50'
-        : 'border-ink/10 bg-white';
+        ? 'border-warn/30 bg-warn/10'
+        : 'border-edge bg-surface';
 
   if (compact) {
     return (
@@ -270,8 +270,8 @@ export function Field({
     <View className="mb-3">
       {label ? <Text className="font-sans mb-2 text-base font-medium text-ink">{label}</Text> : null}
       <TextInput
-        placeholderTextColor="#8A8491"
-        className="h-14 rounded-xl border border-ink/15 bg-white px-4 font-sans text-[16px] text-ink"
+        placeholderTextColor="#A196B2"
+        className="h-14 rounded-2xl border border-edge bg-white px-4 font-sans text-[16px] text-ink"
         {...props}
       />
       {hint ? <Text className="font-sans mt-2 text-sm leading-5 text-muted">{hint}</Text> : null}
@@ -288,10 +288,10 @@ export function MultilineField({
     <View className="mb-3">
       {label ? <Text className="font-sans mb-2 text-base font-medium text-ink">{label}</Text> : null}
       <TextInput
-        placeholderTextColor="#8A8491"
+        placeholderTextColor="#A196B2"
         multiline
         textAlignVertical="top"
-        className="min-h-28 rounded-xl border border-ink/15 bg-white px-4 py-4 font-sans text-[16px] text-ink"
+        className="min-h-28 rounded-2xl border border-edge bg-white px-4 py-4 font-sans text-[16px] text-ink"
         {...props}
       />
       {hint ? <Text className="font-sans mt-2 text-sm leading-5 text-muted">{hint}</Text> : null}

@@ -111,12 +111,12 @@ export default function VedaNewLog() {
       {step === 1 ? (
         <>
           <Card>
-            <Text className="font-sans text-base leading-6 text-slate-600">Photograph the stamped document for this school visit.</Text>
+            <Text className="font-sans text-base leading-6 text-muted">Photograph the stamped document for this school visit.</Text>
             <CaptureBox photo={document} onSnap={() => void snap('document')} hint="Tap to photograph the stamped document" />
           </Card>
           <GlassCard className="mb-2">
             <Text className="font-sans text-sm font-semibold text-ink">Before you capture — check for the school stamp</Text>
-            <Text className="font-sans mt-1 text-sm leading-6 text-slate-600">
+            <Text className="font-sans mt-1 text-sm leading-6 text-muted">
               The document must carry the school's official stamp. Make sure it is clearly visible and in focus before uploading.
             </Text>
           </GlassCard>
@@ -128,7 +128,7 @@ export default function VedaNewLog() {
       {step === 2 ? (
         <>
           <Card>
-            <Text className="font-sans text-base leading-6 text-slate-600">Take a clear selfie of yourself at the school.</Text>
+            <Text className="font-sans text-base leading-6 text-muted">Take a clear selfie of yourself at the school.</Text>
             <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your selfie" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />

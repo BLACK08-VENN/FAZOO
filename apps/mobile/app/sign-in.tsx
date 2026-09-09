@@ -86,7 +86,7 @@ export default function SignIn() {
           />
 
           <GlassCard>
-            <Text className="font-sans text-xs uppercase tracking-[2px] text-primary">Welcome back</Text>
+            <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">Welcome back</Text>
             <Text className="font-sans mt-2 text-[26px] font-bold leading-8 text-ink">Sign in to start today&apos;s route</Text>
             <Text className="font-sans mt-2 text-base leading-7 text-muted">
               Use your mobile number or provisioned email, then continue into your daily dashboard.
@@ -127,7 +127,7 @@ export default function SignIn() {
               </View>
 
               {error ? (
-                <View className="mb-2 rounded-2xl border border-bad/30 bg-red-50 px-4 py-3">
+                <View className="mb-2 rounded-2xl border border-bad/30 bg-bad/10 px-4 py-3">
                   <Text role="alert" className="font-sans font-medium text-bad">
                     {error}
                   </Text>
@@ -139,7 +139,7 @@ export default function SignIn() {
               <View className="mt-5 flex-row flex-wrap items-center justify-between gap-3">
                 <Link href="/forgot-password" asChild>
                   <Pressable>
-                    <Text className="font-sans text-base font-medium text-primary">Forgot password?</Text>
+                    <Text className="font-sans text-base font-medium text-primaryText">Forgot password?</Text>
                   </Pressable>
                 </Link>
                 <View className="flex-row items-center gap-2 rounded-full bg-lavender px-3 py-2">
@@ -151,7 +151,7 @@ export default function SignIn() {
           </GlassCard>
 
           <Link href="/register" asChild>
-            <Pressable className="mt-6 max-w-full self-center rounded-full border border-ink/15 bg-white px-5 py-3">
+            <Pressable className="mt-6 max-w-full self-center rounded-full border border-edge bg-white px-5 py-3">
               <Text className="font-sans text-center text-base font-medium text-ink">New here? Register as a Brand Ambassador</Text>
             </Pressable>
           </Link>

@@ -45,15 +45,15 @@ export default function ForgotPassword() {
 
         <GlassCard>
           {sent ? (
-            <View className="rounded-2xl border border-ok/30 bg-emerald-50 px-4 py-4">
-              <Text role="status" className="font-sans font-medium text-emerald-700">
+            <View className="rounded-2xl border border-ok/30 bg-ok/10 px-4 py-4">
+              <Text role="status" className="font-sans font-medium text-ok">
                 Request received. Contact your supervisor to complete the reset if no message arrives.
               </Text>
             </View>
           ) : null}
 
           {error ? (
-            <View className="mb-3 rounded-2xl border border-bad/30 bg-red-50 px-4 py-4">
+            <View className="mb-3 rounded-2xl border border-bad/30 bg-bad/10 px-4 py-4">
               <Text role="alert" className="font-sans font-medium text-bad">
                 {error}
               </Text>

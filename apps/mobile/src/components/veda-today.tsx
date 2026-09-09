@@ -66,7 +66,7 @@ export default function VedaToday() {
 
         <Card className="mb-4">
           <Text className="font-sans mb-2 text-base font-bold text-ink">Need time off?</Text>
-          <Text className="font-sans mb-3 text-sm leading-6 text-slate-600">Request annual, sick, or other leave that an admin will review.</Text>
+          <Text className="font-sans mb-3 text-sm leading-6 text-muted">Request annual, sick, or other leave that an admin will review.</Text>
           <PrimaryButton
             label="Apply for leave"
             variant="secondary"
@@ -100,9 +100,9 @@ export default function VedaToday() {
                 <Card key={region.assignment_id}>
                   <Text className="font-sans text-base font-bold text-ink">{region.region}</Text>
                   {region.weekly_off_day && region.weekly_off_day.length > 0 ? (
-                    <Text className="font-sans mt-1 text-xs uppercase tracking-wide text-slate-500">Weekly off: {weeklyOffDayName(region.weekly_off_day)}</Text>
+                    <Text className="font-sans mt-1 text-xs uppercase tracking-wide text-muted">Weekly off: {weeklyOffDayName(region.weekly_off_day)}</Text>
                   ) : null}
-                  <Text className="font-sans mt-1 text-sm text-slate-500">{region.schools.length} school{region.schools.length === 1 ? '' : 's'} in this region</Text>
+                  <Text className="font-sans mt-1 text-sm text-muted">{region.schools.length} school{region.schools.length === 1 ? '' : 's'} in this region</Text>
 
                   {region.schools.length === 0 ? (
                     <Text className="font-sans mt-3 text-sm text-muted">No active schools in this region yet.</Text>
@@ -111,23 +111,23 @@ export default function VedaToday() {
                       {region.schools.map((school) => {
                         const totalItems = school.distributions.reduce((sum, d) => sum + d.quantity, 0);
                         return (
-                          <View key={school.school_id} className="rounded-3xl bg-slate-100 p-4">
-                            <Text className="font-sans text-base font-semibold text-slate-800">{school.school_name}</Text>
-                            {school.school_region ? <Text className="font-sans mt-0.5 text-sm text-slate-500">{school.school_region}</Text> : null}
+                          <View key={school.school_id} className="rounded-3xl bg-lavender p-4">
+                            <Text className="font-sans text-base font-semibold text-ink">{school.school_name}</Text>
+                            {school.school_region ? <Text className="font-sans mt-0.5 text-sm text-muted">{school.school_region}</Text> : null}
                             <View className="mt-3 rounded-2xl bg-white p-3">
-                              <Text className="font-sans text-xs uppercase tracking-wide text-slate-500">Stationery distributed today</Text>
-                              <Text className="font-sans mt-1 text-2xl font-bold text-indigo-700">{totalItems}<Text className="font-sans text-base font-normal text-slate-500"> units</Text></Text>
+                              <Text className="font-sans text-xs uppercase tracking-wide text-muted">Stationery distributed today</Text>
+                              <Text className="font-sans mt-1 text-2xl font-bold text-primaryText">{totalItems}<Text className="font-sans text-base font-normal text-muted"> units</Text></Text>
                               {school.distributions.length > 0 ? (
                                 <View className="mt-1 gap-1">
                                   {school.distributions.map((d) => (
                                     <View key={d.id} className="flex-row justify-between">
-                                      <Text className="font-sans text-slate-700">{d.item_name}</Text>
-                                      <Text className="font-sans font-medium tabular-nums text-slate-700">×{d.quantity}</Text>
+                                      <Text className="font-sans text-ink/70">{d.item_name}</Text>
+                                      <Text className="font-sans font-medium tabular-nums text-ink/70">×{d.quantity}</Text>
                                     </View>
                                   ))}
                                 </View>
                               ) : (
-                                <Text className="font-sans mt-1 text-slate-500">No distribution recorded yet.</Text>
+                                <Text className="font-sans mt-1 text-muted">No distribution recorded yet.</Text>
                               )}
                             </View>
                             <View className="mt-3 gap-2">

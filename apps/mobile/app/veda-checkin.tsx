@@ -117,8 +117,8 @@ export default function VedaCheckIn() {
         <>
           <Card>
             <Text className="font-sans text-xl font-bold text-ink">{school?.school.school_name ?? 'Loading…'}</Text>
-            <Text className="font-sans mt-1 text-sm text-slate-500">{school?.region}</Text>
-            <Text className="font-sans mt-4 text-sm font-semibold text-slate-700">Allowed radius: {radius} m</Text>
+            <Text className="font-sans mt-1 text-sm text-muted">{school?.region}</Text>
+            <Text className="font-sans mt-4 text-sm font-semibold text-ink/70">Allowed radius: {radius} m</Text>
             {locating ? <ActivityIndicator color="#7B2FBE" className="mt-4" /> : distance !== null ? <StatusPill tone={insideGeofence ? 'ok' : 'bad'} label={insideGeofence ? `You are about ${distance} m from the school — within the ${radius} m zone` : `You are ${distance} m away — move closer than ${radius} m to check in`} /> : <Text className="font-sans mt-3 text-sm text-muted">Tap “Get my location” so we can verify you are at the school.</Text>}
           </Card>
           <GlassCard className="mb-1 mt-4"><Text className="font-sans text-sm leading-6 text-muted">Your displayed distance is for guidance. The server makes the final geofence decision.</Text></GlassCard>
@@ -130,7 +130,7 @@ export default function VedaCheckIn() {
       {step === 2 ? (
         <>
           <Card>
-            <Text className="font-sans text-base leading-6 text-slate-600">Take a selfie showing you are at the school, with school signage in frame where possible.</Text>
+            <Text className="font-sans text-base leading-6 text-muted">Take a selfie showing you are at the school, with school signage in frame where possible.</Text>
             <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your site selfie" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />
@@ -142,12 +142,12 @@ export default function VedaCheckIn() {
       {step === 3 ? (
         <>
           <Card>
-            <Text className="font-sans text-base leading-6 text-slate-600">Photograph the stamped confirmation document and enter the learner count.</Text>
+            <Text className="font-sans text-base leading-6 text-muted">Photograph the stamped confirmation document and enter the learner count.</Text>
             <CaptureBox photo={document} onSnap={() => void snap('document')} hint="Tap to photograph the stamped document" />
           </Card>
           <GlassCard className="mb-2">
             <Text className="font-sans text-sm font-semibold text-ink">Before you capture — check for the school stamp</Text>
-            <Text className="font-sans mt-1 text-sm leading-6 text-slate-600">
+            <Text className="font-sans mt-1 text-sm leading-6 text-muted">
               The document must carry the school's official stamp. Make sure it is clearly visible and in focus before uploading.
             </Text>
           </GlassCard>

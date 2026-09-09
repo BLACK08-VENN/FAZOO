@@ -40,7 +40,7 @@ function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#F6F2FA' },
+          contentStyle: { backgroundColor: '#F6F4FB' },
         }}
       >
         <Stack.Screen name="(app)" />
