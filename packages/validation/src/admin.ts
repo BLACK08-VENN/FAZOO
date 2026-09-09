@@ -58,7 +58,7 @@ export const assignmentInputSchema = z
   .object({
     brand_ambassador_id: z.string().uuid(),
     campaign_id: z.string().uuid(),
-    store_id: z.string().uuid(),
+    store_id: z.string().uuid().optional().or(z.literal('')),
     weekly_off_day: z.array(z.number().int().min(0).max(6)).max(4),
     start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     end_date: z

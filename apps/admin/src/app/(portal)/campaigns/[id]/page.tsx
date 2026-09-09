@@ -236,7 +236,9 @@ export default async function CampaignDetailPage({
                           </Link>
                         </Td>
                         <Td>
-                          {(a.stores as unknown as { name: string } | null)?.name}
+                          {(a.stores as unknown as { name: string } | null)?.name ?? (
+                            <span className="text-muted italic">N/A</span>
+                          )}
                         </Td>
                         <Td>{weeklyOffDayName(a.weekly_off_day)}</Td>
                         <Td>
@@ -342,8 +344,8 @@ export default async function CampaignDetailPage({
               </div>
               <div className="min-w-[200px] flex-1">
                 <Label htmlFor="add-store">Store</Label>
-                <Select id="add-store" name="store_id" required>
-                  <option value="">Select a store…</option>
+                <Select id="add-store" name="store_id">
+                  <option value="">Not applicable</option>
                   {(stores ?? []).map((store) => (
                     <option key={store.id} value={store.id}>
                       {store.name}

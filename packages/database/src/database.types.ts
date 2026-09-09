@@ -97,7 +97,7 @@ export type Database = {
           organization_id: string
           start_date: string
           status: Database["public"]["Enums"]["assignment_status"]
-          store_id: string
+          store_id: string | null
           updated_at: string
           weekly_off_day: number[]
         }
@@ -110,7 +110,7 @@ export type Database = {
           organization_id: string
           start_date: string
           status?: Database["public"]["Enums"]["assignment_status"]
-          store_id: string
+          store_id?: string | null
           updated_at?: string
           weekly_off_day?: number[]
         }
@@ -123,7 +123,7 @@ export type Database = {
           organization_id?: string
           start_date?: string
           status?: Database["public"]["Enums"]["assignment_status"]
-          store_id?: string
+          store_id?: string | null
           updated_at?: string
           weekly_off_day?: number[]
         }
@@ -1477,7 +1477,7 @@ export type Database = {
           p_end_date?: string
           p_start_date: string
           p_status?: Database["public"]["Enums"]["assignment_status"]
-          p_store_id: string
+          p_store_id?: string
           p_weekly_off_day: number[]
         }
         Returns: string

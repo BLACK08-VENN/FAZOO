@@ -174,7 +174,7 @@ export default async function CampaignsPage() {
                   const parsed = assignmentInputSchema.safeParse({
                     brand_ambassador_id: formData.get('ba_id'),
                     campaign_id: formData.get('campaign_id'),
-                    store_id: formData.get('store_id'),
+                    store_id: formData.get('store_id') || '',
                     weekly_off_day: offDays,
                     start_date: formData.get('start_date'),
                     status: 'active',
@@ -186,7 +186,7 @@ export default async function CampaignsPage() {
                   await scoped.rpc('admin_upsert_assignment', {
                     p_brand_ambassador_id: parsed.data.brand_ambassador_id,
                     p_campaign_id: parsed.data.campaign_id,
-                    p_store_id: parsed.data.store_id,
+                    p_store_id: parsed.data.store_id || undefined,
                     p_weekly_off_day: offDays,
                     p_start_date: parsed.data.start_date,
                   });
@@ -218,7 +218,8 @@ export default async function CampaignsPage() {
                 </div>
                 <div>
                   <Label htmlFor="a-store">Store</Label>
-                  <Select id="a-store" name="store_id" required>
+                  <Select id="a-store" name="store_id">
+                    <option value="">Not applicable</option>
                     {(stores ?? []).map((store) => (
                       <option key={store.id} value={store.id}>
                         {store.name}

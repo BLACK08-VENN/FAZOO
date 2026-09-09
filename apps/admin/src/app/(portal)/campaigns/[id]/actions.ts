@@ -12,17 +12,18 @@ export async function addBaToCampaignAction(formData: FormData): Promise<void> {
   const parsed = assignmentInputSchema.safeParse({
     brand_ambassador_id: formData.get('ba_id'),
     campaign_id: formData.get('campaign_id'),
-    store_id: formData.get('store_id'),
+    store_id: formData.get('store_id') || '',
     weekly_off_day: offDays,
     start_date: formData.get('start_date'),
     status: 'active',
   });
   if (!parsed.success) return;
 
+  const storeId = parsed.data.store_id || undefined;
   await client.rpc('admin_upsert_assignment', {
     p_brand_ambassador_id: parsed.data.brand_ambassador_id,
     p_campaign_id: parsed.data.campaign_id,
-    p_store_id: parsed.data.store_id,
+    p_store_id: storeId,
     p_weekly_off_day: offDays,
     p_start_date: parsed.data.start_date,
   });
