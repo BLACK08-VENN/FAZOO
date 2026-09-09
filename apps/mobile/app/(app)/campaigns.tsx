@@ -201,7 +201,7 @@ export default function Campaigns() {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#7B2FBE" />
         </View>
-      </Screen>
+      </Page>
     );
   }
 

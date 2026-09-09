@@ -93,15 +93,17 @@ export function Page({
   bottomInset = true,
   style,
   contentStyle,
+  refreshControl,
 }: {
   children: ReactNode;
   scroll?: boolean;
   bottomInset?: boolean;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
+  refreshControl?: ReactElement<RefreshControlProps>;
 }) {
   return (
-    <Screen scroll={scroll} bottomInset={bottomInset} style={style} contentStyle={contentStyle}>
+    <Screen scroll={scroll} bottomInset={bottomInset} style={style} contentStyle={contentStyle} refreshControl={refreshControl}>
       <View style={{ alignItems: 'center' }}>
         <View style={{ width: '100%', maxWidth: 720 }}>{children}</View>
       </View>

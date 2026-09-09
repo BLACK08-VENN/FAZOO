@@ -93,7 +93,7 @@ export default function BrandSelect() {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#7B2FBE" />
         </View>
-      </Screen>
+      </Page>
     );
   }
 
@@ -107,7 +107,7 @@ export default function BrandSelect() {
           icon="business"
         />
         <EmptyState title="Nothing to open yet" body="Refresh after your administrator assigns you to an active campaign." actionLabel="Refresh" onAction={() => void load()} />
-      </Screen>
+      </Page>
     );
   }
 

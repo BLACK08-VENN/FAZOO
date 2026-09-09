@@ -38,25 +38,33 @@ export function PrimaryButton({
   const textClass = outlined ? 'text-ink' : 'text-white';
   const toneColor = outlined ? '#0B0B0F' : '#FFFFFF';
 
-  const Container: any = onPress ? TouchableOpacity : View;
+  const content = (
+    <View className="min-h-16 flex-row items-center justify-center px-6">
+      <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} toneColor={toneColor} />
+    </View>
+  );
+
+  const className = `my-1.5 overflow-hidden rounded-[20px] ${shellClass} ${disabled ? 'opacity-50' : ''}`;
+  const style = { shadowColor: variant === 'primary' ? '#7B2FBE' : '#23122C', shadowOpacity: disabled || variant === 'ghost' ? 0 : 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: disabled || variant === 'ghost' ? 0 : 4 };
+
+  if (!onPress) {
+    return <View className={className} style={style}>{content}</View>;
+  }
 
   return (
-    <Container
+    <TouchableOpacity
       onPress={onPress}
-      // View ignores these props when not interactive
       disabled={disabled || busy}
-      accessibilityLabel={onPress ? accessibilityLabel ?? label : undefined}
-      accessibilityHint={onPress ? accessibilityHint : undefined}
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityState={onPress ? { busy, disabled } : undefined}
-      className={`my-1.5 overflow-hidden rounded-[20px] ${shellClass} ${disabled ? 'opacity-50' : ''}`}
-      style={{ shadowColor: variant === 'primary' ? '#7B2FBE' : '#23122C', shadowOpacity: disabled || variant === 'ghost' ? 0 : 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: disabled || variant === 'ghost' ? 0 : 4 }}
-      activeOpacity={onPress ? 0.85 : undefined}
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole="button"
+      accessibilityState={{ busy, disabled }}
+      className={className}
+      style={style}
+      activeOpacity={0.85}
     >
-      <View className="min-h-16 flex-row items-center justify-center px-6">
-        <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} toneColor={toneColor} />
-      </View>
-    </Container>
+      {content}
+    </TouchableOpacity>
   );
 }
 
