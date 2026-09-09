@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { WEEKDAY_NAMES } from '@fazoo/config';
 import { assignmentInputSchema, campaignInputSchema } from '@fazoo/validation';
@@ -42,13 +43,20 @@ export default async function CampaignsPage() {
               </tr>
             </thead>
             <tbody>
-              {(campaigns ?? []).map((campaign) => (
-                <tr key={campaign.id}>
-                  <Td className="font-medium">{campaign.name}</Td>
-                  <Td className="text-xs">
-                    {campaign.start_date} → {campaign.end_date ?? 'open'}
-                  </Td>
-                  <Td>{campaign.status}</Td>
+                {(campaigns ?? []).map((campaign) => (
+                    <tr key={campaign.id}>
+                      <Td className="font-medium">
+                        <Link
+                          href={`/campaigns/${campaign.id}`}
+                          className="text-deep underline hover:text-primary"
+                        >
+                          {campaign.name}
+                        </Link>
+                      </Td>
+                      <Td className="text-xs">
+                        {campaign.start_date} → {campaign.end_date ?? 'open'}
+                      </Td>
+                      <Td>{campaign.status}</Td>
                   <Td>
                     <form
                       action={async (formData: FormData) => {

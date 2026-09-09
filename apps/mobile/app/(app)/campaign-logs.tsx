@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, Text, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { formatLagosDisplay } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
+import { readUserCache, writeUserCache } from '@/lib/cache';
 import { PrimaryButton } from '@/components/primary-button';
 import { Page, ScreenHeader, Card, EmptyState } from '@/components/ui';
 
@@ -33,13 +34,25 @@ export default function CampaignLogs() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef<Promise<void> | null>(null);
 
   const load = useCallback(async () => {
+    if (inFlight.current) return inFlight.current;
+    const request = (async () => {
     setError(null);
+    const targetId = isVeda ? params.schoolId : params.campaignId;
+    const cacheKey = targetId ? `campaign-logs.${isVeda ? 'schools' : 'retail'}.${targetId}` : null;
+    if (cacheKey) {
+      const cached = await readUserCache<(RetailLog | VedaLog)[]>(cacheKey);
+      if (cached) {
+        setLogs(cached);
+        setLoading(false);
+      }
+    }
     if (isVeda && params.schoolId) {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      const userId = authData.user?.id;
-      if (authError || !userId) {
+      const { data: authData } = await supabase.auth.getSession();
+      const userId = authData.session?.user.id;
+      if (!userId) {
         setError('Your account could not be verified. Sign in again.');
         setLoading(false);
         setRefreshing(false);
@@ -53,7 +66,11 @@ export default function CampaignLogs() {
         .order('session_date', { ascending: false })
         .limit(30);
       if (err) setError('Could not load logs.');
-      else setLogs((data as VedaLog[] | null) ?? []);
+      else {
+        const nextLogs = (data as VedaLog[] | null) ?? [];
+        setLogs(nextLogs);
+        if (cacheKey) void writeUserCache(cacheKey, nextLogs);
+      }
     } else if (params.campaignId) {
       const { data, error: err } = await supabase
         .from('daily_logs')
@@ -62,13 +79,18 @@ export default function CampaignLogs() {
         .order('attendance_date', { ascending: false })
         .limit(30);
       if (err) setError('Could not load logs.');
-      else setLogs((data as RetailLog[] | null) ?? []);
+      else {
+        const nextLogs = (data as RetailLog[] | null) ?? [];
+        setLogs(nextLogs);
+        if (cacheKey) void writeUserCache(cacheKey, nextLogs);
+      }
     }
     setLoading(false);
     setRefreshing(false);
+    })().finally(() => { inFlight.current = null; });
+    inFlight.current = request;
+    return request;
   }, [isVeda, params.schoolId, params.campaignId]);
-
-  useEffect(() => { void load(); }, [load]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const headerTitle = isVeda ? params.schoolName : params.campaignName;

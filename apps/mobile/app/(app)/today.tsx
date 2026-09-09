@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, Text, View } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { router, useFocusEffect } from 'expo-router';
@@ -59,11 +59,13 @@ function RetailToday() {
     };
   }, []);
 
-  useFocusEffect(() => {
-    void flushQueue();
-    void refreshCounts();
-    void refresh();
-  });
+  useFocusEffect(
+    useCallback(() => {
+      void flushQueue();
+      void refreshCounts();
+      void refresh();
+    }, [refresh]),
+  );
 
   if (loading) {
     return (

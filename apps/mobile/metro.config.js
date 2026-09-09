@@ -7,6 +7,15 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
+// Enable inlineRequires to reduce JS parsing time on cold start.
+config.transformer = config.transformer || {};
+config.transformer.getTransformOptions = async () => ({
+  transform: {
+    experimentalImportSupport: false,
+    inlineRequires: true,
+  },
+});
+
 // Monorepo: watch workspace packages
 config.watchFolders = [workspaceRoot];
 config.resolver.nodeModulesPaths = [

@@ -13,14 +13,18 @@ export function useOrgKind() {
     let cancelled = false;
 
     async function load() {
+      const cached = await readCachedOrgKind();
+      if (cached && !cancelled) {
+        setKind(cached);
+        setLoading(false);
+      }
       const { data, error } = await supabase.rpc('current_user_org_kind');
       if (error) {
-        const cached = await readCachedOrgKind();
         if (cached && !cancelled) setKind(cached);
       } else {
         const next = (data as OrganizationKind | null) ?? 'retail';
         if (!cancelled) setKind(next);
-        await writeCachedOrgKind(next);
+        void writeCachedOrgKind(next);
       }
       if (!cancelled) setLoading(false);
     }

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useOrgKind } from '@/lib/org-kind';
+import { readUserCache, writeUserCache } from '@/lib/cache';
 import { PrimaryButton } from '@/components/primary-button';
 import { Page, ScreenHeader, Card, GlassCard, EmptyState, Field } from '@/components/ui';
 
@@ -53,6 +54,7 @@ export default function Campaigns() {
   const [codeInput, setCodeInput] = useState<Record<string, string>>({});
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [codeOpen, setCodeOpen] = useState<string | null>(null);
+  const inFlight = useRef<Promise<void> | null>(null);
 
   function openCode(id: string) {
     setCodeOpen((current) => (current === id ? null : id));
@@ -60,23 +62,43 @@ export default function Campaigns() {
   }
 
   const load = useCallback(async () => {
+    if (inFlight.current) return inFlight.current;
+    const request = (async () => {
     setError(null);
+    const cacheKey = kind === 'schools' ? 'campaigns.schools' : 'campaigns.retail';
     if (kind === 'schools') {
+      const cached = await readUserCache<VedaSchool[]>(cacheKey);
+      if (cached) {
+        setVedaSchools(cached);
+        setLoading(false);
+      }
       const { data, error: err } = await supabase.rpc('ba_list_veda_schools');
       if (err) setError('Could not load schools.');
-      else setVedaSchools((data as VedaSchool[] | null) ?? []);
+      else {
+        const schools = (data as VedaSchool[] | null) ?? [];
+        setVedaSchools(schools);
+        void writeUserCache(cacheKey, schools);
+      }
     } else {
+      const cached = await readUserCache<RetailCampaign[]>(cacheKey);
+      if (cached) {
+        setRetailCampaigns(cached);
+        setLoading(false);
+      }
       const { data, error: err } = await supabase.rpc('ba_list_campaigns');
       if (err) setError('Could not load campaigns.');
-      else setRetailCampaigns((data as RetailCampaign[] | null) ?? []);
+      else {
+        const campaigns = (data as RetailCampaign[] | null) ?? [];
+        setRetailCampaigns(campaigns);
+        void writeUserCache(cacheKey, campaigns);
+      }
     }
     setLoading(false);
     setRefreshing(false);
+    })().finally(() => { inFlight.current = null; });
+    inFlight.current = request;
+    return request;
   }, [kind]);
-
-  useEffect(() => {
-    if (!kindLoading) void load();
-  }, [kindLoading, load]);
 
   useFocusEffect(
     useCallback(() => {

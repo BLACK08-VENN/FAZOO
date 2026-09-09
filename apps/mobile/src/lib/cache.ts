@@ -25,6 +25,10 @@ async function write<T>(name: string, value: T): Promise<void> {
   if (storageKey) await AsyncStorage.setItem(storageKey, JSON.stringify(value));
 }
 
+export const readUserCache = <T>(name: string): Promise<T | null> => read<T>(name);
+export const writeUserCache = <T>(name: string, value: T): Promise<void> =>
+  write(name, value);
+
 export const readCachedProfile = (): Promise<SessionProfile | null> => read('profile');
 export const writeCachedProfile = (profile: SessionProfile): Promise<void> =>
   write('profile', profile);
@@ -38,10 +42,9 @@ export const writeCachedOrgKind = (kind: OrganizationKind): Promise<void> =>
   write('org-kind', kind);
 
 export async function clearUserCache(id: string): Promise<void> {
-  await AsyncStorage.multiRemove([
-    `fazoo.profile.${id}`,
-    `fazoo.today.${id}`,
-    `fazoo.veda-today.${id}`,
-    `fazoo.org-kind.${id}`,
-  ]);
+  const suffix = `.${id}`;
+  const keys = (await AsyncStorage.getAllKeys()).filter(
+    (storageKey) => storageKey.startsWith('fazoo.') && storageKey.endsWith(suffix),
+  );
+  if (keys.length > 0) await AsyncStorage.multiRemove(keys);
 }

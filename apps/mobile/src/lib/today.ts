@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BaTodayResult } from '@fazoo/types';
 import { supabase } from './supabase';
 import { readCachedToday, writeCachedToday } from './cache';
@@ -9,7 +9,11 @@ export function useToday() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function refresh(): Promise<void> {
+  const inFlight = useRef<Promise<void> | null>(null);
+
+  const refresh = useCallback(async (): Promise<void> => {
+    if (inFlight.current) return inFlight.current;
+    const request = (async () => {
     setError(null);
     const { data: result, error: err } = await supabase.rpc('ba_today');
     if (err) {
@@ -21,14 +25,25 @@ export function useToday() {
     } else {
       const today = result as unknown as BaTodayResult;
       setData(today);
-      await writeCachedToday(today);
+      void writeCachedToday(today);
     }
     setLoading(false);
-  }
+    })().finally(() => { inFlight.current = null; });
+    inFlight.current = request;
+    return request;
+  }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void readCachedToday().then((cached) => {
+      if (cached && !cancelled) {
+        setData(cached);
+        setLoading(false);
+      }
+    });
     void refresh();
-  }, []);
+    return () => { cancelled = true; };
+  }, [refresh]);
 
   return { data, loading, error, refresh };
 }

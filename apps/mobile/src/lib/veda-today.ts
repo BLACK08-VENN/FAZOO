@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { VedaTodayResult } from '@fazoo/types';
 import { supabase } from './supabase';
 import { readCachedVedaToday, writeCachedVedaToday } from './cache';
@@ -10,7 +10,11 @@ export function useVedaToday() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function refresh(): Promise<void> {
+  const inFlight = useRef<Promise<void> | null>(null);
+
+  const refresh = useCallback(async (): Promise<void> => {
+    if (inFlight.current) return inFlight.current;
+    const request = (async () => {
     setError(null);
     const { data: result, error: err } = await supabase.rpc('veda_today');
     if (err) {
@@ -22,14 +26,25 @@ export function useVedaToday() {
     } else {
       const today = result as unknown as VedaTodayResult;
       setData(today);
-      await writeCachedVedaToday(today);
+      void writeCachedVedaToday(today);
     }
     setLoading(false);
-  }
+    })().finally(() => { inFlight.current = null; });
+    inFlight.current = request;
+    return request;
+  }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void readCachedVedaToday().then((cached) => {
+      if (cached && !cancelled) {
+        setData(cached);
+        setLoading(false);
+      }
+    });
     void refresh();
-  }, []);
+    return () => { cancelled = true; };
+  }, [refresh]);
 
   return { data, loading, error, refresh };
 }

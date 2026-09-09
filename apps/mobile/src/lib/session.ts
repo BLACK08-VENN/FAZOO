@@ -28,14 +28,19 @@ export function useSessionProfile() {
         }
         return;
       }
+      const cached = await readCachedProfile();
+      if (cached && !cancelled) {
+        setProfile(cached);
+        setLoading(false);
+      }
       const { data: profileData } = await supabase
         .from('profiles')
         .select(
           'id, organization_id, full_name, phone, profile_photo_path, role, account_status',
         )
         .single();
-      const nextProfile = (profileData as SessionProfile | null) ?? (await readCachedProfile());
-      if (profileData) await writeCachedProfile(profileData as SessionProfile);
+      const nextProfile = (profileData as SessionProfile | null) ?? cached;
+      if (profileData) void writeCachedProfile(profileData as SessionProfile);
       if (!cancelled) {
         setProfile(nextProfile);
         setLoading(false);
