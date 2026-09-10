@@ -11,6 +11,10 @@ describe('routeRedirect', () => {
       '/checkin',
       '/checkout',
       '/sick-leave',
+      '/leave',
+      '/school-visit',
+      '/schools',
+      '/school-job',
     ]) {
       expect(routeRedirect(route, false)).toBe('/sign-in');
     }

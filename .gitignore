@@ -50,3 +50,6 @@ admin_login_credentials.csv
 migration/data/
 scripts/.geocode-cache.json
 .vercel
+
+# Pre-migration database backups (full school master list + operational rows)
+.backup-*/

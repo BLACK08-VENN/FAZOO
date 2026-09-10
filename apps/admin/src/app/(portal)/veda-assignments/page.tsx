@@ -166,7 +166,8 @@ export default async function BrandAssignmentsPage({
                   }
                 }
                 revalidatePath('/veda-assignments');
-                revalidatePath('/veda-activations');
+                revalidatePath('/booklists');
+                revalidatePath('/ba-performance');
               }}
               className="space-y-3"
             >

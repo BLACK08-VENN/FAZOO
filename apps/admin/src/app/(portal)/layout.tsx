@@ -1,30 +1,14 @@
 import Link from 'next/link';
-import {
-  Boxes,
-  Building2,
-  CalendarOff,
-  Layers,
-  MapPin,
-  Store,
-  Users,
-} from 'lucide-react';
 import { requireStaff } from '@/lib/auth';
+import { navFor, resolveOrgKind } from '@/lib/nav';
 import { MobileNav } from '@/components/mobile-nav';
 import { FazooMark } from '@/components/fazoo-mark';
 import { signOutAction } from './actions';
 
-const NAV = [
-  { href: '/brand-ambassadors', label: 'Brand ambassadors', icon: Users },
-  { href: '/campaigns', label: 'Campaigns & Activations', icon: Store },
-  { href: '/stores', label: 'Store management', icon: MapPin },
-  { href: '/skus', label: 'SKUs', icon: Boxes },
-  { href: '/brands', label: 'Brand', icon: Building2 },
-  { href: '/veda-grades', label: 'Veda grades', icon: Layers },
-  { href: '/leave-requests', label: 'Leave requests', icon: CalendarOff },
-] as const;
-
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
-  const { profile } = await requireStaff();
+  const { client, profile } = await requireStaff();
+  const orgKind = await resolveOrgKind(client);
+  const nav = navFor(orgKind);
 
   return (
     <div className="fazoo-shell flex min-h-screen">
@@ -37,7 +21,7 @@ export default async function PortalLayout({ children }: { children: React.React
           <span className="sr-only">Fazoo</span>
         </div>
         <nav aria-label="Primary" className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-          {NAV.map(({ href, label, icon: Icon }) => (
+          {nav.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -89,7 +73,7 @@ export default async function PortalLayout({ children }: { children: React.React
         >
           {children}
         </main>
-        <MobileNav />
+        <MobileNav orgKind={orgKind} />
       </div>
     </div>
   );

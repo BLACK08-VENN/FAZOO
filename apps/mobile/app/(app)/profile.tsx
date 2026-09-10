@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { PASSWORD_MIN_LENGTH } from '@fazoo/config';
+import { PASSWORD_MIN_LENGTH, agencyLabel } from '@fazoo/config';
 import { supabase } from '@/lib/supabase';
 import { signOut, useSessionProfile } from '@/lib/session';
+import { useOrgKind } from '@/lib/org-kind';
 import { PrimaryButton } from '@/components/primary-button';
 import { Card, Field, HeroCard, MetricTile, Page, SectionLabel } from '@/components/ui';
 
 export default function Profile() {
   const { profile, loading } = useSessionProfile();
+  const { kind } = useOrgKind();
+  const isSchools = kind === 'schools';
   const [newPassword, setNewPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -63,14 +66,15 @@ export default function Profile() {
             <View className="flex-row gap-3">
               <MetricTile compact label="Status" value={profile?.account_status ?? '—'} />
               <MetricTile compact label="Role" value={profile?.role ?? '—'} />
+              <MetricTile compact label="Agency" value={agencyLabel(profile?.agency)} />
             </View>
           </Card>
 
           <SectionLabel>My Logs</SectionLabel>
           <PrimaryButton
-            label="View or add logs"
-            icon="albums"
-            onPress={() => router.push('/campaigns')}
+            label={isSchools ? 'View my schools' : 'View or add logs'}
+            icon={isSchools ? 'school' : 'albums'}
+            onPress={() => router.push(isSchools ? '/schools' : '/campaigns')}
           />
 
           <SectionLabel>Actions</SectionLabel>

@@ -185,12 +185,12 @@ export default function LeavePage() {
 
       <SectionLabel>Assignment</SectionLabel>
       {assignments.length === 0 ? (
-        <EmptyState title="No active assignments" body="Leave requests are linked to a store or school assignment." />
+        <EmptyState title="No active assignments" body="Leave requests are linked to a store assignment." />
       ) : (
         <GlassCard>
           <View className="flex-row flex-wrap">
             {assignments.map((a) => {
-              const label = a.campaign_name ? `${a.store_name || a.school_name || ''} · ${a.campaign_name}` : a.store_name || a.school_name || 'Assignment';
+              const label = a.campaign_name ? `${a.store_name || ''} · ${a.campaign_name}` : a.store_name || 'Assignment';
               return <Choice key={a.id} label={label} selected={assignmentId === a.id} onPress={() => setAssignmentId(a.id)} />;
             })}
           </View>

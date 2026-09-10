@@ -1,28 +1,12 @@
 import Link from 'next/link';
-import {
-  Boxes,
-  Building2,
-  CalendarRange,
-  GraduationCap,
-  MapPin,
-  Store,
-  Users,
-} from 'lucide-react';
+import { navFor, type OrgKind } from '@/lib/nav';
 
-const SECTIONS = [
-  { href: '/brand-ambassadors', label: 'Brand Ambassadors', icon: Users },
-  { href: '/campaigns', label: 'Campaigns', icon: Store },
-  { href: '/stores', label: 'Stores', icon: MapPin },
-  { href: '/skus', label: 'SKUs', icon: Boxes },
-  { href: '/veda-activations', label: 'Brand Activations', icon: GraduationCap },
-  { href: '/veda-assignments', label: 'Brand Assignments', icon: CalendarRange },
-  { href: '/brands', label: 'Brand', icon: Building2 },
-] as const;
+export function SectionCards({ orgKind }: { orgKind: OrgKind }) {
+  const sections = navFor(orgKind);
 
-export function SectionCards() {
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-      {SECTIONS.map(({ href, label, icon: Icon }) => (
+      {sections.map(({ href, cardLabel, icon: Icon }) => (
         <Link
           key={href}
           href={href}
@@ -32,7 +16,7 @@ export function SectionCards() {
             <Icon size={18} aria-hidden="true" />
           </span>
           <span className="text-left text-xs font-semibold leading-tight text-ink sm:text-sm">
-            {label}
+            {cardLabel}
           </span>
         </Link>
       ))}

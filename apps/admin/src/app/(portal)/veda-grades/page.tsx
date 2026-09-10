@@ -13,50 +13,28 @@ interface GradeRow {
   code: string;
   status: string;
   sort_order: number;
-  veda_grade_stationery: Array<{
-    stationery_item: { id: string; name: string; code: string | null } | null;
-  }> | null;
-}
-
-interface StationeryItem {
-  id: string;
-  name: string;
-  code: string | null;
 }
 
 export default async function VedaGradesPage() {
   const { client, profile } = await requireStaff();
   if (profile.role === 'supervisor' || profile.role === 'client') {
     return (
-      <PageHeader title="Veda Grades" description="Grade / class bands and their stationery offerings.">
+      <PageHeader
+        title="Veda Grades"
+        description="Grade and class bands. A school booklist may be issued per grade."
+      >
         <p className="text-sm text-muted">You do not have permission to manage grades.</p>
       </PageHeader>
     );
   }
 
-  const orgId = profile.organization_id;
-
-  const [{ data: gradesRaw }, { data: itemsRaw }] = await Promise.all([
-    client
-      .from('veda_grades')
-      .select(
-        `id, name, code, status, sort_order,
-         veda_grade_stationery(
-           stationery_item:veda_stationery_items!veda_grade_stationery_stationery_item_id_fkey ( id, name, code )
-         )`,
-      )
-      .eq('organization_id', orgId)
-      .order('sort_order', { ascending: true }),
-    client
-      .from('veda_stationery_items')
-      .select('id, name, code')
-      .eq('organization_id', orgId)
-      .eq('status', 'active')
-      .order('name', { ascending: true }),
-  ]);
+  const { data: gradesRaw } = await client
+    .from('veda_grades')
+    .select('id, name, code, status, sort_order')
+    .eq('organization_id', profile.organization_id)
+    .order('sort_order', { ascending: true });
 
   const grades = (gradesRaw ?? []) as unknown as GradeRow[];
-  const items = (itemsRaw ?? []) as unknown as StationeryItem[];
 
   async function upsertGrade(formData: FormData, gradeId?: string) {
     'use server';
@@ -64,10 +42,6 @@ export default async function VedaGradesPage() {
     const code = String(formData.get('code') ?? '').trim();
     const sortOrder = Number(formData.get('sort_order') ?? 0);
     const status = formData.get('status') === 'inactive' ? 'inactive' : 'active';
-    const stationeryIds = formData
-      .getAll('stationery_item')
-      .map((v) => String(v))
-      .filter(Boolean);
     if (!name || !code) return;
 
     const { client: c, profile: actor } = await requireStaff();
@@ -78,57 +52,37 @@ export default async function VedaGradesPage() {
       p_sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
       p_status: status,
       p_grade_id: gradeId,
-      p_stationery_ids: stationeryIds,
     });
     if (!error) revalidatePath('/veda-grades');
   }
-
-  const offeringIds = (id: string) =>
-    new Set((grades.find((g) => g.id === id)?.veda_grade_stationery ?? [])
-      .map((gs) => gs.stationery_item?.id)
-      .filter(Boolean));
 
   return (
     <>
       <PageHeader
         title="Veda Grades"
-        description="Class-band levels (ECDE, Lower Primary, Upper Primary, JSS) and which stationery each offers."
+        description="Class bands (ECDE, Lower Primary, Upper Primary, JSS). These label the sections on a formatted booklist when a school issues one per grade."
       />
 
       <TableWrap className="mb-6">
         <Table>
+          <caption className="sr-only">Configured grades and class bands</caption>
           <thead>
             <tr>
               <Th>Grade / level</Th>
               <Th>Code</Th>
               <Th>Order</Th>
-              <Th>Stationery offered</Th>
               <Th>Status</Th>
             </tr>
           </thead>
           <tbody>
             {grades.length === 0 ? (
-              <EmptyRow colSpan={5}>No grades configured yet. Add the first grade below.</EmptyRow>
+              <EmptyRow colSpan={4}>No grades configured yet. Add the first grade below.</EmptyRow>
             ) : (
               grades.map((g) => (
                 <tr key={g.id}>
                   <Td className="font-medium">{g.name}</Td>
                   <Td className="font-mono text-xs">{g.code}</Td>
                   <Td className="tabular-nums">{g.sort_order}</Td>
-                  <Td className="max-w-md">
-                    <div className="flex flex-wrap gap-1">
-                      {(g.veda_grade_stationery ?? []).map((gs) =>
-                        gs.stationery_item ? (
-                          <span
-                            key={gs.stationery_item.id}
-                            className="rounded-full border border-ink/10 bg-lavender px-2 py-0.5 text-xs text-charcoal"
-                          >
-                            {gs.stationery_item.name}
-                          </span>
-                        ) : null,
-                      )}
-                    </div>
-                  </Td>
                   <Td>
                     <Badge tone={g.status === 'active' ? 'success' : 'neutral'}>{g.status}</Badge>
                   </Td>
@@ -141,7 +95,7 @@ export default async function VedaGradesPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Add a grade" description="Create a grade/class band and choose its stationery offering." />
+          <CardHeader title="Add a grade" description="Create a grade or class band." />
           <CardBody>
             <form
               action={async (formData: FormData) => upsertGrade(formData, undefined)}
@@ -168,31 +122,13 @@ export default async function VedaGradesPage() {
                   <option value="inactive">Inactive</option>
                 </Select>
               </div>
-              <fieldset>
-                <legend className="mb-1 text-sm font-medium text-ink">Stationery offered to this grade</legend>
-                <div className="grid max-h-56 grid-cols-1 gap-1 overflow-y-auto rounded-lg border border-ink/10 p-2 sm:grid-cols-2">
-                  {items.length === 0 ? (
-                    <p className="col-span-full px-1 py-2 text-xs text-muted">No stationery items configured yet.</p>
-                  ) : (
-                    items.map((it) => (
-                      <label
-                        key={it.id}
-                        className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm text-charcoal hover:bg-lavender"
-                      >
-                        <input type="checkbox" name="stationery_item" value={it.id} className="size-4 accent-primary" />
-                        <span className="truncate">{it.name}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </fieldset>
               <Button type="submit" className="w-full">Add grade</Button>
             </form>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader title="Edit a grade" description="Update an existing grade and its stationery offering." />
+          <CardHeader title="Edit a grade" description="Rename, reorder or retire an existing grade." />
           <CardBody className="space-y-4">
             {grades.length === 0 ? (
               <p className="text-sm text-muted">No grades to edit yet.</p>
@@ -206,41 +142,30 @@ export default async function VedaGradesPage() {
                   <p className="mb-3 text-sm font-semibold text-ink">{g.name}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Name</Label>
-                      <Input name="name" defaultValue={g.name} required />
+                      <Label htmlFor={`edit-${g.id}-name`}>Name</Label>
+                      <Input id={`edit-${g.id}-name`} name="name" defaultValue={g.name} required />
                     </div>
                     <div>
-                      <Label>Code</Label>
-                      <Input name="code" defaultValue={g.code} required />
+                      <Label htmlFor={`edit-${g.id}-code`}>Code</Label>
+                      <Input id={`edit-${g.id}-code`} name="code" defaultValue={g.code} required />
                     </div>
                     <div>
-                      <Label>Order</Label>
-                      <Input name="sort_order" type="number" min="0" defaultValue={g.sort_order} />
+                      <Label htmlFor={`edit-${g.id}-sort`}>Order</Label>
+                      <Input
+                        id={`edit-${g.id}-sort`}
+                        name="sort_order"
+                        type="number"
+                        min="0"
+                        defaultValue={g.sort_order}
+                      />
                     </div>
                     <div>
-                      <Label>Status</Label>
-                      <Select name="status" defaultValue={g.status}>
+                      <Label htmlFor={`edit-${g.id}-status`}>Status</Label>
+                      <Select id={`edit-${g.id}-status`} name="status" defaultValue={g.status}>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                       </Select>
                     </div>
-                  </div>
-                  <div className="grid max-h-48 grid-cols-1 gap-1 overflow-y-auto rounded-lg border border-ink/10 p-2 sm:grid-cols-2">
-                    {items.map((it) => (
-                      <label
-                        key={it.id}
-                        className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm text-charcoal hover:bg-lavender"
-                      >
-                        <input
-                          type="checkbox"
-                          name="stationery_item"
-                          value={it.id}
-                          defaultChecked={offeringIds(g.id).has(it.id)}
-                          className="size-4 accent-primary"
-                        />
-                        <span className="truncate">{it.name}</span>
-                      </label>
-                    ))}
                   </div>
                   <Button type="submit" className="mt-3 w-full" size="sm">Save grade</Button>
                 </form>

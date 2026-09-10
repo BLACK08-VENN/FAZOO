@@ -1,5 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { BaTodayResult, VedaTodayResult, OrganizationKind } from '@fazoo/types';
+import type {
+  BaTodayResult,
+  BaSchoolPipelineResult,
+  BaVisitStatsResult,
+  OrganizationKind,
+} from '@fazoo/types';
 import { supabase } from './supabase';
 import type { SessionProfile } from './session';
 
@@ -34,9 +39,14 @@ export const writeCachedProfile = (profile: SessionProfile): Promise<void> =>
   write('profile', profile);
 export const readCachedToday = (): Promise<BaTodayResult | null> => read('today');
 export const writeCachedToday = (today: BaTodayResult): Promise<void> => write('today', today);
-export const readCachedVedaToday = (): Promise<VedaTodayResult | null> => read('veda-today');
-export const writeCachedVedaToday = (today: VedaTodayResult): Promise<void> =>
-  write('veda-today', today);
+export const readCachedVisitStats = (): Promise<BaVisitStatsResult | null> =>
+  read('visit-stats');
+export const writeCachedVisitStats = (stats: BaVisitStatsResult): Promise<void> =>
+  write('visit-stats', stats);
+export const readCachedPipeline = (): Promise<BaSchoolPipelineResult | null> =>
+  read('school-pipeline');
+export const writeCachedPipeline = (pipeline: BaSchoolPipelineResult): Promise<void> =>
+  write('school-pipeline', pipeline);
 export const readCachedOrgKind = (): Promise<OrganizationKind | null> => read('org-kind');
 export const writeCachedOrgKind = (kind: OrganizationKind): Promise<void> =>
   write('org-kind', kind);

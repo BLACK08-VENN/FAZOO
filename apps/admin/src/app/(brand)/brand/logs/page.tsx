@@ -11,12 +11,20 @@ export default async function BrandAmbassadorLogsPage() {
   const { data: kindData } = await client.rpc('current_user_org_kind');
   const organizationKind = kindData === 'schools' ? 'schools' : 'retail';
 
+  const heading =
+    organizationKind === 'schools'
+      ? {
+          title: 'My schools',
+          description: `Where every school you have logged for ${brand.name} has got to in the booklist pipeline.`,
+        }
+      : {
+          title: 'Create a field log',
+          description: `Submit ${brand.name} field activity from your phone or computer browser.`,
+        };
+
   return (
     <>
-      <PageHeader
-        title="Create a field log"
-        description={`Submit ${brand.name} field activity from your phone or computer browser.`}
-      />
+      <PageHeader title={heading.title} description={heading.description} />
       <BaWebLogs
         organizationId={profile.organization_id}
         userId={profile.id}
@@ -27,5 +35,5 @@ export default async function BrandAmbassadorLogsPage() {
 }
 
 export function generateMetadata() {
-  return { title: 'Create Log — Fazoo' };
+  return { title: 'Field Work — Fazoo' };
 }

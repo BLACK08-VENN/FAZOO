@@ -10,12 +10,16 @@
     "./timezone": "./src/timezone.ts",
     "./constants": "./src/constants.ts",
     "./geo": "./src/geo.ts",
+    "./booklist": "./src/booklist.ts",
     "./design-tokens": "./src/design-tokens.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint src"
+  },
+  "dependencies": {
+    "@fazoo/types": "workspace:*"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

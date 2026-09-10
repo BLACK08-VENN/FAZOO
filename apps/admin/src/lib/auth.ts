@@ -45,3 +45,37 @@ export async function requireStaff(): Promise<{ client: FazooClient; profile: Ad
 export function isElevated(role: AppRole): boolean {
   return role === 'super_admin' || role === 'organization_admin';
 }
+
+/**
+ * Resolve any approved profile, staff or brand ambassador.
+ *
+ * `requireStaff()` deliberately bounces BAs to `/brand`, so it cannot guard a
+ * route a BA legitimately needs — downloading the formatted booklist they are
+ * carrying back to the school. This helper only establishes *who* is calling;
+ * what they may read is left to RLS on the rows the route selects, which is
+ * already scoped to their organization and, for booklist documents, to jobs
+ * they own. Do not use it for staff-only surfaces.
+ */
+export async function requireApprovedProfile(): Promise<{
+  client: FazooClient;
+  profile: AdminProfile;
+}> {
+  const client = await serverSupabase();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+
+  if (!user) redirect('/sign-in');
+
+  const { data: profile } = await client
+    .from('profiles')
+    .select('id, full_name, phone, role, account_status, organization_id')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile || profile.account_status !== 'approved') {
+    redirect('/not-authorized');
+  }
+
+  return { client, profile: profile as AdminProfile };
+}

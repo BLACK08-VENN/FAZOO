@@ -12,9 +12,6 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src"
   },
-  "dependencies": {
-    "@fazoo/config": "workspace:*"
-  },
   "devDependencies": {
     "typescript": "~5.9.3"
   }

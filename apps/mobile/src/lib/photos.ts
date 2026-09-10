@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import type { BUCKET_DAILY_LOG_PHOTOS, BUCKET_PROFILE_PHOTOS } from '@fazoo/config';
+import type { StorageBucket } from '@fazoo/config';
 import { supabase } from './supabase';
 
 export interface CapturedPhoto {
@@ -48,7 +48,7 @@ export function photoPath(
  * offline operation can safely re-upload the same deterministic path.
  */
 export async function uploadPhotoWithRetry(
-  bucket: typeof BUCKET_PROFILE_PHOTOS | typeof BUCKET_DAILY_LOG_PHOTOS,
+  bucket: StorageBucket,
   path: string,
   photo: CapturedPhoto,
   attempts = 3,
@@ -57,7 +57,7 @@ export async function uploadPhotoWithRetry(
 }
 
 export async function uploadUriWithRetry(
-  bucket: typeof BUCKET_PROFILE_PHOTOS | typeof BUCKET_DAILY_LOG_PHOTOS,
+  bucket: StorageBucket,
   path: string,
   uri: string,
   mimeType: string,

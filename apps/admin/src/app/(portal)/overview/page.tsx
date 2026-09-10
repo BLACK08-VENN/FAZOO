@@ -1,10 +1,12 @@
 import { requireStaff } from '@/lib/auth';
 import { fetchLogs, parseLogFilters, type LogRow } from '@/lib/logs-query';
+import { resolveOrgKind } from '@/lib/nav';
 import { LogFiltersForm } from '@/components/filters';
 import { PageHeader, StatCard } from '@/components/page';
 import { SectionCards } from '@/components/section-cards';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from './trends-chart';
+import { SchoolsOverview } from './schools-overview';
 import type { FazooClient } from '@fazoo/database';
 
 async function loadFilterOptions(client: FazooClient) {
@@ -75,6 +77,13 @@ export default async function OverviewPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { client } = await requireStaff();
+
+  // A schools org has no stores, campaigns or daily logs, so the retail
+  // aggregate below would render an all-zero landing page. Hand those admins
+  // the booklist pipeline view instead.
+  const orgKind = await resolveOrgKind(client);
+  if (orgKind === 'schools') return <SchoolsOverview client={client} />;
+
   const params = await searchParams;
   const filters = parseLogFilters(params);
   const options = await loadFilterOptions(client);
@@ -91,7 +100,7 @@ export default async function OverviewPage({
 
       <Card className="mb-6 p-5">
         <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
-        <SectionCards />
+        <SectionCards orgKind="retail" />
       </Card>
 
       <Card className="mb-6 p-4">

@@ -11,18 +11,18 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { Card, HeroCard, MetricTile, Page } from '@/components/ui';
-import VedaToday from '@/components/veda-today';
+import SchoolsToday from '@/components/schools-today';
 
 /**
  * Today dashboard — routes between two flows based on the active
  * organization's kind, which only the server can assert:
- *   'schools' → Veda activation dashboard (school visit + stationery)
+ *   'schools' → school booklist pipeline (approach → booklist → print → stamp)
  *   'retail'  → in-store dashboard (below, driven by ba_today)
  */
 export default function Today() {
   const { kind, loading: kindLoading } = useOrgKind();
 
-  if (kind === 'schools') return <VedaToday />;
+  if (kind === 'schools') return <SchoolsToday />;
   if (kindLoading && kind === null) {
     return (
       <View className="flex-1 items-center justify-center bg-transparent">

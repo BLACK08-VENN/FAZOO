@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import * as Crypto from 'expo-crypto';
+import type { StorageBucket } from '@fazoo/config';
 
 export type OperationName =
   | 'checkin'
@@ -9,14 +10,17 @@ export type OperationName =
   | 'delete_sale'
   | 'sick_leave'
   | 'leave_request'
-  | 'veda_checkin'
-  | 'veda_distribution'
-  | 'veda_remove_distribution'
-  | 'veda_checkout';
+  | 'create_school'
+  | 'start_school_visit'
+  | 'record_visit_outcome'
+  | 'submit_booklist_document'
+  | 'mark_pending_school_approval'
+  | 'confirm_copies'
+  | 'submit_stamped_copy';
 export type OperationStatus = 'pending' | 'syncing' | 'done' | 'terminal';
 export interface QueuedAttachment {
   localUri: string;
-  bucket: 'daily-log-photos';
+  bucket: StorageBucket;
   remotePath: string;
   mimeType: string;
 }
@@ -76,6 +80,38 @@ export async function enqueue(
   await database.runAsync(
     `INSERT OR IGNORE INTO ops (id, operation, payload, attachments, client_request_id, status, attempts, retry_at, created_at)
      VALUES (?, ?, ?, ?, ?, 'pending', 0, 0, ?)`,
+    Crypto.randomUUID(),
+    operation,
+    JSON.stringify(payload),
+    JSON.stringify(attachments),
+    requestId,
+    Date.now(),
+  );
+  return requestId;
+}
+
+/**
+ * Re-submit a step the BA has already queued — a retaken selfie, a re-picked
+ * document. Overwrites the payload in place but leaves a synced or terminally
+ * failed operation alone, and keeps the original created_at so the queue still
+ * flushes steps in the order the BA performed them.
+ */
+export async function enqueueReplace(
+  operation: OperationName,
+  payload: Record<string, unknown>,
+  requestId: string,
+  attachments: QueuedAttachment[] = [],
+): Promise<string> {
+  const database = await db();
+  await database.runAsync(
+    `INSERT INTO ops (id, operation, payload, attachments, client_request_id, status, attempts, retry_at, created_at)
+     VALUES (?, ?, ?, ?, ?, 'pending', 0, 0, ?)
+     ON CONFLICT(client_request_id) DO UPDATE SET
+       payload = excluded.payload,
+       attachments = excluded.attachments,
+       status = CASE WHEN ops.status IN ('pending', 'syncing') THEN 'pending' ELSE ops.status END,
+       retry_at = CASE WHEN ops.status IN ('pending', 'syncing') THEN 0 ELSE ops.retry_at END,
+       last_error = CASE WHEN ops.status IN ('pending', 'syncing') THEN NULL ELSE ops.last_error END`,
     Crypto.randomUUID(),
     operation,
     JSON.stringify(payload),

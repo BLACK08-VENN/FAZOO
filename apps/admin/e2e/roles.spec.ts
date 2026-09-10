@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 const ADMIN_ID = process.env.E2E_ADMIN_PHONE;
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD;
@@ -11,7 +12,7 @@ const BA_ID = process.env.E2E_BA_PHONE ?? 'ba.one.demo@ba.fazoo.app';
 const BA_PASSWORD = process.env.E2E_BA_PASSWORD ?? 'Demo-Ba#001!';
 
 async function signIn(
-  page: import('@playwright/test').Page,
+  page: Page,
   identifier: string,
   password: string,
   tab: 'admin' | 'ba' | 'brand',
@@ -37,7 +38,9 @@ test.describe('role isolation: brand ambassador (mobile user)', () => {
     await signIn(page, BA_ID, BA_PASSWORD, 'ba', /\/brand/);
     for (const route of [
       '/overview',
-      '/veda-activations',
+      '/booklists',
+      '/schools',
+      '/ba-performance',
       '/veda-assignments',
       '/audit-logs',
     ]) {
@@ -48,7 +51,7 @@ test.describe('role isolation: brand ambassador (mobile user)', () => {
 
   test('BA CSV export is blocked server-side', async ({ page }) => {
     await signIn(page, BA_ID, BA_PASSWORD, 'ba', /\/brand/);
-    const response = await page.request.get('/api/reports/veda-activations', {
+    const response = await page.request.get('/api/reports/booklists', {
       maxRedirects: 0,
     });
     expect(response.status(), 'BA must be redirected, never given data').toBeGreaterThanOrEqual(
@@ -58,21 +61,28 @@ test.describe('role isolation: brand ambassador (mobile user)', () => {
   });
 });
 
-test.describe('role isolation: organization admin (Lenovo)', () => {
+test.describe('role isolation: organization admin (retail org)', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
   test.skip(!ORG_ADMIN_ID || !ORG_ADMIN_PASSWORD, 'Demo credentials not configured');
 
-  test('org admin reaches portal and Veda pages for a retail org', async ({ page }) => {
+  test('retail org admin gets the retail overview and none of the school surfaces', async ({
+    page,
+  }) => {
     await signIn(page, ORG_ADMIN_ID, ORG_ADMIN_PASSWORD, 'admin', /overview/);
     await expect(page.getByText('BA-days', { exact: true })).toBeVisible();
-    await page.goto('/veda-activations');
-    await expect(page.getByRole('heading', { name: 'Brand Activations' })).toBeVisible();
-    await expect(page.getByText('Select brand')).toBeVisible();
+
+    // Navigation is filtered by organization kind, so a retail tenant is never
+    // offered the booklist programme. Checked page-wide because the sidebar is
+    // hidden and the tab bar shown on the mobile viewport.
+    for (const href of ['/booklists', '/schools', '/ba-performance']) {
+      await expect(page.locator(`a[href="${href}"]`)).toHaveCount(0);
+    }
+    await expect(page.locator('a[href="/stores"]').first()).toBeVisible();
   });
 
-  test('org admin CSV export is allowed', async ({ page }) => {
+  test('retail org admin CSV export is allowed on their own report', async ({ page }) => {
     await signIn(page, ORG_ADMIN_ID, ORG_ADMIN_PASSWORD, 'admin', /overview/);
-    const response = await page.request.get('/api/reports/veda-activations');
+    const response = await page.request.get('/api/reports/daily-logs');
     expect(response.status()).toBe(200);
   });
 });
@@ -80,9 +90,9 @@ test.describe('role isolation: organization admin (Lenovo)', () => {
 test.describe('role isolation: super admin', () => {
   test.skip(!ADMIN_ID || !ADMIN_PASSWORD, 'Demo credentials not configured');
 
-  test('super admin browses Veda and audit pages', async ({ page }) => {
-    await page.goto('/veda-activations');
-    await expect(page.getByRole('heading', { name: 'Brand Activations' })).toBeVisible();
+  test('super admin browses the booklist pipeline and audit pages', async ({ page }) => {
+    await page.goto('/booklists');
+    await expect(page.getByRole('heading', { name: 'Booklist pipeline' })).toBeVisible();
     await page.goto('/audit-logs');
     await expect(page.getByRole('heading', { name: 'Audit Logs' })).toBeVisible();
   });

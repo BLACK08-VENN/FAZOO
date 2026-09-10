@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { browserSupabase } from '@fazoo/database/browser';
-import type { BaTodayResult, VedaTodayResult } from '@fazoo/types';
+import type {
+  BaPipelineCounts,
+  BaPipelineJob,
+  BaSchoolPipelineResult,
+  BaTodayResult,
+  BaVisitStatsResult,
+  BooklistStage,
+} from '@fazoo/types';
+import { AgencyBadge, StageBadge } from '@/components/stage-badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
@@ -13,13 +21,6 @@ type Props = {
   organizationId: string;
   userId: string;
   organizationKind: OrganizationKind;
-};
-
-type VedaSchool = {
-  school_id: string;
-  school_name: string;
-  school_region: string | null;
-  status: string;
 };
 
 type LocationFix = {
@@ -33,7 +34,7 @@ const FIELD =
 
 export function BaWebLogs({ organizationId, userId, organizationKind }: Props) {
   return organizationKind === 'schools' ? (
-    <VedaLogForm organizationId={organizationId} userId={userId} />
+    <SchoolsPipelinePanel />
   ) : (
     <RetailLogForm organizationId={organizationId} userId={userId} />
   );
@@ -125,339 +126,262 @@ function LocationCard({
   );
 }
 
-function VedaLogForm({ organizationId, userId }: Pick<Props, 'organizationId' | 'userId'>) {
+/**
+ * What the BA owes the pipeline at each stage, in their words. The admin owns
+ * the conversion and printing steps, so those say so plainly rather than
+ * leaving the BA wondering whether the app has stalled on them.
+ */
+const NEXT_ACTION: Record<BooklistStage, string> = {
+  engaged: 'Record the outcome — booklist offered, or declined with a reason.',
+  declined: 'Nothing further. The decline is on record.',
+  booklist_offered: 'Upload the booklist the school handed you.',
+  document_received: 'With the admin for conversion.',
+  awaiting_conversion: 'With the admin for conversion.',
+  converting: 'With the admin for conversion.',
+  formatted: 'Download it, print it, and take it back to the school.',
+  pending_school_approval: 'Waiting on the school to acknowledge the formatted copy.',
+  school_approved: 'Confirm how many copies the school wants.',
+  in_production: 'At the printer. The admin is tracking it.',
+  dispatched: 'On its way to the school.',
+  received: 'Copies received — upload the stamped +1 copy to close the log.',
+  completed: 'Closed. The stamped +1 copy is on file.',
+  on_hold: 'Paused — check with your supervisor.',
+  cancelled: 'Cancelled — no further action.',
+};
+
+/**
+ * Schools-org BA view on the web.
+ *
+ * Capture — the gate selfie, the outcome, the booklist upload, the copy count
+ * and the stamped +1 — happens in the mobile app, which owns the camera and
+ * the storage-path conventions the RPCs assert against. What a BA needs from a
+ * browser is the other half of the requirement: seeing exactly where every
+ * school they logged has got to, and downloading the formatted booklist to
+ * print and carry back.
+ */
+function SchoolsPipelinePanel() {
   const client = useMemo(() => browserSupabase(), []);
-  const [schools, setSchools] = useState<VedaSchool[]>([]);
-  const [today, setToday] = useState<VedaTodayResult | null>(null);
-  const [selectedSchoolId, setSelectedSchoolId] = useState('');
-  const [query, setQuery] = useState('');
+  const [stats, setStats] = useState<BaVisitStatsResult | null>(null);
+  const [counts, setCounts] = useState<BaPipelineCounts | null>(null);
+  const [jobs, setJobs] = useState<BaPipelineJob[]>([]);
+  const [downloads, setDownloads] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [selfie, setSelfie] = useState<File | null>(null);
-  const [document, setDocument] = useState<File | null>(null);
-  const [learnerCount, setLearnerCount] = useState('');
-  const [notes, setNotes] = useState('');
-  const { fix, locating, locationError, locate } = useLocation();
-  const [gradeId, setGradeId] = useState('');
-  const [draft, setDraft] = useState<Record<string, number>>({});
-  const [savingDist, setSavingDist] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
+  const [query, setQuery] = useState('');
 
   async function load() {
     setLoading(true);
     setError(null);
-    const [{ data: schoolData, error: schoolError }, { data: todayData, error: todayError }] = await Promise.all([
-      client.rpc('ba_list_veda_schools'),
-      client.rpc('veda_today'),
-    ]);
-    if (schoolError) setError(`Could not load schools: ${schoolError.message}`);
-    else setSchools(Array.isArray(schoolData) ? (schoolData as unknown as VedaSchool[]) : []);
-    if (!todayError && todayData) setToday(todayData as unknown as VedaTodayResult);
-    setLoading(false);
+    try {
+      const [statsResult, pipelineResult] = await Promise.all([
+        client.rpc('ba_visit_stats'),
+        client.rpc('ba_school_pipeline', { p_limit: 200 }),
+      ]);
+      if (statsResult.error) throw new Error(statsResult.error.message);
+      if (pipelineResult.error) throw new Error(pipelineResult.error.message);
+
+      setStats(statsResult.data as unknown as BaVisitStatsResult);
+      const pipeline = pipelineResult.data as unknown as BaSchoolPipelineResult;
+      setCounts(pipeline.counts);
+      setJobs(pipeline.jobs);
+
+      // `ba_school_pipeline` reports that a formatted document exists but not
+      // its id, and the download route needs the id. One extra RLS-scoped read
+      // over the jobs that actually have one, rather than a detail call each.
+      const ready = pipeline.jobs.filter((job) => job.formatted_ready).map((job) => job.job_id);
+      if (ready.length > 0) {
+        const { data: docs, error: docsError } = await client
+          .from('booklist_documents')
+          .select('id, job_id')
+          .eq('kind', 'formatted')
+          .eq('is_current', true)
+          .in('job_id', ready);
+        if (docsError) throw new Error(docsError.message);
+        const map: Record<string, string> = {};
+        for (const doc of docs ?? []) map[String(doc.job_id)] = String(doc.id);
+        setDownloads(map);
+      } else {
+        setDownloads({});
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Could not load your schools.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     void load();
   }, []);
 
-  const visibleSchools = useMemo(() => {
+  const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const rows = needle
-      ? schools.filter((school) =>
-          `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(needle),
-        )
-      : schools;
-    return rows.slice(0, 150);
-  }, [query, schools]);
+    if (!needle) return jobs;
+    return jobs.filter((job) =>
+      `${job.school_name} ${job.school_region ?? ''}`.toLowerCase().includes(needle),
+    );
+  }, [jobs, query]);
 
-  const selectedSchool = schools.find((school) => school.school_id === selectedSchoolId) ?? null;
-  const selectedSchoolRow =
-    today?.regions.flatMap((r) => r.schools).find((row) => row.school_id === selectedSchoolId) ?? null;
-  const existingSession = selectedSchoolRow?.session ?? null;
-  const existingDistributions = selectedSchoolRow?.distributions ?? [];
-  const canUseSchool = Boolean(selectedSchool);
-
-  const grades = today?.grades ?? [];
-  const stationeryItems = today?.stationery_items ?? [];
-  const openSession = existingSession && existingSession.status === 'open' ? existingSession : null;
-  const sessionDone = existingSession && existingSession.status === 'completed' ? true : false;
-
-  const GENERAL = '__general__';
-  const draftKey = (gid: string, itemId: string) => `${gid || GENERAL}|${itemId}`;
-  const originalQty = (gid: string, itemId: string) =>
-    existingDistributions
-      .filter((d) => (d.grade_id ?? GENERAL) === (gid || GENERAL) && d.stationery_item_id === itemId)
-      .reduce((sum, d) => sum + d.quantity, 0);
-
-  async function saveDistributions() {
-    if (!openSession) return;
-    setSavingDist(true);
-    setError(null);
-    setSuccess(null);
-    let changed = 0;
-    try {
-      for (const gid of [GENERAL, ...grades.map((g) => g.id)]) {
-        const gradeIdParam = gid === GENERAL ? null : gid;
-        for (const item of stationeryItems) {
-          const next = draft[draftKey(gid, item.id)] ?? 0;
-          const original = originalQty(gid, item.id);
-          if (next === original) continue;
-          const requestId = crypto.randomUUID();
-          if (next > 0) {
-            const { error: recErr } = await client.rpc('veda_record_distribution', {
-              p_session_id: openSession.id,
-              p_stationery_item_id: item.id,
-              p_grade_id: gradeIdParam,
-              p_quantity: next,
-              p_client_request_id: requestId,
-            });
-            if (recErr) throw new Error(recErr.message);
-          } else {
-            const { error: remErr } = await client.rpc('veda_remove_distribution', {
-              p_session_id: openSession.id,
-              p_stationery_item_id: item.id,
-              p_grade_id: gradeIdParam,
-              p_client_request_id: requestId,
-            });
-            if (remErr) throw new Error(remErr.message);
-          }
-          changed += 1;
-        }
-      }
-      if (changed === 0) setSuccess('Nothing to update.');
-      else setSuccess(`${changed} distribution line${changed > 1 ? 's' : ''} saved.`);
-      await load();
-    } catch (saveErr) {
-      setError(saveErr instanceof Error ? saveErr.message : 'Could not save distributions.');
-    } finally {
-      setSavingDist(false);
-    }
-  }
-
-  async function checkout() {
-    if (!openSession) return;
-    if (!fix) return setError('Capture your location before checking out.');
-    setCheckingOut(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const { error: coErr } = await client.rpc('veda_checkout', {
-        p_session_id: openSession.id,
-        p_latitude: fix.latitude,
-        p_longitude: fix.longitude,
-        p_accuracy_metres: fix.accuracy ?? undefined,
-        p_client_request_id: crypto.randomUUID(),
-        p_notes: notes.trim() || undefined,
-      });
-      if (coErr) throw new Error(coErr.message);
-      setSuccess('Visit checked out successfully.');
-      await load();
-    } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : 'Could not check out.');
-    } finally {
-      setCheckingOut(false);
-    }
-  }
-
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selectedSchool || !canUseSchool) return setError('Choose an unlocked school first.');
-    if (!fix) return setError('Capture your GPS location first.');
-    if (!selfie || !document) return setError('A selfie and stamped school document are required.');
-    if (existingSession && existingSession.status !== 'cancelled') return setError('You already have a log for this school today.');
-
-    setBusy(true);
-    setError(null);
-    setSuccess(null);
-    const requestId = crypto.randomUUID();
-    const uploaded: string[] = [];
-    try {
-      const selfiePath = await uploadEvidence(client, organizationId, userId, requestId, 'selfie', selfie);
-      uploaded.push(selfiePath);
-      const documentPath = await uploadEvidence(client, organizationId, userId, requestId, 'stamped-doc', document);
-      uploaded.push(documentPath);
-
-      const count = learnerCount.trim() === '' ? 0 : Number(learnerCount);
-      if (!Number.isInteger(count) || count < 0) throw new Error('Learner count must be zero or a positive whole number.');
-
-      const { error: checkinError } = await client.rpc('veda_checkin', {
-        p_latitude: fix.latitude,
-        p_longitude: fix.longitude,
-        p_accuracy_metres: fix.accuracy ?? undefined,
-        p_selfie_photo_path: selfiePath,
-        p_stamped_document_path: documentPath,
-        p_client_request_id: requestId,
-        p_school_id: selectedSchool.school_id,
-        p_learner_count: count,
-        p_notes: notes.trim() || undefined,
-      } as never);
-      if (checkinError) throw new Error(checkinError.message);
-
-      setSuccess(`Log started successfully for ${selectedSchool.school_name}.`);
-      setSelfie(null);
-      setDocument(null);
-      setLearnerCount('');
-      setNotes('');
-      await load();
-    } catch (submitError) {
-      if (uploaded.length) await client.storage.from('daily-log-photos').remove(uploaded);
-      setError(submitError instanceof Error ? submitError.message : 'Could not create the log.');
-    } finally {
-      setBusy(false);
-    }
-  }
+  const target = stats?.target?.target_schools ?? stats?.default_target_schools_per_month ?? null;
+  const reached = stats?.schools_visited_this_month ?? 0;
+  const selfies = stats?.selfie_compliance ?? null;
 
   return (
-    <form className="space-y-5" onSubmit={submit}>
-      {success ? <div className="rounded-xl border border-ok/25 bg-ok/10 px-4 py-3 text-sm font-medium text-ink">{success}</div> : null}
-      {error ? <div className="rounded-xl border border-bad/25 bg-bad/10 px-4 py-3 text-sm font-medium text-bad">{error}</div> : null}
-
-      <Card className="p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-ink">1. Choose school</h2>
-        <p className="mt-1 text-xs text-muted">Search all active VEDA schools available to your account.</p>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div>
-            <Label htmlFor="school-search">Search school</Label>
-            <Input id="school-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Type school name or region" />
-          </div>
-          <div>
-            <Label htmlFor="school-select">School</Label>
-            <Select id="school-select" value={selectedSchoolId} onChange={(e) => setSelectedSchoolId(e.target.value)} disabled={loading}>
-              <option value="">{loading ? 'Loading schools…' : 'Select a school'}</option>
-              {visibleSchools.map((school) => (
-                <option key={school.school_id} value={school.school_id}>
-                  {school.school_name}{school.school_region ? ` — ${school.school_region}` : ''}
-                </option>
-              ))}
-            </Select>
-            {schools.length > 150 && !query.trim() ? (
-              <p className="mt-1 text-xs text-muted">Start typing to search the full list of {schools.length.toLocaleString()} schools.</p>
-            ) : null}
-          </div>
+    <div className="space-y-5">
+      {error ? (
+        <div className="rounded-xl border border-bad/25 bg-bad/10 px-4 py-3 text-sm font-medium text-bad">
+          {error}
         </div>
-
-        {selectedSchool ? (
-          <p className="mt-3 text-xs font-medium text-ok">
-            Ready: {selectedSchool.school_name}{selectedSchoolRow ? ` · in an assigned region` : ' · outside your assigned regions — the server will reject check-in'}
-          </p>
-        ) : null}
-      </Card>
-
-      <LocationCard fix={fix} locating={locating} locationError={locationError} onLocate={() => void locate()} />
-
-      <Card className="p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-ink">3. Evidence & details</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div>
-            <Label htmlFor="stamped-document">Stamped school document</Label>
-            <Input id="stamped-document" type="file" accept="image/*" capture="environment" onChange={(e) => setDocument(e.target.files?.[0] ?? null)} />
-            <p className="mt-1 text-xs text-muted">Before you capture — check for the school stamp. The document must carry the school's official stamp and be clearly visible before uploading.</p>
-          </div>
-          <div>
-            <Label htmlFor="veda-selfie">Selfie</Label>
-            <Input id="veda-selfie" type="file" accept="image/*" capture="user" onChange={(e) => setSelfie(e.target.files?.[0] ?? null)} />
-          </div>
-          <div>
-            <Label htmlFor="learner-count">Learner count</Label>
-            <Input id="learner-count" type="number" min="0" step="1" inputMode="numeric" value={learnerCount} onChange={(e) => setLearnerCount(e.target.value)} placeholder="0" />
-          </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="veda-notes">Notes</Label>
-            <textarea id="veda-notes" className={FIELD} rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for the supervisor" />
-          </div>
-        </div>
-      </Card>
-
-      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={busy || !canUseSchool || !fix || !selfie || !document}>
-        {busy ? 'Submitting log…' : 'Start school log'}
-      </Button>
-
-      {selectedSchool ? (
-        !openSession && !sessionDone ? (
-          <p className="text-xs text-muted">After you start a log, record stationery distributed per grade and check out here.</p>
-        ) : sessionDone ? (
-          <Card className="p-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-ink">Visit complete</h2>
-            <p className="mt-1 text-xs text-muted">This school visit has already been checked out.</p>
-            {existingDistributions.length > 0 ? (
-              <ul className="mt-3 space-y-1 text-sm text-ink">
-                {existingDistributions.map((d) => (
-                  <li key={d.id} className="flex justify-between">
-                    <span>{d.item_name}{d.grade_name ? ` · ${d.grade_name}` : d.grade_id ? '' : ' · General'}</span>
-                    <span className="tabular-nums">×{d.quantity}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-xs text-muted">No distributions were recorded.</p>
-            )}
-          </Card>
-        ) : (
-          <>
-            <Card className="p-4 sm:p-5">
-              <h2 className="text-sm font-semibold text-ink">Stationery distributed</h2>
-              <p className="mt-1 text-xs text-muted">Choose a grade, then set how many of each item were distributed to that grade this visit.</p>
-
-              <div className="mt-4">
-                <Label htmlFor="veda-grade">Grade / class band</Label>
-                <Select id="veda-grade" value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
-                  <option value="">General (no specific grade)</option>
-                  {grades.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {stationeryItems.length === 0 ? (
-                  <p className="text-xs text-muted">No stationery items configured yet.</p>
-                ) : (
-                  stationeryItems.map((item) => {
-                    const key = draftKey(gradeId, item.id);
-                    const value = draft[key] ?? originalQty(gradeId, item.id);
-                    return (
-                      <div key={item.id} className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-ink">{item.name}</span>
-                        <div className="flex items-center gap-2">
-                          <Button type="button" variant="outline" size="sm" onClick={() => setDraft((d) => ({ ...d, [key]: Math.max(0, value - 1) }))}>−</Button>
-                          <input
-                            className="w-20 rounded-lg border border-ink/15 bg-white px-2 py-1 text-center text-sm tabular-nums text-ink"
-                            type="number" min="0" step="1" inputMode="numeric"
-                            value={value}
-                            onChange={(e) => setDraft((d) => ({ ...d, [key]: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
-                          />
-                          <Button type="button" variant="outline" size="sm" onClick={() => setDraft((d) => ({ ...d, [key]: Math.min(100000, value + 1) }))}>+</Button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              <Button type="button" className="mt-4 w-full sm:w-auto" disabled={savingDist || stationeryItems.length === 0} onClick={() => void saveDistributions()}>
-                {savingDist ? 'Saving…' : 'Save distributions'}
-              </Button>
-            </Card>
-
-            <Card className="p-4 sm:p-5">
-              <h2 className="text-sm font-semibold text-ink">Check out</h2>
-              <p className="mt-1 text-xs text-muted">Verify your GPS then check out of this school visit. Re-capture your location if it changed.</p>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Button type="button" variant="outline" onClick={() => void locate()} disabled={locating}>
-                  {locating ? 'Getting location…' : fix ? 'Refresh location' : 'Get my location'}
-                </Button>
-                <Button type="button" disabled={checkingOut || !fix} onClick={() => void checkout()}>
-                  {checkingOut ? 'Checking out…' : 'Check out school visit'}
-                </Button>
-              </div>
-              {fix ? <p className="mt-2 text-xs text-muted">Checking out from last captured location{fix.accuracy ? ` (≈${Math.round(fix.accuracy)} m)` : ''}.</p> : null}
-            </Card>
-          </>
-        )
       ) : null}
-    </form>
+
+      <Card className="p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-ink">Logging a new school</h2>
+        <p className="mt-1 text-xs text-muted">
+          Use the Fazoo app at the school: pick or add the school, take your selfie at the gate,
+          then record whether you were given a booklist or turned down. If they hand you one —
+          handwritten, printed, a photo or a softcopy — upload it there. The admin converts it to
+          an editable Word file and publishes it back here for you to download and print.
+        </p>
+        <p className="mt-2 text-xs text-muted">
+          This page is your live view of every school you have logged, and where each one has got
+          to. Nothing here needs re-entering.
+        </p>
+      </Card>
+
+      <Card className="p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink">This month</h2>
+          <AgencyBadge agency={stats?.agency} selfieRequired={stats?.selfie_required} />
+        </div>
+        <p className="mt-1 text-xs text-muted">
+          {stats
+            ? stats.selfie_required
+              ? 'A gate selfie is mandatory at every school you engage.'
+              : 'A gate selfie is not enforced for your agency.'
+            : 'Loading your agency…'}
+        </p>
+
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-lg border border-ink/10 p-3">
+            <dt className="text-xs text-muted">Schools reached</dt>
+            <dd className="mt-1 text-lg font-bold tabular-nums text-ink">
+              {reached}
+              {target ? <span className="text-sm font-medium text-muted"> / {target}</span> : null}
+            </dd>
+            <dd className="text-xs text-muted">
+              {target
+                ? reached >= target
+                  ? 'Target met'
+                  : `${Math.round((reached / target) * 100)}% of target`
+                : 'No target set'}
+            </dd>
+          </div>
+          <div className="rounded-lg border border-ink/10 p-3">
+            <dt className="text-xs text-muted">Booklists collected</dt>
+            <dd className="mt-1 text-lg font-bold tabular-nums text-ink">
+              {stats?.booklists_collected ?? 0}
+            </dd>
+            <dd className="text-xs text-muted">All time</dd>
+          </div>
+          <div className="rounded-lg border border-ink/10 p-3">
+            <dt className="text-xs text-muted">Declines recorded</dt>
+            <dd className="mt-1 text-lg font-bold tabular-nums text-ink">
+              {stats?.declines_recorded ?? 0}
+            </dd>
+            <dd className="text-xs text-muted">All time</dd>
+          </div>
+          <div className="rounded-lg border border-ink/10 p-3">
+            <dt className="text-xs text-muted">Gate selfies</dt>
+            <dd className="mt-1 text-lg font-bold tabular-nums text-ink">
+              {selfies ? `${selfies.captured} / ${selfies.required}` : '—'}
+            </dd>
+            <dd className="text-xs text-muted">
+              {selfies && selfies.missing > 0 ? `${selfies.missing} missing` : 'Up to date'}
+            </dd>
+          </div>
+        </dl>
+      </Card>
+
+      <Card className="p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Your schools</h2>
+            <p className="mt-1 text-xs text-muted">
+              {counts
+                ? `${counts.active} in progress · ${counts.awaiting_admin} with the admin · ${counts.completed} completed · ${counts.declined} declined`
+                : loading
+                  ? 'Loading…'
+                  : 'No schools logged yet.'}
+            </p>
+          </div>
+          <div className="sm:w-64">
+            <Label htmlFor="pipeline-search">Search your schools</Label>
+            <Input
+              id="pipeline-search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="School name or region"
+            />
+          </div>
+        </div>
+
+        {visible.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">
+            {loading ? 'Loading your schools…' : 'Nothing matches that search.'}
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2.5">
+            {visible.map((job) => {
+              const documentId = downloads[job.job_id];
+              return (
+                <li
+                  key={job.job_id}
+                  className="rounded-xl border border-ink/10 bg-white/80 p-3 sm:p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink">{job.school_name}</p>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {job.school_region ?? 'Region not recorded'}
+                        {job.copies_to_print
+                          ? ` · ${job.copies_to_print.toLocaleString()} copies to print (incl. the stamped +1)`
+                          : job.copies_requested
+                            ? ` · ${job.copies_requested.toLocaleString()} copies requested`
+                            : ''}
+                      </p>
+                    </div>
+                    <StageBadge stage={job.stage} />
+                  </div>
+
+                  <p className="mt-2 text-xs font-medium text-ink">
+                    Next: {NEXT_ACTION[job.stage]}
+                  </p>
+
+                  {job.stamped_uploaded ? (
+                    <p className="mt-1 text-xs text-muted">Stamped +1 copy on file.</p>
+                  ) : null}
+
+                  {documentId ? (
+                    <a
+                      href={`/api/booklists/documents/${documentId}/download`}
+                      className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary/90"
+                    >
+                      Download the formatted booklist
+                    </a>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="mt-4">
+          <Button type="button" variant="outline" onClick={() => void load()} disabled={loading}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </Button>
+        </div>
+      </Card>
+    </div>
   );
 }
 

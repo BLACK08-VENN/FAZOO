@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { BaAgency } from '@fazoo/types';
 import { supabase } from './supabase';
 import { clearUserCache, readCachedProfile, writeCachedProfile } from './cache';
 
@@ -9,6 +10,8 @@ export interface SessionProfile {
   phone: string;
   profile_photo_path: string | null;
   role: string;
+  /** Which agency employs this BA — decides whether a gate selfie is mandatory. */
+  agency: BaAgency | null;
   account_status: 'pending' | 'approved' | 'rejected' | 'suspended' | 'inactive';
 }
 
@@ -36,7 +39,7 @@ export function useSessionProfile() {
       const { data: profileData } = await supabase
         .from('profiles')
         .select(
-          'id, organization_id, full_name, phone, profile_photo_path, role, account_status',
+          'id, organization_id, full_name, phone, profile_photo_path, role, agency, account_status',
         )
         .single();
       const nextProfile = (profileData as SessionProfile | null) ?? cached;

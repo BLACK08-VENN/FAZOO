@@ -3,6 +3,7 @@ import type {
   AppRole,
   AssignmentStatus,
   AttendanceStatus,
+  BaAgency,
   CampaignStatus,
   DailyLogStatus,
   OrganizationKind,
@@ -40,6 +41,8 @@ export interface Profile {
   phone: string;
   profile_photo_path: string | null;
   role: AppRole;
+  /** Which agency employed this BA — null for non-BA staff. */
+  agency: BaAgency | null;
   account_status: AccountStatus;
   created_at: IsoTimestamp;
   updated_at: IsoTimestamp;

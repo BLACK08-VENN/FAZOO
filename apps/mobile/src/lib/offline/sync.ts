@@ -70,10 +70,13 @@ async function runOperation(operation: QueuedOperation): Promise<void> {
       delete_sale: 'ba_delete_sale',
       sick_leave: 'ba_mark_sick_leave',
       leave_request: 'ba_submit_leave_request',
-      veda_checkin: 'veda_checkin',
-      veda_distribution: 'veda_record_distribution',
-      veda_remove_distribution: 'veda_remove_distribution',
-      veda_checkout: 'veda_checkout',
+      create_school: 'ba_create_school',
+      start_school_visit: 'ba_start_school_visit',
+      record_visit_outcome: 'ba_record_visit_outcome',
+      submit_booklist_document: 'ba_submit_booklist_document',
+      mark_pending_school_approval: 'ba_mark_pending_school_approval',
+      confirm_copies: 'ba_confirm_copies',
+      submit_stamped_copy: 'ba_submit_stamped_copy',
     } as const
   )[operation.operation];
   const { data, error } = await supabase.rpc(rpc, operation.payload as never);
