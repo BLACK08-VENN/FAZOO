@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BarChart3, ClipboardList, FilePlus2, LogOut, Store, Users } from 'lucide-react';
 import { requireClient } from '@/lib/client-auth';
+import { FazooMark } from '@/components/fazoo-mark';
 import { signOutAction } from '../(portal)/actions';
 
 const NAV = [
@@ -39,9 +40,10 @@ export default async function BrandLayout({ children }: { children: React.ReactN
               />
             </div>
           ) : (
-            <span className="text-lg font-bold tracking-tight text-white">
-              Fazoo<span className="text-bright">.</span>
-            </span>
+            <>
+              <FazooMark className="mb-3 size-12" />
+              <span className="sr-only">Fazoo</span>
+            </>
           )}
           <p className="truncate text-xs font-medium text-white/70">{brand.name}</p>
           <p className="mt-0.5 text-[10px] uppercase tracking-wider text-white/55">

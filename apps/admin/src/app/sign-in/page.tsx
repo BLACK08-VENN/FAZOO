@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { SignInForm } from './sign-in-form';
+import { FazooMark } from '@/components/fazoo-mark';
 
 export default async function SignInPage({
   searchParams,
@@ -20,9 +21,7 @@ export default async function SignInPage({
         </div>
 
         <div className="relative flex items-center gap-3">
-          <span className="relative grid size-10 place-items-center rounded-xl border border-white/15 bg-gradient-to-br from-[#a449e6] to-[#5b1b92] text-lg font-black shadow-[0_0_36px_rgba(168,73,230,.38)]">
-            F<span className="absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-[#100d15] bg-[#50e3a4]" />
-          </span>
+          <FazooMark />
           <div>
             <p className="text-lg font-bold tracking-tight">Fazoo</p>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
@@ -90,7 +89,7 @@ export default async function SignInPage({
         <div aria-hidden="true" className="absolute inset-0 opacity-[0.35] [background-image:linear-gradient(rgba(123,47,190,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(123,47,190,.04)_1px,transparent_1px)] [background-size:36px_36px]" />
         <div className="relative w-full max-w-md">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <span className="grid size-10 place-items-center rounded-xl bg-primary text-lg font-black text-white shadow-lg shadow-primary/20">F</span>
+            <FazooMark />
             <span className="text-lg font-bold tracking-tight text-ink">Fazoo</span>
           </div>
 

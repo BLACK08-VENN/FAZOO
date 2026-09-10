@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { requireStaff } from '@/lib/auth';
 import { MobileNav } from '@/components/mobile-nav';
+import { FazooMark } from '@/components/fazoo-mark';
 import { signOutAction } from './actions';
 
 const NAV = [
@@ -32,9 +33,8 @@ export default async function PortalLayout({ children }: { children: React.React
         aria-label="Sidebar navigation"
       >
         <div className="mb-8 px-3">
-          <span className="text-lg font-bold tracking-tight text-white">
-            Fazoo<span className="text-bright">.</span>
-          </span>
+          <FazooMark className="size-12" />
+          <span className="sr-only">Fazoo</span>
         </div>
         <nav aria-label="Primary" className="min-h-0 flex-1 space-y-1 overflow-y-auto">
           {NAV.map(({ href, label, icon: Icon }) => (
@@ -67,10 +67,9 @@ export default async function PortalLayout({ children }: { children: React.React
       {/* Mobile top bar */}
       <div className="flex w-full flex-col">
         <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-14 items-center justify-between border-b px-4 lg:hidden">
-          <div className="min-w-0">
-            <span className="text-lg font-bold text-white">
-              Fazoo<span className="text-bright">.</span>
-            </span>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <FazooMark className="size-9" />
+            <span className="sr-only">Fazoo</span>
             <p className="truncate text-[11px] capitalize text-white/55">
               {profile.role.replace('_', ' ')}
             </p>
