@@ -39,6 +39,20 @@ const DOCUMENT_KIND_LABELS: Record<BooklistDocument['kind'], string> = {
   stamped_copy: 'Stamped +1 copy',
 };
 
+// Form values arrive as strings but the RPCs take Postgres enums, and `in` does
+// not narrow on its own — each guard both validates and narrows.
+function isStage(value: string): value is BooklistStage {
+  return value in BOOKLIST_STAGE_LABELS;
+}
+
+function isPrintOrderStatus(value: string): value is PrintOrderStatus {
+  return value in PRINT_ORDER_STATUS_LABELS;
+}
+
+function isDispatchMeans(value: string): value is DispatchMeans {
+  return value in DISPATCH_MEANS_LABELS;
+}
+
 const OUTCOME_LABELS: Record<SchoolVisit['outcome'], string> = {
   pending: 'No answer recorded',
   booklist_offered: 'Booklist offered',
@@ -180,13 +194,13 @@ export default async function BooklistJobPage({
     if (!isElevated(actor.role)) return;
 
     const stage = String(formData.get('stage') ?? '');
-    if (!(stage in BOOKLIST_STAGE_LABELS)) return;
+    if (!isStage(stage)) return;
     const note = String(formData.get('note') ?? '').trim();
 
     const { error } = await c.rpc('admin_advance_stage', {
       p_job_id: jobId,
       p_stage: stage,
-      p_note: note || null,
+      p_note: note || undefined,
     });
     if (!error) {
       revalidatePath(`/booklists/${jobId}`);
@@ -205,10 +219,10 @@ export default async function BooklistJobPage({
     const { error } = await c.rpc('admin_create_print_order', {
       p_job_id: jobId,
       p_quantity: quantity,
-      p_printer_name: String(formData.get('printer_name') ?? '').trim() || null,
-      p_reference: String(formData.get('reference') ?? '').trim() || null,
+      p_printer_name: String(formData.get('printer_name') ?? '').trim() || undefined,
+      p_reference: String(formData.get('reference') ?? '').trim() || undefined,
       p_client_request_id: crypto.randomUUID(),
-      p_note: String(formData.get('note') ?? '').trim() || null,
+      p_note: String(formData.get('note') ?? '').trim() || undefined,
     });
     if (!error) {
       revalidatePath(`/booklists/${jobId}`);
@@ -227,20 +241,22 @@ export default async function BooklistJobPage({
 
     const { error } = await c.rpc('admin_update_print_order', {
       p_order_id: orderId,
-      p_status: status in PRINT_ORDER_STATUS_LABELS ? status : null,
-      p_printer_name: String(formData.get('printer_name') ?? '').trim() || null,
-      p_reference: String(formData.get('reference') ?? '').trim() || null,
-      p_quantity: quantityRaw && Number.isInteger(Number(quantityRaw)) ? Number(quantityRaw) : null,
+      p_status: isPrintOrderStatus(status) ? status : undefined,
+      p_printer_name: String(formData.get('printer_name') ?? '').trim() || undefined,
+      p_reference: String(formData.get('reference') ?? '').trim() || undefined,
+      p_quantity:
+        quantityRaw && Number.isInteger(Number(quantityRaw)) ? Number(quantityRaw) : undefined,
       // The RPC rejects a dispatch with no means recorded, so only send a value
       // the supervisor actually chose.
-      p_dispatch_means: means in DISPATCH_MEANS_LABELS ? means : null,
-      p_dispatch_carrier: String(formData.get('dispatch_carrier') ?? '').trim() || null,
-      p_dispatch_tracking_ref: String(formData.get('dispatch_tracking_ref') ?? '').trim() || null,
-      p_dispatch_notes: String(formData.get('dispatch_notes') ?? '').trim() || null,
-      p_receipt_notes: String(formData.get('receipt_notes') ?? '').trim() || null,
-      p_cancelled_reason: String(formData.get('cancelled_reason') ?? '').trim() || null,
+      p_dispatch_means: isDispatchMeans(means) ? means : undefined,
+      p_dispatch_carrier: String(formData.get('dispatch_carrier') ?? '').trim() || undefined,
+      p_dispatch_tracking_ref:
+        String(formData.get('dispatch_tracking_ref') ?? '').trim() || undefined,
+      p_dispatch_notes: String(formData.get('dispatch_notes') ?? '').trim() || undefined,
+      p_receipt_notes: String(formData.get('receipt_notes') ?? '').trim() || undefined,
+      p_cancelled_reason: String(formData.get('cancelled_reason') ?? '').trim() || undefined,
       p_client_request_id: crypto.randomUUID(),
-      p_note: String(formData.get('note') ?? '').trim() || null,
+      p_note: String(formData.get('note') ?? '').trim() || undefined,
     });
     if (!error) {
       revalidatePath(`/booklists/${jobId}`);

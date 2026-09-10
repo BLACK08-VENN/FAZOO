@@ -67,18 +67,19 @@ export default async function SchoolDossierPage({
 
     const { error } = await c.rpc('admin_update_school', {
       p_school_id: schoolId,
-      p_name: String(formData.get('name') ?? '').trim() || null,
-      p_region: String(formData.get('region') ?? '').trim() || null,
-      p_address: String(formData.get('address') ?? '').trim() || null,
-      // Blank means "leave it alone"; the RPC coalesces nulls onto the current value.
-      p_latitude: latitude === '' ? null : Number(latitude),
-      p_longitude: longitude === '' ? null : Number(longitude),
-      p_geofence_radius_metres: radius === '' ? null : Number(radius),
-      p_school_type: String(formData.get('school_type') ?? '').trim() || null,
-      p_contact_person_name: String(formData.get('contact_person_name') ?? '').trim() || null,
+      p_name: String(formData.get('name') ?? '').trim() || undefined,
+      p_region: String(formData.get('region') ?? '').trim() || undefined,
+      p_address: String(formData.get('address') ?? '').trim() || undefined,
+      // Blank means "leave it alone": the argument is omitted, so the SQL default
+      // null reaches the RPC, which coalesces it onto the current value.
+      p_latitude: latitude === '' ? undefined : Number(latitude),
+      p_longitude: longitude === '' ? undefined : Number(longitude),
+      p_geofence_radius_metres: radius === '' ? undefined : Number(radius),
+      p_school_type: String(formData.get('school_type') ?? '').trim() || undefined,
+      p_contact_person_name: String(formData.get('contact_person_name') ?? '').trim() || undefined,
       p_contact_person_designation:
-        String(formData.get('contact_person_designation') ?? '').trim() || null,
-      p_contact_person_phone: String(formData.get('contact_person_phone') ?? '').trim() || null,
+        String(formData.get('contact_person_designation') ?? '').trim() || undefined,
+      p_contact_person_phone: String(formData.get('contact_person_phone') ?? '').trim() || undefined,
       p_status: String(formData.get('status') ?? '') === 'inactive' ? 'inactive' : 'active',
     });
     if (!error) {

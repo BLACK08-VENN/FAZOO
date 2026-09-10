@@ -90,7 +90,6 @@ export default async function BaPerformancePage({
       p_period_start: periodStart,
       p_period_end: periodEnd,
       p_target_schools: target,
-      p_target_id: null,
     });
     if (!error) revalidatePath('/ba-performance');
   }

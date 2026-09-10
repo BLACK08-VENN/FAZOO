@@ -87,6 +87,405 @@ export type Database = {
           },
         ]
       }
+      ba_school_targets: {
+        Row: {
+          agency: Database["public"]["Enums"]["ba_agency"] | null
+          brand_ambassador_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          target_schools: number
+          updated_at: string
+        }
+        Insert: {
+          agency?: Database["public"]["Enums"]["ba_agency"] | null
+          brand_ambassador_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          target_schools: number
+          updated_at?: string
+        }
+        Update: {
+          agency?: Database["public"]["Enums"]["ba_agency"] | null
+          brand_ambassador_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          target_schools?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ba_school_targets_brand_ambassador_id_fkey"
+            columns: ["brand_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ba_school_targets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ba_school_targets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booklist_documents: {
+        Row: {
+          captured_on_site: boolean
+          client_request_id: string | null
+          created_at: string
+          file_size_bytes: number | null
+          id: string
+          is_current: boolean
+          job_id: string
+          kind: Database["public"]["Enums"]["booklist_document_kind"]
+          mime_type: string | null
+          ocr_confidence: number | null
+          ocr_error: string | null
+          ocr_finished_at: string | null
+          ocr_provider: string | null
+          ocr_started_at: string | null
+          ocr_status: Database["public"]["Enums"]["ocr_status"]
+          organization_id: string
+          page_count: number | null
+          source_format: string | null
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+          visit_id: string | null
+        }
+        Insert: {
+          captured_on_site?: boolean
+          client_request_id?: string | null
+          created_at?: string
+          file_size_bytes?: number | null
+          id?: string
+          is_current?: boolean
+          job_id: string
+          kind: Database["public"]["Enums"]["booklist_document_kind"]
+          mime_type?: string | null
+          ocr_confidence?: number | null
+          ocr_error?: string | null
+          ocr_finished_at?: string | null
+          ocr_provider?: string | null
+          ocr_started_at?: string | null
+          ocr_status?: Database["public"]["Enums"]["ocr_status"]
+          organization_id: string
+          page_count?: number | null
+          source_format?: string | null
+          storage_bucket?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+          visit_id?: string | null
+        }
+        Update: {
+          captured_on_site?: boolean
+          client_request_id?: string | null
+          created_at?: string
+          file_size_bytes?: number | null
+          id?: string
+          is_current?: boolean
+          job_id?: string
+          kind?: Database["public"]["Enums"]["booklist_document_kind"]
+          mime_type?: string | null
+          ocr_confidence?: number | null
+          ocr_error?: string | null
+          ocr_finished_at?: string | null
+          ocr_provider?: string | null
+          ocr_started_at?: string | null
+          ocr_status?: Database["public"]["Enums"]["ocr_status"]
+          organization_id?: string
+          page_count?: number | null
+          source_format?: string | null
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booklist_documents_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "booklist_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_documents_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "school_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booklist_jobs: {
+        Row: {
+          approved_by_school_at: string | null
+          cancelled_reason: string | null
+          completed_at: string | null
+          converted_at: string | null
+          converted_by: string | null
+          copies_confirmed_at: string | null
+          copies_confirmed_by: string | null
+          copies_requested: number | null
+          copies_to_print: number | null
+          created_at: string
+          dispatched_at: string | null
+          document_received_at: string | null
+          formatted_at: string | null
+          formatted_document_id: string | null
+          grade_notes: string | null
+          id: string
+          is_per_grade: boolean
+          latest_visit_id: string | null
+          ocr_status: Database["public"]["Enums"]["ocr_status"]
+          on_hold_reason: string | null
+          organization_id: string
+          owner_ba_id: string | null
+          raw_document_id: string | null
+          received_at: string | null
+          school_acknowledged_by: string | null
+          school_id: string
+          stage: Database["public"]["Enums"]["booklist_stage"]
+          stage_updated_at: string
+          stage_updated_by: string | null
+          stamped_document_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by_school_at?: string | null
+          cancelled_reason?: string | null
+          completed_at?: string | null
+          converted_at?: string | null
+          converted_by?: string | null
+          copies_confirmed_at?: string | null
+          copies_confirmed_by?: string | null
+          copies_requested?: number | null
+          copies_to_print?: number | null
+          created_at?: string
+          dispatched_at?: string | null
+          document_received_at?: string | null
+          formatted_at?: string | null
+          formatted_document_id?: string | null
+          grade_notes?: string | null
+          id?: string
+          is_per_grade?: boolean
+          latest_visit_id?: string | null
+          ocr_status?: Database["public"]["Enums"]["ocr_status"]
+          on_hold_reason?: string | null
+          organization_id: string
+          owner_ba_id?: string | null
+          raw_document_id?: string | null
+          received_at?: string | null
+          school_acknowledged_by?: string | null
+          school_id: string
+          stage?: Database["public"]["Enums"]["booklist_stage"]
+          stage_updated_at?: string
+          stage_updated_by?: string | null
+          stamped_document_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by_school_at?: string | null
+          cancelled_reason?: string | null
+          completed_at?: string | null
+          converted_at?: string | null
+          converted_by?: string | null
+          copies_confirmed_at?: string | null
+          copies_confirmed_by?: string | null
+          copies_requested?: number | null
+          copies_to_print?: number | null
+          created_at?: string
+          dispatched_at?: string | null
+          document_received_at?: string | null
+          formatted_at?: string | null
+          formatted_document_id?: string | null
+          grade_notes?: string | null
+          id?: string
+          is_per_grade?: boolean
+          latest_visit_id?: string | null
+          ocr_status?: Database["public"]["Enums"]["ocr_status"]
+          on_hold_reason?: string | null
+          organization_id?: string
+          owner_ba_id?: string | null
+          raw_document_id?: string | null
+          received_at?: string | null
+          school_acknowledged_by?: string | null
+          school_id?: string
+          stage?: Database["public"]["Enums"]["booklist_stage"]
+          stage_updated_at?: string
+          stage_updated_by?: string | null
+          stamped_document_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booklist_jobs_converted_by_fkey"
+            columns: ["converted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_copies_confirmed_by_fkey"
+            columns: ["copies_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_formatted_document_id_fkey"
+            columns: ["formatted_document_id"]
+            isOneToOne: false
+            referencedRelation: "booklist_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_latest_visit_id_fkey"
+            columns: ["latest_visit_id"]
+            isOneToOne: false
+            referencedRelation: "school_visits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_owner_ba_id_fkey"
+            columns: ["owner_ba_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_raw_document_id_fkey"
+            columns: ["raw_document_id"]
+            isOneToOne: false
+            referencedRelation: "booklist_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "veda_schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_stage_updated_by_fkey"
+            columns: ["stage_updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_jobs_stamped_document_id_fkey"
+            columns: ["stamped_document_id"]
+            isOneToOne: false
+            referencedRelation: "booklist_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booklist_stage_events: {
+        Row: {
+          changed_by: string | null
+          changed_by_role: Database["public"]["Enums"]["app_role"] | null
+          created_at: string
+          from_stage: Database["public"]["Enums"]["booklist_stage"] | null
+          id: number
+          job_id: string
+          note: string | null
+          organization_id: string
+          to_stage: Database["public"]["Enums"]["booklist_stage"]
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_role?: Database["public"]["Enums"]["app_role"] | null
+          created_at?: string
+          from_stage?: Database["public"]["Enums"]["booklist_stage"] | null
+          id?: never
+          job_id: string
+          note?: string | null
+          organization_id: string
+          to_stage: Database["public"]["Enums"]["booklist_stage"]
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_role?: Database["public"]["Enums"]["app_role"] | null
+          created_at?: string
+          from_stage?: Database["public"]["Enums"]["booklist_stage"] | null
+          id?: never
+          job_id?: string
+          note?: string | null
+          organization_id?: string
+          to_stage?: Database["public"]["Enums"]["booklist_stage"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booklist_stage_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_stage_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "booklist_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booklist_stage_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_ambassador_assignments: {
         Row: {
           brand_ambassador_id: string
@@ -642,9 +1041,130 @@ export type Database = {
         }
         Relationships: []
       }
+      print_orders: {
+        Row: {
+          cancelled_reason: string | null
+          client_request_id: string | null
+          created_at: string
+          dispatch_carrier: string | null
+          dispatch_means: Database["public"]["Enums"]["dispatch_means"] | null
+          dispatch_notes: string | null
+          dispatch_tracking_ref: string | null
+          dispatched_at: string | null
+          dispatched_by: string | null
+          id: string
+          includes_stamped_copy: boolean
+          job_id: string
+          ordered_at: string | null
+          ordered_by: string | null
+          organization_id: string
+          printer_name: string | null
+          production_started_at: string | null
+          quantity: number
+          ready_at: string | null
+          receipt_notes: string | null
+          received_at: string | null
+          received_by: string | null
+          reference: string | null
+          status: Database["public"]["Enums"]["print_order_status"]
+          updated_at: string
+        }
+        Insert: {
+          cancelled_reason?: string | null
+          client_request_id?: string | null
+          created_at?: string
+          dispatch_carrier?: string | null
+          dispatch_means?: Database["public"]["Enums"]["dispatch_means"] | null
+          dispatch_notes?: string | null
+          dispatch_tracking_ref?: string | null
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          id?: string
+          includes_stamped_copy?: boolean
+          job_id: string
+          ordered_at?: string | null
+          ordered_by?: string | null
+          organization_id: string
+          printer_name?: string | null
+          production_started_at?: string | null
+          quantity: number
+          ready_at?: string | null
+          receipt_notes?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          reference?: string | null
+          status?: Database["public"]["Enums"]["print_order_status"]
+          updated_at?: string
+        }
+        Update: {
+          cancelled_reason?: string | null
+          client_request_id?: string | null
+          created_at?: string
+          dispatch_carrier?: string | null
+          dispatch_means?: Database["public"]["Enums"]["dispatch_means"] | null
+          dispatch_notes?: string | null
+          dispatch_tracking_ref?: string | null
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          id?: string
+          includes_stamped_copy?: boolean
+          job_id?: string
+          ordered_at?: string | null
+          ordered_by?: string | null
+          organization_id?: string
+          printer_name?: string | null
+          production_started_at?: string | null
+          quantity?: number
+          ready_at?: string | null
+          receipt_notes?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          reference?: string | null
+          status?: Database["public"]["Enums"]["print_order_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_orders_dispatched_by_fkey"
+            columns: ["dispatched_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_orders_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "booklist_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_orders_ordered_by_fkey"
+            columns: ["ordered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_orders_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_status: Database["public"]["Enums"]["account_status"]
+          agency: Database["public"]["Enums"]["ba_agency"] | null
           created_at: string
           current_membership_id: string | null
           full_name: string
@@ -657,6 +1177,7 @@ export type Database = {
         }
         Insert: {
           account_status?: Database["public"]["Enums"]["account_status"]
+          agency?: Database["public"]["Enums"]["ba_agency"] | null
           created_at?: string
           current_membership_id?: string | null
           full_name: string
@@ -669,6 +1190,7 @@ export type Database = {
         }
         Update: {
           account_status?: Database["public"]["Enums"]["account_status"]
+          agency?: Database["public"]["Enums"]["ba_agency"] | null
           created_at?: string
           current_membership_id?: string | null
           full_name?: string
@@ -743,6 +1265,112 @@ export type Database = {
             columns: ["sku_id"]
             isOneToOne: false
             referencedRelation: "skus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_visits: {
+        Row: {
+          accuracy_metres: number | null
+          agency: Database["public"]["Enums"]["ba_agency"] | null
+          arrived_at: string
+          brand_ambassador_id: string
+          client_request_id: string | null
+          contact_person_name: string | null
+          contact_person_phone: string | null
+          contact_person_role: string | null
+          created_at: string
+          declined_reason_code: string | null
+          declined_reason_notes: string | null
+          distance_metres: number | null
+          geofence_status: Database["public"]["Enums"]["geofence_outcome"]
+          id: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          organization_id: string
+          outcome: Database["public"]["Enums"]["visit_outcome"]
+          school_id: string
+          selfie_captured_at: string | null
+          selfie_photo_path: string | null
+          selfie_required: boolean
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          accuracy_metres?: number | null
+          agency?: Database["public"]["Enums"]["ba_agency"] | null
+          arrived_at?: string
+          brand_ambassador_id: string
+          client_request_id?: string | null
+          contact_person_name?: string | null
+          contact_person_phone?: string | null
+          contact_person_role?: string | null
+          created_at?: string
+          declined_reason_code?: string | null
+          declined_reason_notes?: string | null
+          distance_metres?: number | null
+          geofence_status?: Database["public"]["Enums"]["geofence_outcome"]
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          organization_id: string
+          outcome?: Database["public"]["Enums"]["visit_outcome"]
+          school_id: string
+          selfie_captured_at?: string | null
+          selfie_photo_path?: string | null
+          selfie_required?: boolean
+          updated_at?: string
+          visit_date: string
+        }
+        Update: {
+          accuracy_metres?: number | null
+          agency?: Database["public"]["Enums"]["ba_agency"] | null
+          arrived_at?: string
+          brand_ambassador_id?: string
+          client_request_id?: string | null
+          contact_person_name?: string | null
+          contact_person_phone?: string | null
+          contact_person_role?: string | null
+          created_at?: string
+          declined_reason_code?: string | null
+          declined_reason_notes?: string | null
+          distance_metres?: number | null
+          geofence_status?: Database["public"]["Enums"]["geofence_outcome"]
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          organization_id?: string
+          outcome?: Database["public"]["Enums"]["visit_outcome"]
+          school_id?: string
+          selfie_captured_at?: string | null
+          selfie_photo_path?: string | null
+          selfie_required?: boolean
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_visits_brand_ambassador_id_fkey"
+            columns: ["brand_ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_visits_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_visits_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "veda_schools"
             referencedColumns: ["id"]
           },
         ]
@@ -901,51 +1529,6 @@ export type Database = {
           },
         ]
       }
-      veda_activities: {
-        Row: {
-          activity_type: Database["public"]["Enums"]["veda_activity_type"]
-          created_at: string
-          id: string
-          learner_count: number
-          organization_id: string
-          session_id: string
-          updated_at: string
-        }
-        Insert: {
-          activity_type: Database["public"]["Enums"]["veda_activity_type"]
-          created_at?: string
-          id?: string
-          learner_count: number
-          organization_id: string
-          session_id: string
-          updated_at?: string
-        }
-        Update: {
-          activity_type?: Database["public"]["Enums"]["veda_activity_type"]
-          created_at?: string
-          id?: string
-          learner_count?: number
-          organization_id?: string
-          session_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "veda_activities_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_activities_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "veda_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       veda_assignments: {
         Row: {
           brand_ambassador_id: string
@@ -996,55 +1579,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      veda_grade_stationery: {
-        Row: {
-          created_at: string
-          grade_id: string
-          id: string
-          organization_id: string
-          stationery_item_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          grade_id: string
-          id?: string
-          organization_id: string
-          stationery_item_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          grade_id?: string
-          id?: string
-          organization_id?: string
-          stationery_item_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "veda_grade_stationery_grade_id_fkey"
-            columns: ["grade_id"]
-            isOneToOne: false
-            referencedRelation: "veda_grades"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_grade_stationery_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_grade_stationery_stationery_item_id_fkey"
-            columns: ["stationery_item_id"]
-            isOneToOne: false
-            referencedRelation: "veda_stationery_items"
             referencedColumns: ["id"]
           },
         ]
@@ -1170,248 +1704,35 @@ export type Database = {
           },
         ]
       }
-      veda_session_distributions: {
-        Row: {
-          client_request_id: string | null
-          created_at: string
-          grade_id: string | null
-          id: string
-          organization_id: string
-          quantity: number
-          session_id: string
-          stationery_item_id: string
-          updated_at: string
-        }
-        Insert: {
-          client_request_id?: string | null
-          created_at?: string
-          grade_id?: string | null
-          id?: string
-          organization_id: string
-          quantity: number
-          session_id: string
-          stationery_item_id: string
-          updated_at?: string
-        }
-        Update: {
-          client_request_id?: string | null
-          created_at?: string
-          grade_id?: string | null
-          id?: string
-          organization_id?: string
-          quantity?: number
-          session_id?: string
-          stationery_item_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "veda_session_distributions_grade_fkey"
-            columns: ["grade_id"]
-            isOneToOne: false
-            referencedRelation: "veda_grades"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_session_distributions_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_session_distributions_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "veda_sessions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_session_distributions_stationery_item_id_fkey"
-            columns: ["stationery_item_id"]
-            isOneToOne: false
-            referencedRelation: "veda_stationery_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      veda_session_photos: {
-        Row: {
-          captured_at: string
-          created_at: string
-          id: string
-          organization_id: string
-          photo_type: Database["public"]["Enums"]["veda_photo_type"]
-          session_id: string
-          storage_path: string
-        }
-        Insert: {
-          captured_at?: string
-          created_at?: string
-          id?: string
-          organization_id: string
-          photo_type: Database["public"]["Enums"]["veda_photo_type"]
-          session_id: string
-          storage_path: string
-        }
-        Update: {
-          captured_at?: string
-          created_at?: string
-          id?: string
-          organization_id?: string
-          photo_type?: Database["public"]["Enums"]["veda_photo_type"]
-          session_id?: string
-          storage_path?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "veda_session_photos_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_session_photos_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "veda_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      veda_sessions: {
-        Row: {
-          brand_ambassador_id: string
-          checkin_at: string | null
-          checkin_distance_metres: number | null
-          checkin_latitude: number | null
-          checkin_longitude: number | null
-          checkout_at: string | null
-          checkout_latitude: number | null
-          checkout_longitude: number | null
-          client_request_id: string | null
-          created_at: string
-          id: string
-          learner_count: number
-          legacy_id: number | null
-          notes: string | null
-          organization_id: string
-          school_id: string
-          session_date: string
-          status: Database["public"]["Enums"]["daily_log_status"]
-          updated_at: string
-        }
-        Insert: {
-          brand_ambassador_id: string
-          checkin_at?: string | null
-          checkin_distance_metres?: number | null
-          checkin_latitude?: number | null
-          checkin_longitude?: number | null
-          checkout_at?: string | null
-          checkout_latitude?: number | null
-          checkout_longitude?: number | null
-          client_request_id?: string | null
-          created_at?: string
-          id?: string
-          learner_count: number
-          legacy_id?: number | null
-          notes?: string | null
-          organization_id: string
-          school_id: string
-          session_date: string
-          status?: Database["public"]["Enums"]["daily_log_status"]
-          updated_at?: string
-        }
-        Update: {
-          brand_ambassador_id?: string
-          checkin_at?: string | null
-          checkin_distance_metres?: number | null
-          checkin_latitude?: number | null
-          checkin_longitude?: number | null
-          checkout_at?: string | null
-          checkout_latitude?: number | null
-          checkout_longitude?: number | null
-          client_request_id?: string | null
-          created_at?: string
-          id?: string
-          learner_count?: number
-          legacy_id?: number | null
-          notes?: string | null
-          organization_id?: string
-          school_id?: string
-          session_date?: string
-          status?: Database["public"]["Enums"]["daily_log_status"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "veda_sessions_brand_ambassador_id_fkey"
-            columns: ["brand_ambassador_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_sessions_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "veda_sessions_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "veda_schools"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      veda_stationery_items: {
-        Row: {
-          code: string | null
-          created_at: string
-          id: string
-          name: string
-          organization_id: string
-          status: Database["public"]["Enums"]["sku_status"]
-          updated_at: string
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          organization_id: string
-          status?: Database["public"]["Enums"]["sku_status"]
-          updated_at?: string
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          organization_id?: string
-          status?: Database["public"]["Enums"]["sku_status"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "veda_stationery_items_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       account_status_active: { Args: never; Returns: boolean }
+      admin_advance_stage: {
+        Args: {
+          p_job_id: string
+          p_note?: string
+          p_stage: Database["public"]["Enums"]["booklist_stage"]
+        }
+        Returns: Json
+      }
+      admin_ba_performance: {
+        Args: {
+          p_agency?: Database["public"]["Enums"]["ba_agency"]
+          p_period_end?: string
+          p_period_start?: string
+        }
+        Returns: Json
+      }
+      admin_booklist_queue: {
+        Args: {
+          p_limit?: number
+          p_ocr_status?: Database["public"]["Enums"]["ocr_status"]
+        }
+        Returns: Json
+      }
       admin_create_ba: {
         Args: {
           p_end_date?: string
@@ -1432,6 +1753,17 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_create_print_order: {
+        Args: {
+          p_client_request_id?: string
+          p_job_id: string
+          p_note?: string
+          p_printer_name?: string
+          p_quantity: number
+          p_reference?: string
+        }
+        Returns: Json
+      }
       admin_delete_ba: { Args: { p_profile_id: string }; Returns: Json }
       admin_delete_campaign: { Args: { p_campaign_id: string }; Returns: Json }
       admin_delete_organization: { Args: { p_org_id: string }; Returns: Json }
@@ -1449,6 +1781,47 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_pipeline_board: {
+        Args: {
+          p_agency?: Database["public"]["Enums"]["ba_agency"]
+          p_ba_id?: string
+          p_from?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_region?: string
+          p_stage?: Database["public"]["Enums"]["booklist_stage"]
+          p_to?: string
+        }
+        Returns: Json
+      }
+      admin_publish_formatted_document: {
+        Args: {
+          p_file_size_bytes?: number
+          p_is_per_grade?: boolean
+          p_job_id: string
+          p_mime_type?: string
+          p_note?: string
+          p_page_count?: number
+          p_storage_path: string
+        }
+        Returns: Json
+      }
+      admin_record_ocr_result: {
+        Args: {
+          p_actor_id?: string
+          p_confidence?: number
+          p_draft_mime_type?: string
+          p_draft_size_bytes?: number
+          p_draft_storage_path?: string
+          p_error?: string
+          p_job_id: string
+          p_page_count?: number
+          p_provider?: string
+          p_status: Database["public"]["Enums"]["ocr_status"]
+        }
+        Returns: Json
+      }
       admin_reopen_daily_log: {
         Args: { p_daily_log_id: string }
         Returns: undefined
@@ -1461,12 +1834,67 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_school_dossier: { Args: { p_school_id: string }; Returns: Json }
       admin_set_account_status: {
         Args: { p_action: string; p_profile_id: string; p_reason?: string }
         Returns: Json
       }
+      admin_set_ba_agency: {
+        Args: {
+          p_agency: Database["public"]["Enums"]["ba_agency"]
+          p_ba_id: string
+        }
+        Returns: Json
+      }
+      admin_set_ba_target: {
+        Args: {
+          p_ba_id: string
+          p_period_end: string
+          p_period_start: string
+          p_target_id?: string
+          p_target_schools: number
+        }
+        Returns: Json
+      }
       admin_set_organization_status: {
         Args: { p_org_id: string; p_status: string }
+        Returns: Json
+      }
+      admin_update_print_order: {
+        Args: {
+          p_cancelled_reason?: string
+          p_client_request_id?: string
+          p_dispatch_carrier?: string
+          p_dispatch_means?: Database["public"]["Enums"]["dispatch_means"]
+          p_dispatch_notes?: string
+          p_dispatch_tracking_ref?: string
+          p_dispatched_at?: string
+          p_note?: string
+          p_order_id: string
+          p_printer_name?: string
+          p_quantity?: number
+          p_receipt_notes?: string
+          p_received_at?: string
+          p_reference?: string
+          p_status?: Database["public"]["Enums"]["print_order_status"]
+        }
+        Returns: Json
+      }
+      admin_update_school: {
+        Args: {
+          p_address?: string
+          p_contact_person_designation?: string
+          p_contact_person_name?: string
+          p_contact_person_phone?: string
+          p_geofence_radius_metres?: number
+          p_latitude?: number
+          p_longitude?: number
+          p_name?: string
+          p_region?: string
+          p_school_id: string
+          p_school_type?: string
+          p_status?: Database["public"]["Enums"]["store_status"]
+        }
         Returns: Json
       }
       admin_upsert_assignment: {
@@ -1477,7 +1905,7 @@ export type Database = {
           p_end_date?: string
           p_start_date: string
           p_status?: Database["public"]["Enums"]["assignment_status"]
-          p_store_id: string | null
+          p_store_id: string
           p_weekly_off_day: number[]
         }
         Returns: string
@@ -1486,6 +1914,82 @@ export type Database = {
         Args: never
         Returns: {
           account_status: Database["public"]["Enums"]["account_status"]
+          agency: Database["public"]["Enums"]["ba_agency"] | null
+          created_at: string
+          current_membership_id: string | null
+          full_name: string
+          id: string
+          organization_id: string
+          phone: string
+          profile_photo_path: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assert_org_admin: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          agency: Database["public"]["Enums"]["ba_agency"] | null
+          created_at: string
+          current_membership_id: string | null
+          full_name: string
+          id: string
+          organization_id: string
+          phone: string
+          profile_photo_path: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assert_org_staff: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          agency: Database["public"]["Enums"]["ba_agency"] | null
+          created_at: string
+          current_membership_id: string | null
+          full_name: string
+          id: string
+          organization_id: string
+          phone: string
+          profile_photo_path: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assert_own_storage_path: {
+        Args: {
+          p_label?: string
+          p_organization_id: string
+          p_path: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      assert_school_ba: {
+        Args: never
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          agency: Database["public"]["Enums"]["ba_agency"] | null
           created_at: string
           current_membership_id: string | null
           full_name: string
@@ -1530,12 +2034,44 @@ export type Database = {
         }
         Returns: Json
       }
+      ba_confirm_copies: {
+        Args: {
+          p_client_request_id: string
+          p_copies_requested: number
+          p_job_id: string
+          p_notes?: string
+          p_school_acknowledged_by?: string
+        }
+        Returns: Json
+      }
+      ba_create_school: {
+        Args: {
+          p_address?: string
+          p_client_request_id?: string
+          p_contact_person_name?: string
+          p_contact_person_phone?: string
+          p_latitude?: number
+          p_longitude?: number
+          p_name: string
+          p_region?: string
+          p_school_type?: string
+        }
+        Returns: Json
+      }
       ba_delete_sale: {
         Args: { p_daily_log_id?: string; p_sales_entry_id: string }
         Returns: undefined
       }
       ba_list_campaigns: { Args: never; Returns: Json }
       ba_list_veda_schools: { Args: never; Returns: Json }
+      ba_mark_pending_school_approval: {
+        Args: {
+          p_client_request_id: string
+          p_job_id: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
       ba_mark_sick_leave: {
         Args: {
           p_assignment_id?: string
@@ -1553,6 +2089,22 @@ export type Database = {
           p_quantity: number
           p_recorded_at_hint?: string
           p_sku_id: string
+        }
+        Returns: Json
+      }
+      ba_record_visit_outcome: {
+        Args: {
+          p_client_request_id?: string
+          p_contact_person_name?: string
+          p_contact_person_phone?: string
+          p_contact_person_role?: string
+          p_declined_reason_code?: string
+          p_declined_reason_notes?: string
+          p_is_per_grade?: boolean
+          p_notes?: string
+          p_outcome?: Database["public"]["Enums"]["visit_outcome"]
+          p_visit_client_request_id?: string
+          p_visit_id?: string
         }
         Returns: Json
       }
@@ -1576,6 +2128,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ba_school_job_detail: { Args: { p_job_id: string }; Returns: Json }
+      ba_school_pipeline: {
+        Args: {
+          p_limit?: number
+          p_query?: string
+          p_stage?: Database["public"]["Enums"]["booklist_stage"]
+        }
+        Returns: Json
+      }
+      ba_search_schools: {
+        Args: { p_limit?: number; p_query?: string; p_region?: string }
+        Returns: Json
+      }
+      ba_start_school_visit: {
+        Args: {
+          p_accuracy_metres?: number
+          p_client_request_id: string
+          p_contact_person_name?: string
+          p_contact_person_phone?: string
+          p_contact_person_role?: string
+          p_latitude?: number
+          p_longitude?: number
+          p_notes?: string
+          p_school_id: string
+          p_selfie_photo_path?: string
+        }
+        Returns: Json
+      }
+      ba_submit_booklist_document: {
+        Args: {
+          p_captured_on_site?: boolean
+          p_client_request_id?: string
+          p_file_size_bytes?: number
+          p_grade_notes?: string
+          p_is_per_grade?: boolean
+          p_mime_type?: string
+          p_notes?: string
+          p_page_count?: number
+          p_source_format?: string
+          p_storage_path?: string
+          p_visit_client_request_id?: string
+          p_visit_id?: string
+        }
+        Returns: Json
+      }
       ba_submit_leave_request: {
         Args: {
           p_assignment_id: string
@@ -1589,6 +2186,17 @@ export type Database = {
           p_supervisor_informed: boolean
           p_supervisor_not_informed_reason: string
           p_supporting_document_types: string[]
+        }
+        Returns: Json
+      }
+      ba_submit_stamped_copy: {
+        Args: {
+          p_client_request_id: string
+          p_file_size_bytes?: number
+          p_job_id: string
+          p_mime_type?: string
+          p_notes?: string
+          p_storage_path: string
         }
         Returns: Json
       }
@@ -1625,6 +2233,18 @@ export type Database = {
           p_sales_entry_id: string
         }
         Returns: undefined
+      }
+      ba_visit_rules: {
+        Args: {
+          p_agency: Database["public"]["Enums"]["ba_agency"]
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      ba_visit_stats: { Args: never; Returns: Json }
+      can_read_booklist_document: {
+        Args: { p_object_name: string }
+        Returns: boolean
       }
       can_read_org: { Args: { p_organization_id: string }; Returns: boolean }
       check_rate_limit: {
@@ -1699,6 +2319,23 @@ export type Database = {
         }[]
       }
       normalize_off_days: { Args: { p_days: number[] }; Returns: number[] }
+      resolve_school_visit: {
+        Args: {
+          p_profile: Database["public"]["Tables"]["profiles"]["Row"]
+          p_visit_client_request_id: string
+          p_visit_id: string
+        }
+        Returns: string
+      }
+      set_booklist_stage: {
+        Args: {
+          p_actor: string
+          p_job_id: string
+          p_note?: string
+          p_to: Database["public"]["Enums"]["booklist_stage"]
+        }
+        Returns: undefined
+      }
       supervisor_can_see_campaign: {
         Args: { p_campaign_id: string; p_supervisor_id: string }
         Returns: boolean
@@ -1713,10 +2350,6 @@ export type Database = {
           p_client_request_id: string
           p_operation: string
         }
-        Returns: Json
-      }
-      veda_admin_delete_stationery_item: {
-        Args: { p_item_id: string }
         Returns: Json
       }
       veda_admin_upsert_assignment: {
@@ -1737,7 +2370,6 @@ export type Database = {
           p_grade_id?: string
           p_name: string
           p_sort_order?: number
-          p_stationery_ids?: string[]
           p_status?: Database["public"]["Enums"]["sku_status"]
         }
         Returns: string
@@ -1753,89 +2385,6 @@ export type Database = {
         }
         Returns: string
       }
-      veda_admin_upsert_stationery: {
-        Args: {
-          p_code?: string
-          p_item_id?: string
-          p_name: string
-          p_status?: Database["public"]["Enums"]["sku_status"]
-        }
-        Returns: string
-      }
-      veda_admin_upsert_stationery_item: {
-        Args: {
-          p_code: string
-          p_item_id?: string
-          p_name: string
-          p_status?: Database["public"]["Enums"]["sku_status"]
-        }
-        Returns: string
-      }
-      veda_checkin: {
-        Args: {
-          p_accuracy_metres?: number
-          p_assignment_id?: string
-          p_client_request_id: string
-          p_latitude: number
-          p_learner_count?: number
-          p_longitude: number
-          p_notes?: string
-          p_school_id?: string
-          p_selfie_photo_path: string
-          p_stamped_document_path: string
-        }
-        Returns: Json
-      }
-      veda_checkout: {
-        Args: {
-          p_accuracy_metres?: number
-          p_client_request_id: string
-          p_latitude: number
-          p_longitude: number
-          p_notes?: string
-          p_session_id: string
-        }
-        Returns: Json
-      }
-      veda_record_distribution:
-        | {
-            Args: {
-              p_client_request_id: string
-              p_quantity: number
-              p_session_id: string
-              p_stationery_item_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_client_request_id: string
-              p_grade_id?: string
-              p_quantity: number
-              p_session_id: string
-              p_stationery_item_id: string
-            }
-            Returns: Json
-          }
-      veda_remove_distribution:
-        | {
-            Args: {
-              p_client_request_id: string
-              p_session_id: string
-              p_stationery_item_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_client_request_id: string
-              p_grade_id?: string
-              p_session_id: string
-              p_stationery_item_id: string
-            }
-            Returns: Json
-          }
-      veda_today: { Args: never; Returns: Json }
       write_audit: {
         Args: {
           p_action: string
@@ -1863,8 +2412,40 @@ export type Database = {
         | "client"
       assignment_status: "active" | "ended" | "cancelled"
       attendance_status: "present" | "sick_leave" | "weekly_off" | "absent"
+      ba_agency: "ael" | "veda"
+      booklist_document_kind:
+        | "raw_upload"
+        | "ocr_draft"
+        | "formatted"
+        | "printed_proof"
+        | "stamped_copy"
+      booklist_stage:
+        | "engaged"
+        | "declined"
+        | "booklist_offered"
+        | "document_received"
+        | "awaiting_conversion"
+        | "converting"
+        | "formatted"
+        | "pending_school_approval"
+        | "school_approved"
+        | "in_production"
+        | "dispatched"
+        | "received"
+        | "completed"
+        | "on_hold"
+        | "cancelled"
       campaign_status: "draft" | "active" | "completed" | "cancelled"
       daily_log_status: "open" | "completed" | "cancelled"
+      dispatch_means:
+        | "courier"
+        | "boda_boda"
+        | "own_fleet"
+        | "ba_pickup"
+        | "postal"
+        | "third_party"
+        | "other"
+      geofence_outcome: "inside" | "outside" | "no_coordinates" | "not_checked"
       leave_request_status: "pending" | "approved" | "denied" | "cancelled"
       leave_type:
         | "annual_leave"
@@ -1873,6 +2454,13 @@ export type Database = {
         | "maternity_leave"
         | "casual_leave"
         | "other"
+      ocr_status:
+        | "not_required"
+        | "queued"
+        | "processing"
+        | "succeeded"
+        | "failed"
+        | "manual_required"
       organization_status: "active" | "suspended"
       photo_type:
         | "stock_shelf"
@@ -1881,13 +2469,17 @@ export type Database = {
         | "other"
         | "checkout_stock_shelf"
         | "checkout_uniform_selfie"
+      print_order_status:
+        | "draft"
+        | "ordered"
+        | "in_production"
+        | "ready"
+        | "dispatched"
+        | "received"
+        | "cancelled"
       sku_status: "active" | "inactive"
       store_status: "active" | "inactive"
-      veda_activity_type:
-        | "crayon_colouring"
-        | "watercolour_painting"
-        | "paper_crafts"
-      veda_photo_type: "site_selfie" | "stamped_document"
+      visit_outcome: "pending" | "booklist_offered" | "declined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2034,8 +2626,43 @@ export const Constants = {
       ],
       assignment_status: ["active", "ended", "cancelled"],
       attendance_status: ["present", "sick_leave", "weekly_off", "absent"],
+      ba_agency: ["ael", "veda"],
+      booklist_document_kind: [
+        "raw_upload",
+        "ocr_draft",
+        "formatted",
+        "printed_proof",
+        "stamped_copy",
+      ],
+      booklist_stage: [
+        "engaged",
+        "declined",
+        "booklist_offered",
+        "document_received",
+        "awaiting_conversion",
+        "converting",
+        "formatted",
+        "pending_school_approval",
+        "school_approved",
+        "in_production",
+        "dispatched",
+        "received",
+        "completed",
+        "on_hold",
+        "cancelled",
+      ],
       campaign_status: ["draft", "active", "completed", "cancelled"],
       daily_log_status: ["open", "completed", "cancelled"],
+      dispatch_means: [
+        "courier",
+        "boda_boda",
+        "own_fleet",
+        "ba_pickup",
+        "postal",
+        "third_party",
+        "other",
+      ],
+      geofence_outcome: ["inside", "outside", "no_coordinates", "not_checked"],
       leave_request_status: ["pending", "approved", "denied", "cancelled"],
       leave_type: [
         "annual_leave",
@@ -2044,6 +2671,14 @@ export const Constants = {
         "maternity_leave",
         "casual_leave",
         "other",
+      ],
+      ocr_status: [
+        "not_required",
+        "queued",
+        "processing",
+        "succeeded",
+        "failed",
+        "manual_required",
       ],
       organization_status: ["active", "suspended"],
       photo_type: [
@@ -2054,14 +2689,18 @@ export const Constants = {
         "checkout_stock_shelf",
         "checkout_uniform_selfie",
       ],
+      print_order_status: [
+        "draft",
+        "ordered",
+        "in_production",
+        "ready",
+        "dispatched",
+        "received",
+        "cancelled",
+      ],
       sku_status: ["active", "inactive"],
       store_status: ["active", "inactive"],
-      veda_activity_type: [
-        "crayon_colouring",
-        "watercolour_painting",
-        "paper_crafts",
-      ],
-      veda_photo_type: ["site_selfie", "stamped_document"],
+      visit_outcome: ["pending", "booklist_offered", "declined"],
     },
   },
 } as const

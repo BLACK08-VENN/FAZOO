@@ -56,13 +56,13 @@ async function recordResult(
   const { error } = await db.rpc('admin_record_ocr_result', {
     p_job_id: jobId,
     p_status: payload.status,
-    p_provider: payload.provider ?? null,
-    p_confidence: payload.confidence ?? null,
-    p_error: payload.error ?? null,
-    p_draft_storage_path: payload.draftStoragePath ?? null,
-    p_draft_mime_type: payload.draftStoragePath ? DOCX_MIME : null,
-    p_draft_size_bytes: payload.draftSizeBytes ?? null,
-    p_page_count: payload.pageCount ?? null,
+    p_provider: payload.provider ?? undefined,
+    p_confidence: payload.confidence ?? undefined,
+    p_error: payload.error ?? undefined,
+    p_draft_storage_path: payload.draftStoragePath ?? undefined,
+    p_draft_mime_type: payload.draftStoragePath ? DOCX_MIME : undefined,
+    p_draft_size_bytes: payload.draftSizeBytes ?? undefined,
+    p_page_count: payload.pageCount ?? undefined,
     p_actor_id: actorId,
   });
   if (error) throw new Error(`Failed to record the OCR result: ${error.message}`);

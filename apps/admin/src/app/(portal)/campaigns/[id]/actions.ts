@@ -19,7 +19,9 @@ export async function addBaToCampaignAction(formData: FormData): Promise<void> {
   });
   if (!parsed.success) return;
 
-  const storeId = parsed.data.store_id || null;
+  // Generated types mark a required arg non-null; Postgres still accepts NULL
+  // here, which is how a storeless BA is attached.
+  const storeId = (parsed.data.store_id || null) as string;
   await client.rpc('admin_upsert_assignment', {
     p_brand_ambassador_id: parsed.data.brand_ambassador_id,
     p_campaign_id: parsed.data.campaign_id,

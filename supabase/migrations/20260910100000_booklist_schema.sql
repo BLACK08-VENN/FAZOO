@@ -107,13 +107,17 @@ create index if not exists profiles_agency_idx
   on public.profiles (organization_id, agency)
   where agency is not null;
 
--- Existing school-org BAs default to Veda.
+-- Existing school-org BAs default to Veda. `guard_profile_update` rejects any
+-- profiles write whose `auth.uid()` resolves to no profile, and a migration runs
+-- as the deploy role, so use the guard's own transaction-local bypass token.
+select set_config('fazoo.membership_sync', 'true', true);
 update public.profiles pr
    set agency = 'veda'
   from public.organizations o
  where o.id = pr.organization_id
    and o.kind = 'schools'
    and pr.agency is null;
+select set_config('fazoo.membership_sync', 'false', true);
 
 -- ── Per-agency visit rules ──────────────────────────────────────────────────
 -- Read from organizations.settings -> 'agency_rules' -> <agency>, with safe
@@ -555,16 +559,32 @@ begin
 end $$;
 
 do $$
+declare trgm_schema text;
 begin
-  if exists (select 1 from pg_extension where extname = 'pg_trgm') then
-    create index if not exists veda_schools_name_trgm_idx
-      on public.veda_schools using gin (name gin_trgm_ops);
-    create index if not exists veda_schools_region_idx
-      on public.veda_schools (organization_id, region);
-  else
-    create index if not exists veda_schools_region_idx
-      on public.veda_schools (organization_id, region);
+  create index if not exists veda_schools_region_idx
+    on public.veda_schools (organization_id, region);
+
+  -- Supabase installs pg_trgm into `extensions`, which is not on the migration
+  -- role's search_path, so the operator class has to be schema-qualified.
+  select n.nspname into trgm_schema
+    from pg_extension e
+    join pg_namespace n on n.oid = e.extnamespace
+   where e.extname = 'pg_trgm';
+
+  if trgm_schema is null then
+    raise notice 'pg_trgm not installed; school search falls back to an ILIKE scan.';
+    return;
   end if;
+
+  begin
+    execute format(
+      'create index if not exists veda_schools_name_trgm_idx
+         on public.veda_schools using gin (name %I.gin_trgm_ops)',
+      trgm_schema
+    );
+  exception when others then
+    raise notice 'trigram index skipped (%); school search falls back to an ILIKE scan.', sqlerrm;
+  end;
 end $$;
 
 commit;

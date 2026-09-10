@@ -114,9 +114,8 @@ export async function publishFormattedDocument(params: {
     p_storage_path: storagePath,
     p_mime_type: params.file.type || DOCX_MIME,
     p_file_size_bytes: sizeBytes,
-    p_page_count: null,
-    p_is_per_grade: params.isPerGrade ?? null,
-    p_note: params.note ?? null,
+    p_is_per_grade: params.isPerGrade ?? undefined,
+    p_note: params.note ?? undefined,
   });
 
   if (error) {
