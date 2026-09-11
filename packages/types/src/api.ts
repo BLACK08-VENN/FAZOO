@@ -397,8 +397,13 @@ export interface AdminPipelineJob {
   has_raw_document: boolean;
   has_formatted_document: boolean;
   has_stamped_copy: boolean;
+  raw_document_id: Uuid | null;
+  formatted_document_id: Uuid | null;
+  stamped_document_id: Uuid | null;
   /** e.g. `dispatched · courier` — the newest print order for this job. */
   latest_print_order: string | null;
+  /** Dispatch means from the newest print order (e.g. 'courier', 'boda_boda'). */
+  print_order_dispatch_means: DispatchMeans | null;
   visit_count: number;
   last_visit_date: IsoDate | null;
 }

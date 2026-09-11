@@ -1,0 +1,16 @@
+Fazoo Android release
+
+Version: 0.1.0
+Commit: f3073b8 (local)
+EAS build artifact: https://expo.dev/artifacts/eas/Axayg9qmXfNot3Ov_TUzDWYs-FZFmH5PmU6BFwX_r2o.apk
+
+Changes in this build:
+- Added BA: Priscilla Wangui Mwangi (+254717364438)
+- Mobile performance improvements:
+  - Metro: enabled inlineRequires to reduce cold-start JS parsing
+  - Enabled Hermes JS engine for production/dev-client builds (app.json)
+
+Notes:
+- This APK is a development/internal build. Install with `adb install -r`.
+- To profile performance, use the Expo dev client or Flipper after installation.
+- For production release, build a production EAS build and sign accordingly.

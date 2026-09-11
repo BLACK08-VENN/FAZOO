@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { BaAgency, BooklistStage } from '@fazoo/types';
-import { BOOKLIST_STAGE_LABELS } from '@fazoo/config';
+import { BOOKLIST_STAGE_LABELS, DISPATCH_MEANS_LABELS } from '@fazoo/config';
 import { requireStaff } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
 import { AgencyBadge, StageBadge } from '@/components/stage-badge';
@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
-import { nairobiDate, nairobiTime } from '@/lib/format';
+import { nairobiTime } from '@/lib/format';
 import { pipelineBoard } from '@/server/booklists';
+import type { AdminPipelineJob } from '@fazoo/types';
 
 const PAGE_SIZE = 50;
 
@@ -61,6 +62,51 @@ function hrefWith(params: SearchParams, overrides: Record<string, string | undef
   }
   const qs = search.toString();
   return qs ? `/booklists?${qs}` : '/booklists';
+}
+
+interface SpreadsheetColumns {
+  booklistGiven: boolean;
+  hasDocument: boolean;
+  hasApproved: boolean;
+  copiesRequested: number | null;
+  copiesToPrint: number | null;
+  printed: boolean;
+  dispatched: boolean;
+  dispatchMeans: string | null;
+  received: boolean;
+  hasStamped: boolean;
+  rawDocId: string | null;
+  formattedDocId: string | null;
+  stampedDocId: string | null;
+}
+
+function spreadsheetColumns(job: AdminPipelineJob): SpreadsheetColumns {
+  const booklistGiven = job.stage !== 'engaged' && job.stage !== 'declined';
+  const hasDocument = job.has_raw_document;
+  const hasApproved = job.has_formatted_document;
+  const printed = Boolean(job.latest_print_order);
+  const dispatched = job.stage === 'dispatched' || job.stage === 'received' || job.stage === 'completed';
+  const dispatchMeans = dispatched && job.print_order_dispatch_means
+    ? (DISPATCH_MEANS_LABELS[job.print_order_dispatch_means] ?? job.print_order_dispatch_means)
+    : null;
+  const received = job.stage === 'received' || job.stage === 'completed';
+  const hasStamped = job.has_stamped_copy;
+
+  return {
+    booklistGiven,
+    hasDocument,
+    hasApproved,
+    copiesRequested: job.copies_requested,
+    copiesToPrint: job.copies_to_print,
+    printed,
+    dispatched,
+    dispatchMeans,
+    received,
+    hasStamped,
+    rawDocId: job.raw_document_id ?? null,
+    formattedDocId: job.formatted_document_id ?? null,
+    stampedDocId: job.stamped_document_id ?? null,
+  };
 }
 
 export default async function BooklistPipelinePage({
@@ -257,80 +303,150 @@ export default async function BooklistPipelinePage({
           <thead>
             <tr>
               <Th>School</Th>
-              <Th>Stage</Th>
-              <Th>Brand ambassador</Th>
+              <Th>Booklist</Th>
+              <Th>Document</Th>
+              <Th>Approved</Th>
               <Th className="text-right">Copies</Th>
-              <Th>Print order</Th>
-              <Th>Last visit</Th>
+              <Th className="text-right">To print</Th>
+              <Th>Printed?</Th>
+              <Th>Dispatched</Th>
+              <Th>Received</Th>
+              <Th>Stamped</Th>
+              <Th>BA</Th>
+              <Th>Stage</Th>
               <Th>Updated</Th>
             </tr>
           </thead>
           <tbody>
             {jobs.length === 0 ? (
-              <EmptyRow colSpan={7}>
+              <EmptyRow colSpan={13}>
                 {board.total === 0 && !query && !stage
                   ? 'No schools have been logged yet. They appear here as soon as a BA records a gate visit.'
                   : 'No schools match that search or filter.'}
               </EmptyRow>
             ) : (
-              jobs.map((job) => (
-                <tr key={job.job_id} className="transition-colors hover:bg-lavender/40">
-                  <Td>
-                    <Link
-                      href={`/booklists/${job.job_id}`}
-                      className="font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                    >
-                      {job.school_name}
-                    </Link>
-                    <p className="mt-0.5 text-xs text-muted">
-                      {job.school_region ?? 'Region not recorded'}
-                      {job.is_per_grade ? ' · per grade' : ''}
-                    </p>
-                  </Td>
-                  <Td>
-                    <StageBadge stage={job.stage} />
-                    {job.has_stamped_copy ? (
-                      <p className="mt-1 text-xs text-muted">Stamped copy on file</p>
-                    ) : null}
-                  </Td>
-                  <Td>
-                    {job.owner_ba_name ?? (
-                      <span className="text-muted">Unassigned</span>
-                    )}
-                    <div className="mt-1">
-                      <AgencyBadge agency={job.owner_ba_agency} />
-                    </div>
-                  </Td>
-                  <Td className="text-right tabular-nums">
-                    {job.copies_requested === null ? (
-                      <span className="text-muted">Not confirmed</span>
-                    ) : (
-                      <>
-                        {job.copies_requested.toLocaleString()}
-                        <p className="text-xs text-muted">
-                          +1 stamped = {(job.copies_to_print ?? job.copies_requested + 1).toLocaleString()}
-                        </p>
-                      </>
-                    )}
-                  </Td>
-                  <Td>
-                    {job.latest_print_order ? (
-                      <span className="text-xs text-ink">{job.latest_print_order}</span>
-                    ) : (
-                      <span className="text-xs text-muted">None raised</span>
-                    )}
-                  </Td>
-                  <Td className="whitespace-nowrap text-xs">
-                    {nairobiDate(job.last_visit_date)}
-                    <p className="text-muted">
-                      {job.visit_count} visit{job.visit_count === 1 ? '' : 's'}
-                    </p>
-                  </Td>
-                  <Td className="whitespace-nowrap text-xs text-muted">
-                    {nairobiTime(job.stage_updated_at)}
-                  </Td>
-                </tr>
-              ))
+              jobs.map((job) => {
+                const sc = spreadsheetColumns(job);
+                return (
+                  <tr key={job.job_id} className="transition-colors hover:bg-lavender/40">
+                    <Td>
+                      <Link
+                        href={`/booklists/${job.job_id}`}
+                        className="font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      >
+                        {job.school_name}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {job.school_region ?? 'Region not recorded'}
+                        {job.is_per_grade ? ' · per grade' : ''}
+                      </p>
+                    </Td>
+                    <Td>
+                      <Badge tone={sc.booklistGiven ? 'success' : 'warning'}>
+                        {sc.booklistGiven ? 'Yes' : 'No'}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      {sc.hasDocument ? (
+                        sc.rawDocId ? (
+                          <a
+                            href={`/api/booklists/documents/${sc.rawDocId}/download`}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Download
+                          </a>
+                        ) : (
+                          <Badge tone="success">Yes</Badge>
+                        )
+                      ) : (
+                        <span className="text-xs text-muted">N/A</span>
+                      )}
+                    </Td>
+                    <Td>
+                      {sc.hasApproved ? (
+                        sc.formattedDocId ? (
+                          <a
+                            href={`/api/booklists/documents/${sc.formattedDocId}/download`}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Download
+                          </a>
+                        ) : (
+                          <Badge tone="success">Yes</Badge>
+                        )
+                      ) : (
+                        <span className="text-xs text-muted">N/A</span>
+                      )}
+                    </Td>
+                    <Td className="text-right tabular-nums">
+                      {sc.copiesRequested === null ? (
+                        <span className="text-muted">Not confirmed</span>
+                      ) : (
+                        sc.copiesRequested.toLocaleString()
+                      )}
+                    </Td>
+                    <Td className="text-right tabular-nums">
+                      {sc.copiesToPrint === null ? (
+                        <span className="text-muted">—</span>
+                      ) : (
+                        sc.copiesToPrint.toLocaleString()
+                      )}
+                    </Td>
+                    <Td>
+                      <Badge tone={sc.printed ? 'success' : 'warning'}>
+                        {sc.printed ? 'Yes' : 'No'}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      {sc.dispatched ? (
+                        <div>
+                          <Badge tone="success">Yes</Badge>
+                          {sc.dispatchMeans ? (
+                            <p className="mt-1 text-xs text-muted">{sc.dispatchMeans}</p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <Badge tone="warning">No</Badge>
+                      )}
+                    </Td>
+                    <Td>
+                      <Badge tone={sc.received ? 'success' : 'warning'}>
+                        {sc.received ? 'Yes' : 'No'}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      {sc.hasStamped ? (
+                        sc.stampedDocId ? (
+                          <a
+                            href={`/api/booklists/documents/${sc.stampedDocId}/download`}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            View
+                          </a>
+                        ) : (
+                          <Badge tone="success">Yes</Badge>
+                        )
+                      ) : (
+                        <Badge tone="warning">No</Badge>
+                      )}
+                    </Td>
+                    <Td>
+                      {job.owner_ba_name ?? (
+                        <span className="text-muted">Unassigned</span>
+                      )}
+                      <div className="mt-1">
+                        <AgencyBadge agency={job.owner_ba_agency} />
+                      </div>
+                    </Td>
+                    <Td>
+                      <StageBadge stage={job.stage} />
+                    </Td>
+                    <Td className="whitespace-nowrap text-xs text-muted">
+                      {nairobiTime(job.stage_updated_at)}
+                    </Td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </Table>

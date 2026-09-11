@@ -608,10 +608,17 @@ begin
                (bj.raw_document_id is not null)       as has_raw_document,
                (bj.formatted_document_id is not null) as has_formatted_document,
                (bj.stamped_document_id is not null)   as has_stamped_copy,
+               bj.raw_document_id,
+               bj.formatted_document_id,
+               bj.stamped_document_id,
                (select po.status || ' · ' || coalesce(po.dispatch_means::text, 'not dispatched')
                   from public.print_orders po
                  where po.job_id = bj.id
                  order by po.created_at desc limit 1)  as latest_print_order,
+               (select po.dispatch_means
+                  from public.print_orders po
+                 where po.job_id = bj.id and po.dispatch_means is not null
+                 order by po.created_at desc limit 1)  as print_order_dispatch_means,
                (select count(*) from public.school_visits v
                  where v.school_id = bj.school_id)      as visit_count,
                (select max(v.visit_date) from public.school_visits v
