@@ -742,6 +742,8 @@ export default function SchoolVisit() {
           <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(3)} />
         </>
       ) : null}
+
+      <View className="h-12" />
     </Page>
   );
 }

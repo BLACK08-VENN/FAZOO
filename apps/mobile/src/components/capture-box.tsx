@@ -1,5 +1,4 @@
-import { Image, Text, View } from 'react-native';
-import { PrimaryButton } from './primary-button';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 
 export interface Capturable {
   uri: string;
@@ -10,24 +9,32 @@ export function CaptureBox({
   photo,
   onSnap,
   hint,
-  heightClass = 'min-h-48',
 }: {
   photo: Capturable | null;
   onSnap: () => void;
   hint: string;
-  heightClass?: string;
 }) {
   return (
-    <PrimaryButton onPress={onSnap} label="" accessibilityLabel={hint}>
+    <TouchableOpacity
+      onPress={onSnap}
+      accessibilityLabel={hint}
+      accessibilityRole="button"
+      activeOpacity={0.85}
+      className="min-h-48 w-full overflow-hidden rounded-2xl border border-dashed border-ink/15 bg-lavender"
+    >
       {photo ? (
-        <Image source={{ uri: photo.uri }} className="h-full w-full rounded-2xl" resizeMode="cover" />
+        <Image
+          source={{ uri: photo.uri }}
+          className="h-48 w-full rounded-2xl"
+          resizeMode="cover"
+        />
       ) : (
         <View
-          className={`${heightClass} w-full items-center justify-center rounded-2xl border border-dashed border-ink/15 bg-lavender px-4`}
+          className="min-h-48 w-full items-center justify-center px-4"
         >
           <Text className="font-sans text-center font-semibold text-ink">{hint}</Text>
         </View>
       )}
-    </PrimaryButton>
+    </TouchableOpacity>
   );
 }
