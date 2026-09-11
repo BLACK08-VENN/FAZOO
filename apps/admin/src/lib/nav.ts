@@ -4,7 +4,6 @@ import {
   Building2,
   CalendarOff,
   CalendarRange,
-  Layers,
   MapPin,
   School,
   Store,
@@ -67,14 +66,6 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     shortLabel: 'Performance',
     cardLabel: 'BA Performance',
     icon: Target,
-    kinds: ['schools'],
-  },
-  {
-    href: '/veda-grades',
-    label: 'Grades & class bands',
-    shortLabel: 'Grades',
-    cardLabel: 'Grades & Class Bands',
-    icon: Layers,
     kinds: ['schools'],
   },
   {
