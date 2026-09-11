@@ -155,8 +155,8 @@ begin
         pr.full_name,
         pr.phone,
         pr.agency,
-        tgt.target_daily_schools,
-        tgt.days_met_last_7_days,
+        t.target_daily_schools,
+        w.days_met_last_7_days,
         coalesce((select count(distinct v.school_id) from public.school_visits v
                    where v.brand_ambassador_id = pr.id and v.visit_date = v_date), 0)
                                     as schools_visited_today,
@@ -165,10 +165,17 @@ begin
                                     as visits_today
         from public.profiles pr
         left join lateral (
-          select coalesce(bt.target_daily_schools,
-                   (public.ba_visit_rules(pr.organization_id, pr.agency)->>'target_daily_schools')::integer)
-                    as target_daily_schools,
-                 coalesce((
+          select coalesce(
+                   (select bt.target_daily_schools
+                      from public.ba_school_targets bt
+                     where bt.brand_ambassador_id = pr.id
+                       and bt.period_start <= v_date and bt.period_end >= v_date
+                     order by bt.period_start desc limit 1),
+                   (public.ba_visit_rules(pr.organization_id, pr.agency)->>'target_daily_schools')::integer
+                 ) as target_daily_schools
+        ) t on true
+        left join lateral (
+          select coalesce((
                    select count(*)
                      from (
                        select v2.visit_date
@@ -176,17 +183,10 @@ begin
                         where v2.brand_ambassador_id = pr.id
                           and v2.visit_date between v_date - 6 and v_date
                         group by v2.visit_date
-                       having count(distinct v2.school_id) >= coalesce(
-                            bt.target_daily_schools,
-                            (public.ba_visit_rules(pr.organization_id, pr.agency)->>'target_daily_schools')::integer)
+                       having count(distinct v2.school_id) >= t.target_daily_schools
                      ) met
-                 ), 0)            as days_met_last_7_days
-            from public.ba_school_targets bt
-           where bt.brand_ambassador_id = pr.id
-             and bt.period_start <= v_date and bt.period_end >= v_date
-           order by bt.period_start desc
-           limit 1
-        ) tgt on true
+                 ), 0)        as days_met_last_7_days
+        ) w on true
        where pr.organization_id = p.organization_id
          and pr.role = 'brand_ambassador'
          and pr.account_status = 'approved'
