@@ -53,3 +53,6 @@ scripts/.geocode-cache.json
 
 # Pre-migration database backups (full school master list + operational rows)
 .backup-*/
+
+# Expo build outputs (too large for GitHub; rebuild via EAS)
+artifacts/
