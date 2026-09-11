@@ -16,8 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrimaryButton } from './primary-button';
 
-const H_PADDING = 20;
-const V_PADDING = 20;
+const H_PADDING = 16;
+const V_PADDING = 16;
 
 export function AppBackdrop({
   children,
@@ -120,8 +120,8 @@ export function GlassCard({
 }) {
   return (
     <View
-      className={`overflow-hidden rounded-[32px] border border-edge bg-surface p-5 ${className}`}
-      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 4 }}
+      className={`overflow-hidden rounded-[24px] border border-edge bg-surface p-4 ${className}`}
+      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.1, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 3 }}
     >
       {children}
     </View>
@@ -137,8 +137,8 @@ export function Card({
 }) {
   return (
     <View
-      className={`overflow-hidden rounded-[28px] border border-edge bg-surface p-5 ${className}`}
-      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.10, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 3 }}
+      className={`overflow-hidden rounded-[22px] border border-edge bg-surface p-4 ${className}`}
+      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 2 }}
     >
       {children}
     </View>
@@ -161,8 +161,8 @@ export function HeroCard({
   onBack?: () => void;
 }) {
   return (
-    <GlassCard className="mb-5">
-      <View className="flex-row items-start justify-between gap-4">
+    <GlassCard className="mb-4">
+      <View className="flex-row items-start justify-between gap-3">
         {onBack ? (
           <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="chevron-back" size={22} color="#1B1623" />
@@ -172,15 +172,15 @@ export function HeroCard({
           {eyebrow ? (
             <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">{eyebrow}</Text>
           ) : null}
-          <View className="mt-2 flex-row items-center gap-3">
+          <View className="mt-1.5 flex-row items-center gap-3">
             {icon ? (
-              <View className="h-12 w-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/15">
+              <View className="h-11 w-11 items-center justify-center rounded-2xl border border-primary/25 bg-primary/15">
                 <Ionicons name={icon} size={20} color="#7B2FBE" />
               </View>
             ) : null}
             <View className="flex-1">
-              <Text className="font-sans text-[26px] font-bold leading-8 text-ink">{title}</Text>
-              {subtitle ? <Text className="font-sans mt-1 text-base leading-6 text-muted">{subtitle}</Text> : null}
+              <Text className="font-sans text-[23px] font-bold leading-7 text-ink">{title}</Text>
+              {subtitle ? <Text className="font-sans mt-1 text-sm leading-5 text-muted">{subtitle}</Text> : null}
             </View>
           </View>
         </View>
@@ -204,7 +204,7 @@ export function ScreenHeader({
   onBack?: () => void;
 }) {
   return (
-    <View className="mb-5 flex-row items-start justify-between gap-4">
+    <View className="mb-4 flex-row items-start justify-between gap-3">
       {onBack ? (
         <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="chevron-back" size={22} color="#1B1623" />
@@ -214,8 +214,8 @@ export function ScreenHeader({
         {eyebrow ? (
           <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">{eyebrow}</Text>
         ) : null}
-        <Text className="font-sans mt-2 font-sans text-[28px] font-bold leading-9 text-ink">{title}</Text>
-        {subtitle ? <Text className="font-sans mt-2 text-base leading-7 text-muted">{subtitle}</Text> : null}
+        <Text className="font-sans mt-1.5 text-[25px] font-bold leading-8 text-ink">{title}</Text>
+        {subtitle ? <Text className="font-sans mt-1.5 text-sm leading-5 text-muted">{subtitle}</Text> : null}
       </View>
       {action ? <View className="pt-1">{action}</View> : null}
     </View>
@@ -223,7 +223,7 @@ export function ScreenHeader({
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
-  return <Text className="font-sans mb-3 mt-7 text-sm font-semibold uppercase tracking-[2px] text-muted">{children}</Text>;
+  return <Text className="font-sans mb-3 mt-6 text-xs font-semibold uppercase tracking-[1.5px] text-muted">{children}</Text>;
 }
 
 export function MetricTile({
@@ -254,9 +254,9 @@ export function MetricTile({
   }
 
   return (
-    <View className={`flex-1 overflow-hidden rounded-[26px] border px-4 py-4 ${toneClass}`}>
-      <Text className="font-sans text-xs uppercase tracking-[2px] text-muted">{label}</Text>
-      <Text className="font-sans mt-2 text-[30px] font-bold text-ink">{value}</Text>
+    <View className={`min-w-0 flex-1 overflow-hidden rounded-[20px] border px-3.5 py-3 ${toneClass}`}>
+      <Text className="font-sans text-[10px] uppercase tracking-[1.2px] text-muted">{label}</Text>
+      <Text className="font-sans mt-1 text-[24px] font-bold leading-8 text-ink">{value}</Text>
     </View>
   );
 }

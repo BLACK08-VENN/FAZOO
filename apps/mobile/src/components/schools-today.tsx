@@ -72,29 +72,18 @@ export default function SchoolsToday() {
       <HeroCard
         eyebrow={`Today · ${data?.today ?? '—'} (Kenya)`}
         title="School booklists"
-        subtitle="Log every school you approach, from the gate selfie to the stamped copy."
+        subtitle={`${online === false ? 'Offline' : 'Ready'} · Track each school from visit to stamped copy.`}
         icon="school"
-        trailing={
-          <View className="items-end">
-            <View className="rounded-full bg-lavender px-3 py-2">
-              <Text className="font-sans text-xs font-semibold text-charcoal">
-                {online === false ? 'Offline' : 'Ready'}
-              </Text>
-            </View>
-          </View>
-        }
       />
 
       <GlassCard className="mb-4">
         <Text className="font-sans text-xs uppercase tracking-[2px] text-muted">Your agency</Text>
-        <Text className="font-sans mt-2 text-xl font-bold text-ink">{agencyLabel(data?.agency)}</Text>
-        <Text className="font-sans mt-2 text-sm leading-6 text-muted">
+        <Text className="font-sans mt-1 text-lg font-bold text-ink">{agencyLabel(data?.agency)}</Text>
+        <Text className="font-sans mt-1.5 text-sm leading-5 text-muted">
           {selfieRequired
-            ? 'A gate selfie is mandatory for every school you approach.'
-            : 'A gate selfie is optional for you — take one anyway when the school signage is useful evidence.'}
-        </Text>
-        <Text className="font-sans mt-1 text-sm leading-6 text-muted">
-          Your GPS is always recorded. Distance is advisory{data?.geofence_enforced ? ' and enforced for your agency' : ''}.
+            ? 'Gate selfie required · GPS recorded'
+            : 'Gate selfie optional · GPS recorded'}
+          {data?.geofence_enforced ? ' · Geofence enforced' : ''}
         </Text>
       </GlassCard>
 
@@ -212,7 +201,7 @@ export default function SchoolsToday() {
         />
       </Card>
 
-      <Text className="font-sans mt-10 text-center text-xs text-muted">Fazoo · v0.1</Text>
+      <Text className="font-sans mb-24 mt-8 text-center text-xs text-muted">Fazoo · v0.1</Text>
     </Page>
   );
 }

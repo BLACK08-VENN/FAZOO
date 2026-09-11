@@ -42,18 +42,18 @@ export function PrimaryButton({
   const toneColor = outlined ? '#1B1623' : '#FFFFFF';
 
   const content = (
-    <View className="min-h-16 flex-row items-center justify-center px-6">
+    <View className="min-h-14 flex-row items-center justify-center px-5">
       <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} toneColor={toneColor} />
     </View>
   );
 
-  const className = `my-1.5 overflow-hidden rounded-[20px] ${shellClass} ${disabled ? 'opacity-50' : ''}`;
+  const className = `my-1 overflow-hidden rounded-[18px] ${shellClass} ${disabled ? 'opacity-50' : ''}`;
   const style = {
     shadowColor: variant === 'primary' ? '#7B2FBE' : variant === 'danger' ? '#DC2626' : '#1B1623',
     shadowOpacity: disabled || variant === 'ghost' ? 0 : variant === 'primary' || variant === 'danger' ? 0.32 : 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: disabled || variant === 'ghost' ? 0 : variant === 'primary' || variant === 'danger' ? 6 : 2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: disabled || variant === 'ghost' ? 0 : variant === 'primary' || variant === 'danger' ? 4 : 2,
   };
 
   const facade =
@@ -105,7 +105,7 @@ function Content({
   return (
     <View className="flex-row items-center justify-center gap-2">
       {icon ? <Ionicons name={icon} size={20} color={toneColor} /> : null}
-      <Text className={`font-sans text-[17px] font-semibold ${textClass}`}>{label}</Text>
+      <Text className={`font-sans text-base font-semibold ${textClass}`}>{label}</Text>
     </View>
   );
 }

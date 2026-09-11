@@ -81,39 +81,15 @@ function RetailToday() {
     <Page bottomInset={false}>
       <HeroCard
         eyebrow={`Today · ${lagosDate()} (Nigeria)`}
-        title={data?.attendance_date ?? 'Today'}
-        subtitle="Your live field dashboard for assignments, sales, and next actions."
-        icon="sparkles"
-        trailing={
-          <View className="items-end">
-            <View className="rounded-full bg-lavender px-3 py-2">
-              <Text className="font-sans text-xs font-semibold text-charcoal">
-                {online === false ? 'Offline' : 'Ready'}
-              </Text>
-            </View>
-          </View>
-        }
+        title="Today's route"
+        subtitle={`${assignments.length} assignment${assignments.length === 1 ? '' : 's'} · ${online === false ? 'Offline' : 'Ready to work'}`}
+        icon="navigate"
       />
 
-      <Card className="mb-4">
-        <View className="flex-row gap-3">
-          <MetricTile label="Assignments" value={assignments.length} />
-          <MetricTile label="Pending sync" value={counts.pending} tone={counts.pending > 0 ? 'warning' : 'default'} />
-        </View>
-      </Card>
-
-      <Card className="mb-4">
-        <View className="mb-2 flex-row items-center justify-between">
-          <Text className="font-sans text-base font-bold text-ink">Need time off?</Text>
-        </View>
-        <Text className="font-sans mb-3 text-sm leading-6 text-muted">Request annual, sick, or other leave that an admin will review.</Text>
-        <PrimaryButton
-          label="Apply for leave"
-          variant="secondary"
-          icon="calendar-clear"
-          onPress={() => router.push('/leave')}
-        />
-      </Card>
+      <View className="mb-4 flex-row gap-3">
+        <MetricTile label="Assignments" value={assignments.length} />
+        <MetricTile label="Pending sync" value={counts.pending} tone={counts.pending > 0 ? 'warning' : 'default'} />
+      </View>
 
       {counts.failed > 0 ? (
         <Card className="mb-4 border-bad/25 bg-bad/10">
@@ -143,25 +119,23 @@ function RetailToday() {
 
             return (
               <Card key={assignment.id}>
-                <View className="flex-row items-start justify-between gap-4">
-                  <View className="flex-1">
-                    <Text className="font-sans text-xs uppercase tracking-[2px] text-primary">{assignment.campaign_name}</Text>
-                    <Text className="font-sans mt-2 text-[24px] font-bold leading-8 text-ink">{assignment.store_name}</Text>
-                    <Text className="font-sans mt-2 text-base leading-7 text-muted">{assignment.store_address}</Text>
-                  </View>
-                  {item.log ? (
+                <Text className="font-sans text-[11px] uppercase tracking-[1.5px] text-primary">{assignment.campaign_name}</Text>
+                <Text className="font-sans mt-1.5 text-xl font-bold leading-7 text-ink">{assignment.store_name}</Text>
+                <Text className="font-sans mt-1 text-sm leading-5 text-muted">{assignment.store_address}</Text>
+                {item.log ? (
+                  <View className="self-start">
                     <StatusPill
                       tone={item.log.status === 'completed' ? 'ok' : item.log.attendance_status === 'sick_leave' ? 'warn' : 'purple'}
                       label={`${item.log.attendance_status.replace('_', ' ')} · ${item.log.status.replace('_', ' ')}`}
                     />
-                  ) : null}
-                </View>
+                  </View>
+                ) : null}
 
-                <View className="mt-3 rounded-2xl bg-lavender p-3">
+                <View className="mt-3 rounded-2xl bg-lavender px-3 py-2.5">
                   <Text className="font-sans text-xs uppercase tracking-wide text-muted">
                     Units sold today
                   </Text>
-                  <Text className="font-sans mt-1 text-3xl font-bold tabular-nums text-primaryText">
+                  <Text className="font-sans mt-0.5 text-2xl font-bold tabular-nums text-primaryText">
                     {item.total_units_today ?? 0}
                   </Text>
                   {(item.sales ?? []).length > 0 ? (
@@ -210,6 +184,7 @@ function RetailToday() {
                       />
                       <PrimaryButton
                         label="Check Out"
+                        variant="secondary"
                         onPress={() =>
                           router.push({ pathname: '/checkout', params: { assignment: assignment.id } })
                         }
@@ -229,7 +204,18 @@ function RetailToday() {
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
-      <Text className="font-sans mt-10 text-center text-xs text-muted">Fazoo · v0.1</Text>
+      <Card className="mt-5">
+        <Text className="font-sans text-base font-bold text-ink">Need time off?</Text>
+        <Text className="font-sans mt-1 text-sm leading-5 text-muted">Submit a leave request for admin review.</Text>
+        <PrimaryButton
+          label="Apply for leave"
+          variant="secondary"
+          icon="calendar-clear"
+          onPress={() => router.push('/leave')}
+        />
+      </Card>
+
+      <Text className="font-sans mb-24 mt-8 text-center text-xs text-muted">Fazoo · v0.1</Text>
     </Page>
   );
 }

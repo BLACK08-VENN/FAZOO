@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Tabs } from 'expo-router';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { Animated, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const ACTIVE = '#7B2FBE';
 const INACTIVE = 'rgba(27, 22, 35, 0.42)';
-const TAB_BAR_HEIGHT = 82;
+const TAB_BAR_HEIGHT = 68;
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -35,9 +35,9 @@ function FancyTabIcon({ name, focused }: { name: IconName; focused: boolean }) {
     return (
       <Animated.View
         style={{
-          width: 48,
-          height: 38,
-          borderRadius: 19,
+          width: 42,
+          height: 34,
+          borderRadius: 17,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'rgba(123,47,190,0.08)',
@@ -56,9 +56,9 @@ function FancyTabIcon({ name, focused }: { name: IconName; focused: boolean }) {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
-          width: 52,
-          height: 40,
-          borderRadius: 20,
+          width: 46,
+          height: 36,
+          borderRadius: 18,
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 1,
@@ -71,51 +71,16 @@ function FancyTabIcon({ name, focused }: { name: IconName; focused: boolean }) {
         }}
       >
         {icon}
-        <Ionicons
-          name="sparkles"
-          size={9}
-          color="#FFFFFF"
-          style={{ position: 'absolute', right: 6, top: 5, opacity: 0.9 }}
-        />
       </LinearGradient>
     </Animated.View>
   );
 }
 
-const toggleShadow = {
-  shadowColor: '#7B2FBE',
-  shadowOpacity: 0.18,
-  shadowRadius: 20,
-  shadowOffset: { width: 0, height: 10 },
-  elevation: 8,
-} as const;
-
-function HamburgerIcon() {
-  return (
-    <View style={{ gap: 5 }}>
-      {[0, 1, 2].map((line) => (
-        <View
-          key={line}
-          style={{
-            width: 30,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: '#1B1623',
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
 export default function AppLayout() {
-  const [menuCollapsed, setMenuCollapsed] = useState(false);
-
   return (
-    <>
-      <Tabs
-        initialRouteName="profile"
-        screenOptions={{
+    <Tabs
+      initialRouteName="today"
+      screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: ACTIVE,
           tabBarInactiveTintColor: INACTIVE,
@@ -127,31 +92,29 @@ export default function AppLayout() {
               end={{ x: 1, y: 1 }}
               style={{
                 flex: 1,
-                borderRadius: 32,
+                borderRadius: 26,
                 borderWidth: 1,
                 borderColor: 'rgba(123,47,190,0.20)',
               }}
             />
           ),
-          tabBarStyle: menuCollapsed
-            ? { display: 'none' }
-            : {
-                position: 'absolute',
-                left: 16,
-                right: 16,
-                bottom: 16,
-                backgroundColor: 'transparent',
-                borderTopWidth: 0,
-                borderRadius: 32,
-                height: TAB_BAR_HEIGHT,
-                paddingTop: 8,
-                paddingBottom: 8,
-                elevation: 10,
-                shadowColor: '#7B2FBE',
-                shadowOpacity: 0.18,
-                shadowRadius: 22,
-                shadowOffset: { width: 0, height: 10 },
-              },
+          tabBarStyle: {
+            position: 'absolute',
+            left: 16,
+            right: 16,
+            bottom: 10,
+            backgroundColor: 'transparent',
+            borderTopWidth: 0,
+            borderRadius: 26,
+            height: TAB_BAR_HEIGHT,
+            paddingTop: 5,
+            paddingBottom: 5,
+            elevation: 10,
+            shadowColor: '#7B2FBE',
+            shadowOpacity: 0.18,
+            shadowRadius: 22,
+            shadowOffset: { width: 0, height: 10 },
+          },
           tabBarItemStyle: {
             paddingVertical: 2,
           },
@@ -160,90 +123,36 @@ export default function AppLayout() {
             <Text style={{ color, fontFamily: 'Sora', fontSize: 11, fontWeight: '700', paddingBottom: 1, letterSpacing: 0.2 }}>{children}</Text>
           ),
           sceneStyle: { backgroundColor: 'transparent' },
-        }}
-      >
-        <Tabs.Screen
+      }}
+    >
+      <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
             tabBarIcon: ({ focused }) => <FancyTabIcon name="person" focused={focused} />,
           }}
         />
-        <Tabs.Screen
+      <Tabs.Screen
           name="today"
           options={{
             title: 'Today',
             tabBarIcon: ({ focused }) => <FancyTabIcon name="home" focused={focused} />,
           }}
         />
-        <Tabs.Screen
+      <Tabs.Screen
           name="history"
           options={{
             title: 'History',
             tabBarIcon: ({ focused }) => <FancyTabIcon name="time" focused={focused} />,
           }}
         />
-        {/* Non-tab routes in this group — hidden from the tab bar */}
-        <Tabs.Screen name="campaign-logs" options={{ href: null }} />
-        <Tabs.Screen name="campaigns" options={{ href: null }} />
-        <Tabs.Screen name="error" options={{ href: null }} />
-        <Tabs.Screen name="leave" options={{ href: null }} />
-        <Tabs.Screen name="loading" options={{ href: null }} />
-        <Tabs.Screen name="sales" options={{ href: null }} />
-      </Tabs>
-
-      {menuCollapsed ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Expand menu"
-          onPress={() => setMenuCollapsed(false)}
-          style={({ pressed }) => [
-            {
-              position: 'absolute',
-              right: 16,
-              bottom: 20,
-              height: 64,
-              width: 64,
-              borderRadius: 32,
-              backgroundColor: '#FFFFFF',
-              borderWidth: 1,
-              borderColor: 'rgba(123,47,190,0.28)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.85 : 1,
-            },
-            toggleShadow,
-          ]}
-        >
-          <HamburgerIcon />
-        </Pressable>
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Collapse menu"
-          onPress={() => setMenuCollapsed(true)}
-          style={({ pressed }) => [
-            {
-              position: 'absolute',
-              left: '50%',
-              marginLeft: -22,
-              bottom: 16 + TAB_BAR_HEIGHT + 8,
-              height: 44,
-              width: 44,
-              borderRadius: 22,
-              backgroundColor: '#FFFFFF',
-              borderWidth: 1,
-              borderColor: 'rgba(123,47,190,0.28)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.8 : 1,
-            },
-            toggleShadow,
-          ]}
-        >
-          <Ionicons name="chevron-down" size={26} color="#1B1623" />
-        </Pressable>
-      )}
-    </>
+      {/* Non-tab routes in this group — hidden from the tab bar */}
+      <Tabs.Screen name="campaign-logs" options={{ href: null }} />
+      <Tabs.Screen name="campaigns" options={{ href: null }} />
+      <Tabs.Screen name="error" options={{ href: null }} />
+      <Tabs.Screen name="leave" options={{ href: null }} />
+      <Tabs.Screen name="loading" options={{ href: null }} />
+      <Tabs.Screen name="sales" options={{ href: null }} />
+    </Tabs>
   );
 }

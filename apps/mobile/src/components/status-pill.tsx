@@ -27,11 +27,11 @@ export function StatusPill({
   } as const;
   return (
     <View
-      className={`mt-3 rounded-2xl border px-4 py-3 ${map[tone]}`}
+      className={`mt-2 rounded-xl border px-3 py-2.5 ${map[tone]}`}
       accessibilityRole="text"
       accessibilityLabel={`${tone} status: ${label}`}
     >
-      <Text className={`font-sans text-base font-medium capitalize ${textClass[tone]}`}>{label}</Text>
+      <Text className={`font-sans text-sm font-medium leading-5 capitalize ${textClass[tone]}`}>{label}</Text>
     </View>
   );
 }
