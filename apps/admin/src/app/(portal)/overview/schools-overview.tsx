@@ -6,7 +6,7 @@ import { PageHeader, StatCard } from '@/components/page';
 import { SectionCards } from '@/components/section-cards';
 import { StageBadge } from '@/components/stage-badge';
 import { Card } from '@/components/ui/card';
-import { pipelineBoard } from '@/server/booklists';
+import { pipelineBoard, baDailyTargets } from '@/server/booklists';
 
 /**
  * Landing view for a schools-org admin: where every logged school currently
@@ -26,6 +26,13 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
     total = board.total;
   } catch {
     unavailable = true;
+  }
+
+  let daily;
+  try {
+    daily = await baDailyTargets(client);
+  } catch {
+    daily = null;
   }
 
   const at = (stage: BooklistStage): number => counts[stage] ?? 0;
@@ -51,6 +58,33 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
           Conversion queue{waitingOnAdmin > 0 ? ` (${waitingOnAdmin})` : ''}
         </Link>
       </PageHeader>
+
+      {daily ? (
+        <Card className="mb-6 p-4">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Daily BA targets (today)</h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <StatCard
+              label="Schools logged today"
+              value={daily.summary.schools_logged_today}
+              hint={`${daily.summary.bas_active_today} active BA${daily.summary.bas_active_today === 1 ? '' : 's'}`}
+            />
+            <StatCard
+              label="On daily target"
+              value={`${daily.summary.bas_on_target_today} of ${daily.summary.bas_with_daily_target}`}
+              hint="Hit minimum"
+            />
+            <StatCard
+              label="Missed today"
+              value={daily.summary.bas_missed_today}
+            />
+            <StatCard
+              label="Compliance today"
+              value={daily.summary.compliance_pct !== null ? `${daily.summary.compliance_pct}%` : 'n/a'}
+              hint={`Default target ${daily.default_target_daily_schools ?? 'unset'} school${daily.default_target_daily_schools === 1 ? '' : 's'}/day`}
+            />
+          </div>
+        </Card>
+      ) : null}
 
       <Card className="mb-6 p-5">
         <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>

@@ -63,6 +63,8 @@ export default function SchoolsToday() {
   const data = stats.data;
   const monthlyTarget = data?.target?.target_schools ?? data?.default_target_schools_per_month ?? null;
   const visitedThisMonth = data?.schools_visited_this_month ?? 0;
+  const targetDaily = data?.target_daily_schools ?? null;
+  const visitedToday = data?.schools_visited_today ?? 0;
   const selfieRequired = data?.selfie_required ?? false;
   const jobs = pipeline.data?.jobs ?? [];
   const activeJobs = jobs.filter((job) => job.stage !== 'completed' && job.stage !== 'cancelled');
@@ -97,9 +99,28 @@ export default function SchoolsToday() {
       </View>
 
       <View className="mb-4 flex-row gap-3">
-        <MetricTile label="Visits today" value={data?.visits_today ?? 0} />
+        <MetricTile
+          label="Schools today"
+          value={targetDaily !== null ? `${visitedToday} / ${targetDaily}` : `${visitedToday}`}
+          tone={
+            targetDaily !== null && visitedToday >= targetDaily
+              ? 'success'
+              : targetDaily !== null
+                ? 'warning'
+                : 'default'
+          }
+        />
         <MetricTile label="Declines logged" value={data?.declines_recorded ?? 0} />
       </View>
+
+      {targetDaily !== null && visitedToday < targetDaily ? (
+        <StatusPill
+          tone="warn"
+          label={`${visitedToday} of ${targetDaily} schools logged today — keep going`}
+        />
+      ) : targetDaily !== null ? (
+        <StatusPill tone="ok" label={`Daily target met — ${visitedToday} schools logged today`} />
+      ) : null}
 
       {selfieRequired && data && data.selfie_compliance.missing > 0 ? (
         <StatusPill

@@ -11,7 +11,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { nairobiDate, NOT_YET } from '@/lib/format';
-import { baPerformance } from '@/server/booklists';
+import { baPerformance, baDailyTargets } from '@/server/booklists';
 
 const AGENCIES: ReadonlyArray<{ value: BaAgency; label: string }> = [
   { value: 'ael', label: 'Advert Eyes Limited (AEL)' },
@@ -43,6 +43,13 @@ export default async function BaPerformancePage({
 
   const result = await baPerformance(client, { agency, from, to });
   const rows = result.brand_ambassadors;
+
+  let daily;
+  try {
+    daily = await baDailyTargets(client);
+  } catch {
+    daily = null;
+  }
 
   const totals = rows.reduce(
     (acc, row) => ({
@@ -82,6 +89,8 @@ export default async function BaPerformancePage({
     const periodStart = String(formData.get('period_start') ?? '');
     const periodEnd = String(formData.get('period_end') ?? '');
     const target = Number(formData.get('target_schools') ?? 0);
+    const targetDailyRaw = String(formData.get('target_daily_schools') ?? '').trim();
+    const targetDaily = targetDailyRaw ? Number(targetDailyRaw) : null;
     if (!/^[0-9a-f-]{36}$/i.test(baId) || !periodStart || !periodEnd) return;
     if (!Number.isInteger(target) || target < 0) return;
 
@@ -90,6 +99,7 @@ export default async function BaPerformancePage({
       p_period_start: periodStart,
       p_period_end: periodEnd,
       p_target_schools: target,
+      p_target_daily_schools: targetDaily,
     });
     if (!error) revalidatePath('/ba-performance');
   }
@@ -107,6 +117,34 @@ export default async function BaPerformancePage({
           Booklist pipeline
         </Link>
       </PageHeader>
+
+      {daily ? (
+        <>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Daily school targets (today)</h3>
+          <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <StatCard
+              label="Schools logged today"
+              value={daily.summary.schools_logged_today}
+              hint={`${daily.summary.bas_active_today} BA${daily.summary.bas_active_today === 1 ? '' : 's'} active`}
+            />
+            <StatCard
+              label="On daily target"
+              value={`${daily.summary.bas_on_target_today} of ${daily.summary.bas_with_daily_target}`}
+              hint="Hit their minimum today"
+            />
+            <StatCard
+              label="Missed today"
+              value={daily.summary.bas_missed_today}
+              hint={daily.summary.bas_missed_today === 0 ? 'All clear' : 'Below minimum'}
+            />
+            <StatCard
+              label="Compliance today"
+              value={daily.summary.compliance_pct !== null ? `${daily.summary.compliance_pct}%` : 'n/a'}
+              hint={`Default daily target ${daily.default_target_daily_schools ?? 'unset'} school${daily.default_target_daily_schools === 1 ? '' : 's'}`}
+            />
+          </div>
+        </>
+      ) : null}
 
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Brand ambassadors" value={rows.length} hint={`${aelCount} from AEL`} />
@@ -191,6 +229,7 @@ export default async function BaPerformancePage({
               <Th>Selfie rule</Th>
               <Th className="text-right">Target</Th>
               <Th className="text-right">Schools reached</Th>
+              <Th className="text-right">Daily</Th>
               <Th className="text-right">Booklists</Th>
               <Th className="text-right">Declines</Th>
               <Th className="text-right">Selfies</Th>
@@ -271,6 +310,25 @@ export default async function BaPerformancePage({
                         </p>
                       ) : null}
                     </Td>
+                    <Td className="text-right tabular-nums text-xs">
+                      {(() => {
+                        const dRow = daily?.rows.find((r) => r.ba_id === row.ba_id);
+                        if (!dRow || dRow.target_daily_schools === null) {
+                          return <span className="text-muted">n/a</span>;
+                        }
+                        const dMet = dRow.schools_visited_today >= dRow.target_daily_schools;
+                        return (
+                          <span className="font-semibold tabular-nums">
+                            {dRow.schools_visited_today}/{dRow.target_daily_schools}
+                            <p className="mt-0.5">
+                              <Badge tone={dMet ? 'success' : 'warning'}>
+                                {dMet ? 'Met' : `${dRow.days_met_last_7_days}/7 days`}
+                              </Badge>
+                            </p>
+                          </span>
+                        );
+                      })()}
+                    </Td>
                     <Td className="text-right tabular-nums text-xs">{row.booklists_collected}</Td>
                     <Td className="text-right tabular-nums text-xs">{row.declines}</Td>
                     <Td className="text-right text-xs tabular-nums">
@@ -308,7 +366,7 @@ export default async function BaPerformancePage({
             description="AEL supervisors set a target number of schools per period. Where none is set, the agency default from the organization settings applies."
           />
           <CardBody>
-            <form action={setTarget} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <form action={setTarget} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
               <div className="lg:col-span-2">
                 <Label htmlFor="tg-ba">Brand ambassador</Label>
                 <Select id="tg-ba" name="ba_id" required>
@@ -329,7 +387,7 @@ export default async function BaPerformancePage({
                 <Input id="tg-end" name="period_end" type="date" required />
               </div>
               <div>
-                <Label htmlFor="tg-target">Target schools</Label>
+                <Label htmlFor="tg-target">Target schools (period)</Label>
                 <Input
                   id="tg-target"
                   name="target_schools"
@@ -340,11 +398,22 @@ export default async function BaPerformancePage({
                   required
                 />
               </div>
-              <div className="sm:col-span-2 lg:col-span-5">
+              <div>
+                <Label htmlFor="tg-daily">Daily target (AEL)</Label>
+                <Input
+                  id="tg-daily"
+                  name="target_daily_schools"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="e.g. 7"
+                />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-6">
                 <Button type="submit">Save target</Button>
                 <p className="mt-2 text-xs text-muted">
                   Saving over an existing period for the same BA updates that target rather than
-                  creating a second one.
+                  creating a second one. Leave the daily field blank to use the agency default.
                 </p>
               </div>
             </form>

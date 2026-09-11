@@ -313,6 +313,8 @@ export interface BaVisitStatsResult {
   geofence_enforced: boolean;
   today: IsoDate;
   visits_today: number;
+  schools_visited_today: number;
+  target_daily_schools: number | null;
   visits_this_month: number;
   schools_visited_total: number;
   schools_visited_this_month: number;
@@ -470,6 +472,35 @@ export interface AdminBaPerformanceResult {
   period_start: IsoDate;
   period_end: IsoDate;
   brand_ambassadors: AdminBaPerformanceRow[];
+}
+
+/** One row of `admin_ba_daily_targets`. */
+export interface AdminBaDailyTargetRow {
+  ba_id: Uuid;
+  full_name: string;
+  phone: string | null;
+  agency: BaAgency | null;
+  target_daily_schools: number | null;
+  schools_visited_today: number;
+  visits_today: number;
+  days_met_last_7_days: number;
+}
+
+/** Result of `admin_ba_daily_targets` — who hit today's daily school count. */
+export interface AdminBaDailyTargetsResult {
+  status: string;
+  date: IsoDate;
+  default_target_daily_schools: number | null;
+  rows: AdminBaDailyTargetRow[];
+  summary: {
+    bas_on_roster: number;
+    bas_with_daily_target: number;
+    bas_active_today: number;
+    bas_on_target_today: number;
+    bas_missed_today: number;
+    schools_logged_today: number;
+    compliance_pct: number | null;
+  };
 }
 
 /** Print-order dispatch update, mirroring `admin_update_print_order`'s parameters. */

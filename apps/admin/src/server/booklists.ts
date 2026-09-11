@@ -1,6 +1,7 @@
 import 'server-only';
 import type { FazooClient } from '@fazoo/database';
 import type {
+  AdminBaDailyTargetsResult,
   AdminBaPerformanceResult,
   AdminBooklistQueueResult,
   AdminPipelineBoardInput,
@@ -117,5 +118,21 @@ export async function baPerformance(
       p_period_end: options.to ?? null,
     }),
     'admin_ba_performance',
+  );
+}
+
+/**
+ * Daily school target progress: per-BA distinct schools reached today
+ * against the AEL daily minimum, plus a 7-day compliance streak.
+ */
+export async function baDailyTargets(
+  client: FazooClient,
+  options: { date?: string | null } = {},
+): Promise<AdminBaDailyTargetsResult> {
+  return unwrap(
+    await call<AdminBaDailyTargetsResult>(client, 'admin_ba_daily_targets', {
+      p_date: options.date ?? null,
+    }),
+    'admin_ba_daily_targets',
   );
 }
