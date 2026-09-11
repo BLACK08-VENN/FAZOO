@@ -3,7 +3,7 @@ import type { BaAgency, BooklistStage } from '@fazoo/types';
 import { BOOKLIST_STAGE_LABELS, DISPATCH_MEANS_LABELS } from '@fazoo/config';
 import { requireStaff } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
-import { StageBadge } from '@/components/stage-badge';
+import { AgencyBadge, StageBadge } from '@/components/stage-badge';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
@@ -301,13 +301,14 @@ export default async function BooklistPipelinePage({
               <Th>Due date</Th>
               <Th>Dispatch (means)</Th>
               <Th>Arrived?</Th>
+              <Th>BA (handled the log)</Th>
               <Th>Stamped document</Th>
               <Th>Status</Th>
             </tr>
           </thead>
           <tbody>
             {jobs.length === 0 ? (
-              <EmptyRow colSpan={9}>
+              <EmptyRow colSpan={10}>
                 {board.total === 0 && !query && !stage
                   ? 'No schools have been logged yet. They appear here as soon as a BA records a gate visit.'
                   : 'No schools match that search or filter.'}
@@ -366,6 +367,14 @@ export default async function BooklistPipelinePage({
                       <Badge tone={sc.arrived ? 'success' : 'warning'}>
                         {sc.arrived ? 'Yes' : 'No'}
                       </Badge>
+                    </Td>
+                    <Td>
+                      {job.owner_ba_name ?? (
+                        <span className="text-muted">Unassigned</span>
+                      )}
+                      <div className="mt-1">
+                        <AgencyBadge agency={job.owner_ba_agency} />
+                      </div>
                     </Td>
                     <Td>
                       {sc.stampedDocId ? (
