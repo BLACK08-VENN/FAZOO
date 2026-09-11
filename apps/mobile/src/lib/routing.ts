@@ -22,19 +22,17 @@ export type RedirectRoute =
   | '/sign-in'
   | '/brand-select'
   | '/profile'
-  | '/today'
-  | '/pending-approval';
+  | '/today';
 
 export function routeRedirect(
   pathname: string,
   authenticated: boolean,
-  status?: AccountStatus,
+  _status?: AccountStatus,
   recovery = false,
 ): RedirectRoute | null {
   if (recovery) return pathname === '/update-password' ? null : '/update-password';
   if (!authenticated)
     return PROTECTED.some((path) => pathname.startsWith(path)) ? '/sign-in' : null;
   if (GUEST_ONLY.some((path) => path === pathname)) return '/profile';
-  if (pathname !== '/update-password' && status !== 'approved') return '/pending-approval';
   return null;
 }

@@ -7,8 +7,5 @@ export default function Index() {
   if (loading) return null;
 
   if (!profile) return <Redirect href="/sign-in" />;
-  if (profile.account_status !== 'approved') {
-    return <Redirect href="/pending-approval" />;
-  }
   return <Redirect href="/profile" />;
 }

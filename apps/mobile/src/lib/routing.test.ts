@@ -19,8 +19,8 @@ describe('routeRedirect', () => {
       expect(routeRedirect(route, false)).toBe('/sign-in');
     }
   });
-  it('gates an unapproved session', () => {
-    expect(routeRedirect('/checkin', true, 'pending')).toBe('/pending-approval');
+  it('allows an authenticated unapproved user to remain signed in', () => {
+    expect(routeRedirect('/checkin', true, 'pending')).toBeNull();
   });
   it('allows an approved BA', () => {
     expect(routeRedirect('/sales', true, 'approved')).toBeNull();
