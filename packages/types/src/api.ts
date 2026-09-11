@@ -384,6 +384,7 @@ export interface AdminPipelineJob {
   owner_ba_agency: BaAgency | null;
   copies_requested: number | null;
   copies_to_print: number | null;
+  due_date: IsoDate | null;
   is_per_grade: boolean;
   ocr_status: OcrStatus;
   document_received_at: IsoTimestamp | null;

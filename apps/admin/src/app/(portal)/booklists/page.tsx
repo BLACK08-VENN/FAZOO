@@ -3,12 +3,11 @@ import type { BaAgency, BooklistStage } from '@fazoo/types';
 import { BOOKLIST_STAGE_LABELS, DISPATCH_MEANS_LABELS } from '@fazoo/config';
 import { requireStaff } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
-import { AgencyBadge, StageBadge } from '@/components/stage-badge';
+import { StageBadge } from '@/components/stage-badge';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
-import { nairobiTime } from '@/lib/format';
 import { pipelineBoard } from '@/server/booklists';
 import type { AdminPipelineJob } from '@fazoo/types';
 
@@ -64,48 +63,41 @@ function hrefWith(params: SearchParams, overrides: Record<string, string | undef
   return qs ? `/booklists?${qs}` : '/booklists';
 }
 
-interface SpreadsheetColumns {
-  booklistGiven: boolean;
-  hasDocument: boolean;
-  hasApproved: boolean;
-  copiesRequested: number | null;
-  copiesToPrint: number | null;
-  printed: boolean;
-  dispatched: boolean;
-  dispatchMeans: string | null;
-  received: boolean;
-  hasStamped: boolean;
+interface SchoolStatusColumns {
   rawDocId: string | null;
-  formattedDocId: string | null;
   stampedDocId: string | null;
+  copiesToPrint: number | null;
+  dueDate: string | null;
+  dispatchMeans: string | null;
+  arrived: boolean;
+  status: 'success' | 'pending';
 }
 
-function spreadsheetColumns(job: AdminPipelineJob): SpreadsheetColumns {
-  const booklistGiven = job.stage !== 'engaged' && job.stage !== 'declined';
-  const hasDocument = job.has_raw_document;
-  const hasApproved = job.has_formatted_document;
-  const printed = Boolean(job.latest_print_order);
-  const dispatched = job.stage === 'dispatched' || job.stage === 'received' || job.stage === 'completed';
-  const dispatchMeans = dispatched && job.print_order_dispatch_means
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/** `2026-09-12` → `12 Sep 2026`. */
+function formatDate(value: string): string {
+  const [y, m, d] = value.split('-');
+  const month = Number(m);
+  if (!y || !m || !d || !(month >= 1 && month <= 12)) return value;
+  return `${d.padStart(2, '0')} ${MONTHS[month - 1]} ${y}`;
+}
+
+function schoolStatusColumns(job: AdminPipelineJob): SchoolStatusColumns {
+  const dispatchMeans = job.print_order_dispatch_means
     ? (DISPATCH_MEANS_LABELS[job.print_order_dispatch_means] ?? job.print_order_dispatch_means)
     : null;
-  const received = job.stage === 'received' || job.stage === 'completed';
-  const hasStamped = job.has_stamped_copy;
-
   return {
-    booklistGiven,
-    hasDocument,
-    hasApproved,
-    copiesRequested: job.copies_requested,
-    copiesToPrint: job.copies_to_print,
-    printed,
-    dispatched,
-    dispatchMeans,
-    received,
-    hasStamped,
     rawDocId: job.raw_document_id ?? null,
-    formattedDocId: job.formatted_document_id ?? null,
     stampedDocId: job.stamped_document_id ?? null,
+    copiesToPrint: job.copies_to_print,
+    dueDate: job.due_date,
+    dispatchMeans,
+    arrived: Boolean(job.received_at),
+    status: job.stage === 'completed' ? 'success' : 'pending',
   };
 }
 
@@ -302,31 +294,27 @@ export default async function BooklistPipelinePage({
           </caption>
           <thead>
             <tr>
-              <Th>School</Th>
-              <Th>Booklist</Th>
-              <Th>Document</Th>
-              <Th>Approved</Th>
-              <Th className="text-right">Copies</Th>
-              <Th className="text-right">To print</Th>
-              <Th>Printed?</Th>
-              <Th>Dispatched</Th>
-              <Th>Received</Th>
-              <Th>Stamped</Th>
-              <Th>BA</Th>
-              <Th>Stage</Th>
-              <Th>Updated</Th>
+              <Th>Name of school</Th>
+              <Th>Region / location</Th>
+              <Th>Attached document (Word)</Th>
+              <Th className="text-right">Copies to print</Th>
+              <Th>Due date</Th>
+              <Th>Dispatch (means)</Th>
+              <Th>Arrived?</Th>
+              <Th>Stamped document</Th>
+              <Th>Status</Th>
             </tr>
           </thead>
           <tbody>
             {jobs.length === 0 ? (
-              <EmptyRow colSpan={13}>
+              <EmptyRow colSpan={9}>
                 {board.total === 0 && !query && !stage
                   ? 'No schools have been logged yet. They appear here as soon as a BA records a gate visit.'
                   : 'No schools match that search or filter.'}
               </EmptyRow>
             ) : (
               jobs.map((job) => {
-                const sc = spreadsheetColumns(job);
+                const sc = schoolStatusColumns(job);
                 return (
                   <tr key={job.job_id} className="transition-colors hover:bg-lavender/40">
                     <Td>
@@ -336,53 +324,25 @@ export default async function BooklistPipelinePage({
                       >
                         {job.school_name}
                       </Link>
-                      <p className="mt-0.5 text-xs text-muted">
-                        {job.school_region ?? 'Region not recorded'}
-                        {job.is_per_grade ? ' · per grade' : ''}
-                      </p>
+                      {job.school_address ? (
+                        <p className="mt-0.5 text-xs text-muted">{job.school_address}</p>
+                      ) : null}
                     </Td>
                     <Td>
-                      <Badge tone={sc.booklistGiven ? 'success' : 'warning'}>
-                        {sc.booklistGiven ? 'Yes' : 'No'}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      {sc.hasDocument ? (
-                        sc.rawDocId ? (
-                          <a
-                            href={`/api/booklists/documents/${sc.rawDocId}/download`}
-                            className="text-xs font-medium text-primary hover:underline"
-                          >
-                            Download
-                          </a>
-                        ) : (
-                          <Badge tone="success">Yes</Badge>
-                        )
-                      ) : (
-                        <span className="text-xs text-muted">N/A</span>
+                      {job.school_region ?? (
+                        <span className="text-xs text-muted">Not recorded</span>
                       )}
                     </Td>
                     <Td>
-                      {sc.hasApproved ? (
-                        sc.formattedDocId ? (
-                          <a
-                            href={`/api/booklists/documents/${sc.formattedDocId}/download`}
-                            className="text-xs font-medium text-primary hover:underline"
-                          >
-                            Download
-                          </a>
-                        ) : (
-                          <Badge tone="success">Yes</Badge>
-                        )
+                      {sc.rawDocId ? (
+                        <a
+                          href={`/api/booklists/documents/${sc.rawDocId}/download`}
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          View Word doc
+                        </a>
                       ) : (
-                        <span className="text-xs text-muted">N/A</span>
-                      )}
-                    </Td>
-                    <Td className="text-right tabular-nums">
-                      {sc.copiesRequested === null ? (
-                        <span className="text-muted">Not confirmed</span>
-                      ) : (
-                        sc.copiesRequested.toLocaleString()
+                        <span className="text-xs text-muted">No doc yet</span>
                       )}
                     </Td>
                     <Td className="text-right tabular-nums">
@@ -392,57 +352,40 @@ export default async function BooklistPipelinePage({
                         sc.copiesToPrint.toLocaleString()
                       )}
                     </Td>
+                    <Td className="whitespace-nowrap text-xs">
+                      {sc.dueDate ? formatDate(sc.dueDate) : <span className="text-muted">—</span>}
+                    </Td>
                     <Td>
-                      <Badge tone={sc.printed ? 'success' : 'warning'}>
-                        {sc.printed ? 'Yes' : 'No'}
+                      {sc.dispatchMeans ? (
+                        <span className="text-xs font-medium">{sc.dispatchMeans}</span>
+                      ) : (
+                        <span className="text-xs text-muted">Not dispatched</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <Badge tone={sc.arrived ? 'success' : 'warning'}>
+                        {sc.arrived ? 'Yes' : 'No'}
                       </Badge>
                     </Td>
                     <Td>
-                      {sc.dispatched ? (
-                        <div>
-                          <Badge tone="success">Yes</Badge>
-                          {sc.dispatchMeans ? (
-                            <p className="mt-1 text-xs text-muted">{sc.dispatchMeans}</p>
-                          ) : null}
-                        </div>
+                      {sc.stampedDocId ? (
+                        <a
+                          href={`/api/booklists/documents/${sc.stampedDocId}/download`}
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          View
+                        </a>
                       ) : (
                         <Badge tone="warning">No</Badge>
                       )}
                     </Td>
                     <Td>
-                      <Badge tone={sc.received ? 'success' : 'warning'}>
-                        {sc.received ? 'Yes' : 'No'}
+                      <Badge tone={sc.status === 'success' ? 'success' : 'warning'}>
+                        {sc.status === 'success' ? 'Success' : 'Pending'}
                       </Badge>
-                    </Td>
-                    <Td>
-                      {sc.hasStamped ? (
-                        sc.stampedDocId ? (
-                          <a
-                            href={`/api/booklists/documents/${sc.stampedDocId}/download`}
-                            className="text-xs font-medium text-primary hover:underline"
-                          >
-                            View
-                          </a>
-                        ) : (
-                          <Badge tone="success">Yes</Badge>
-                        )
-                      ) : (
-                        <Badge tone="warning">No</Badge>
-                      )}
-                    </Td>
-                    <Td>
-                      {job.owner_ba_name ?? (
-                        <span className="text-muted">Unassigned</span>
-                      )}
                       <div className="mt-1">
-                        <AgencyBadge agency={job.owner_ba_agency} />
+                        <StageBadge stage={job.stage} />
                       </div>
-                    </Td>
-                    <Td>
-                      <StageBadge stage={job.stage} />
-                    </Td>
-                    <Td className="whitespace-nowrap text-xs text-muted">
-                      {nairobiTime(job.stage_updated_at)}
                     </Td>
                   </tr>
                 );
