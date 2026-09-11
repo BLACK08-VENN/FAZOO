@@ -28,3 +28,9 @@ minimumReleaseAgeExclude:
   - expo-router@57.0.16
   - expo-splash-screen@57.0.8
   - expo@57.0.16
+  - expo-eas-client@57.0.4
+  - expo-json-utils@57.0.2
+  - expo-manifests@57.0.2
+  - expo-structured-headers@57.0.1
+  - expo-updates-interface@57.0.2
+  - expo-updates@57.0.22

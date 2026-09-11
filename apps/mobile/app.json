@@ -51,7 +51,8 @@
       "policy": "appVersion"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/4042072f-9905-44fa-b231-82b00974f5ee"
     },
     "extra": {
       "router": {},
