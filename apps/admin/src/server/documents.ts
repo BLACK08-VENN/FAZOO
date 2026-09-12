@@ -10,9 +10,7 @@ import { BOOKLIST_BUCKET, DOCX_MIME } from './ocr/convert';
  * (`{org}/documents/{jobId}/…`) instead of being scattered under whoever
  * happened to upload them. Because the service role bypasses storage
  * policies, every caller-facing route must select the `booklist_documents`
- * row through the user's own RLS-scoped client *before* asking for a signed
- * URL — that select, not the bucket policy, is what stops a BA reaching a
- * document on a job they do not own.
+ * row through the user's own RLS-scoped client before asking for a signed URL.
  */
 
 /** Vercel's serverless body limit is 4.5 MB; leave headroom for multipart. */
@@ -23,7 +21,6 @@ const SIGNED_URL_TTL_SECONDS = Number(process.env.ADMIN_SIGNED_URL_TTL_SECONDS ?
 const ACCEPTED_FORMATTED_TYPES = new Set([
   DOCX_MIME,
   'application/msword',
-  'application/pdf',
 ]);
 
 export function isAcceptableFormattedUpload(mimeType: string | null | undefined): boolean {
@@ -83,7 +80,7 @@ export async function storeJobDocument({
   return { storagePath, sizeBytes: file.size };
 }
 
-/** Publish an admin-formatted Word document and advance the job to `formatted`. */
+/** Publish the admin's final Word document and advance the job to `formatted`. */
 export async function publishFormattedDocument(params: {
   jobId: string;
   actorId: string;
@@ -119,10 +116,12 @@ export async function publishFormattedDocument(params: {
   });
 
   if (error) {
-    // Do not leave an orphaned object if the RPC rejected the publish.
     await db.storage.from(BOOKLIST_BUCKET).remove([storagePath]);
     throw new Error(error.message);
   }
 
-  return { documentId: String((data as { document_id?: string } | null)?.document_id ?? ''), storagePath };
+  return {
+    documentId: String((data as { document_id?: string } | null)?.document_id ?? ''),
+    storagePath,
+  };
 }
