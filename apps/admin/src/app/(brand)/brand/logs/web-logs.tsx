@@ -6,6 +6,7 @@ import type {
   BaPipelineCounts,
   BaPipelineJob,
   BaSchoolPipelineResult,
+  BaSchoolMatch,
   BaTodayResult,
   BaVisitStatsResult,
   BooklistStage,
@@ -168,6 +169,7 @@ function SchoolsPipelinePanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [schoolList, setSchoolList] = useState<BaSchoolMatch[]>([]);
 
   async function load() {
     setLoading(true);
@@ -233,6 +235,24 @@ function SchoolsPipelinePanel() {
           {error}
         </div>
       ) : null}
+
+      <Card className="p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-ink">School master list</h2>
+        <p className="mt-1 text-xs text-muted">Search and select from the schools available to you. New schools can still be added from the mobile visit flow.</p>
+        <div className="mt-3">
+          <Label htmlFor="master-school-search">Find a school</Label>
+          <Input id="master-school-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Type a school name or region" />
+        </div>
+        <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-ink/10">
+          {schoolList.filter((school) => `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())).map((school) => (
+            <div key={school.school_id} className="flex items-center justify-between border-b border-ink/5 px-3 py-2 last:border-0">
+              <span className="text-sm text-ink">{school.school_name}</span>
+              <span className="text-xs text-muted">{school.school_region ?? 'Region not recorded'}</span>
+            </div>
+          ))}
+          {schoolList.length === 0 ? <p className="px-3 py-3 text-sm text-muted">No schools available.</p> : null}
+        </div>
+      </Card>
 
       <Card className="p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-ink">Logging a new school</h2>
