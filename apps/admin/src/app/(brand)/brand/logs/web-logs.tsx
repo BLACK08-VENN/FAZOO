@@ -5,8 +5,8 @@ import { browserSupabase } from '@fazoo/database/browser';
 import type {
   BaPipelineCounts,
   BaPipelineJob,
-  BaSchoolPipelineResult,
   BaSchoolMatch,
+  BaSchoolPipelineResult,
   BaTodayResult,
   BaVisitStatsResult,
   BooklistStage,
@@ -153,12 +153,19 @@ const NEXT_ACTION: Record<BooklistStage, string> = {
 /**
  * Schools-org BA view on the web.
  *
- * Capture — the gate selfie, the outcome, the booklist upload, the copy count
- * and the stamped +1 — happens in the mobile app, which owns the camera and
- * the storage-path conventions the RPCs assert against. What a BA needs from a
- * browser is the other half of the requirement: seeing exactly where every
- * school they logged has got to, and downloading the formatted booklist to
- * print and carry back.
+ * Full booklist pipeline flow:
+ * 1. Search and select a school (or create manually)
+ * 2. Approach the school and take gate selfie
+ * 3. Record outcome: booklist offered or declined
+ * 4. If offered, upload the booklist (any format → will be converted to Word)
+ * 5. Download formatted Word doc from admin
+ * 6. Print and get school approval
+ * 7. Confirm number of copies needed + due date
+ * 8. Receive printed copies from admin
+ * 9. Upload stamped +1 copy to complete
+ *
+ * The mobile app captures steps 1-4, this web dashboard shows the pipeline
+ * status and allows uploading the stamped copy to complete the job.
  */
 function SchoolsPipelinePanel() {
   const client = useMemo(() => browserSupabase(), []);
@@ -171,6 +178,15 @@ function SchoolsPipelinePanel() {
   const [query, setQuery] = useState('');
   const [schoolList, setSchoolList] = useState<BaSchoolMatch[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [schoolError, setSchoolError] = useState<string | null>(null);
+  const [schoolCreating, setSchoolCreating] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newSchoolData, setNewSchoolData] = useState({
+    name: '',
+    region: '',
+    address: '',
+    contactName: '',
+  });
 
   async function load() {
     setLoading(true);
@@ -218,15 +234,57 @@ function SchoolsPipelinePanel() {
     }
   }
 
+  async function handleCreateSchool() {
+    if (!newSchoolData.name.trim()) {
+      setSchoolError('School name is required.');
+      return;
+    }
+
+    setSchoolCreating(true);
+    setSchoolError(null);
+
+    try {
+      const { data, error: createError } = await client.rpc('ba_create_school', {
+        p_name: newSchoolData.name,
+        p_region: newSchoolData.region || null,
+        p_address: newSchoolData.address || null,
+        p_contact_person_name: newSchoolData.contactName || null,
+        p_client_request_id: crypto.randomUUID(),
+      });
+
+      if (createError) throw new Error(createError.message);
+
+      const result = data as unknown as { status: string; school_id?: string; created?: boolean };
+      if (result.status !== 'ok') throw new Error('Failed to create school');
+
+      // Reset form and reload
+      setNewSchoolData({ name: '', region: '', address: '', contactName: '' });
+      setShowCreateForm(false);
+      if (result.school_id) {
+        setSelectedSchoolId(result.school_id);
+      }
+      await load();
+    } catch (err) {
+      setSchoolError(err instanceof Error ? err.message : 'Could not create school.');
+    } finally {
+      setSchoolCreating(false);
+    }
+  }
+
   useEffect(() => {
     void load();
   }, []);
+
+  const filteredSchools = schoolList.filter(
+    (school) =>
+      `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())
+  );
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return jobs;
     return jobs.filter((job) =>
-      `${job.school_name} ${job.school_region ?? ''}`.toLowerCase().includes(needle),
+      `${job.school_name} ${job.school_region ?? ''}`.toLowerCase().includes(needle)
     );
   }, [jobs, query]);
 
@@ -243,44 +301,165 @@ function SchoolsPipelinePanel() {
       ) : null}
 
       <Card className="p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-ink">School master list</h2>
-        <p className="mt-1 text-xs text-muted">Search and select from the schools available to you. New schools can still be added from the mobile visit flow.</p>
-        <div className="mt-3">
-          <Label htmlFor="master-school-search">Search the school list</Label>
-          <Input id="master-school-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Type a school name or region" />
-        </div>
-        <div className="mt-3">
-          <Label htmlFor="school-to-log">Choose the school to log</Label>
-          <Select id="school-to-log" value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}>
-            <option value="">Select a school from the database</option>
-            {schoolList.filter((school) => `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())).map((school) => (
-              <option key={school.school_id} value={school.school_id}>{school.school_name}{school.school_region ? ` — ${school.school_region}` : ''}</option>
-            ))}
-          </Select>
-        </div>
-        <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-ink/10">
-          {schoolList.filter((school) => `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())).map((school) => (
-            <div key={school.school_id} className="flex items-center justify-between border-b border-ink/5 px-3 py-2 last:border-0">
-              <span className="text-sm text-ink">{school.school_name}</span>
-              <span className="text-xs text-muted">{school.school_region ?? 'Region not recorded'}</span>
+        <h2 className="text-sm font-semibold text-ink">Create a new booklist log</h2>
+        <p className="mt-1 text-xs text-muted">
+          Use the Fazoo mobile app to start. Select a school from our master list or add one manually if it's not there.
+        </p>
+
+        <div className="mt-4 space-y-3">
+          <div>
+            <Label htmlFor="school-search">Search the school list</Label>
+            <Input
+              id="school-search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Type a school name or region"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="school-select">Choose a school</Label>
+            <Select id="school-select" value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}>
+              <option value="">Select a school from the database</option>
+              {filteredSchools.map((school) => (
+                <option key={school.school_id} value={school.school_id}>
+                  {school.school_name}
+                  {school.school_region ? ` — ${school.school_region}` : ''}
+                  {school.has_active_job ? ' (active log)' : ''}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {schoolError ? (
+            <div className="rounded-lg border border-bad/25 bg-bad/10 px-3 py-2 text-xs font-medium text-bad">
+              {schoolError}
             </div>
-          ))}
-          {schoolList.length === 0 ? <p className="px-3 py-3 text-sm text-muted">No schools available.</p> : null}
+          ) : null}
+
+          <div className="flex gap-2">
+            {selectedSchoolId && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSelectedSchoolId('');
+                  setSchoolError(null);
+                }}
+              >
+                Clear selection
+              </Button>
+            )}
+            <Button
+              type="button"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="flex-1"
+            >
+              {showCreateForm ? 'Cancel' : 'Add school manually'}
+            </Button>
+          </div>
+
+          {showCreateForm && (
+            <Card className="border-primary/30 bg-primary/5 p-3">
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="new-school-name">School name *</Label>
+                  <Input
+                    id="new-school-name"
+                    value={newSchoolData.name}
+                    onChange={(e) => setNewSchoolData({ ...newSchoolData, name: e.target.value })}
+                    placeholder="Full name of the school"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-school-region">Region / area</Label>
+                  <Input
+                    id="new-school-region"
+                    value={newSchoolData.region}
+                    onChange={(e) => setNewSchoolData({ ...newSchoolData, region: e.target.value })}
+                    placeholder="e.g. Lagos, Abuja"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-school-address">Address</Label>
+                  <Input
+                    id="new-school-address"
+                    value={newSchoolData.address}
+                    onChange={(e) => setNewSchoolData({ ...newSchoolData, address: e.target.value })}
+                    placeholder="Street address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-school-contact">Contact person name</Label>
+                  <Input
+                    id="new-school-contact"
+                    value={newSchoolData.contactName}
+                    onChange={(e) => setNewSchoolData({ ...newSchoolData, contactName: e.target.value })}
+                    placeholder="Principal or admin name"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => void handleCreateSchool()}
+                  disabled={schoolCreating || !newSchoolData.name.trim()}
+                  className="w-full"
+                >
+                  {schoolCreating ? 'Creating…' : 'Create school & start log'}
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          <div className="mt-3 max-h-48 overflow-y-auto rounded-lg border border-ink/10">
+            {filteredSchools.length === 0 ? (
+              <p className="px-3 py-3 text-sm text-muted">No schools match. Try different keywords or add manually.</p>
+            ) : (
+              filteredSchools.map((school) => (
+                <div
+                  key={school.school_id}
+                  className={`flex items-center justify-between border-b border-ink/5 px-3 py-2 last:border-0 cursor-pointer hover:bg-ink/5 ${
+                    selectedSchoolId === school.school_id ? 'bg-primary/10' : ''
+                  }`}
+                  onClick={() => setSelectedSchoolId(school.school_id)}
+                >
+                  <div>
+                    <span className="text-sm font-medium text-ink">{school.school_name}</span>
+                    {school.has_active_job && (
+                      <span className="ml-2 text-xs font-semibold text-warn">Active log</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted">{school.school_region ?? 'Region unknown'}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </Card>
 
       <Card className="p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-ink">Logging a new school</h2>
+        <h2 className="text-sm font-semibold text-ink">Your booklist journey</h2>
         <p className="mt-1 text-xs text-muted">
-          Use the Fazoo app at the school: pick or add the school, take your selfie at the gate,
-          then record whether you were given a booklist or turned down. If they hand you one —
-          handwritten, printed, a photo or a softcopy — upload it there. The admin converts it to
-          an editable Word file and publishes it back here for you to download and print.
+          Once you log a school in the mobile app, track its progress here through every step — from your approach to the stamped copy.
         </p>
-        <p className="mt-2 text-xs text-muted">
-          This page is your live view of every school you have logged, and where each one has got
-          to. Nothing here needs re-entering.
-        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
+          <div className="rounded-lg border border-ink/10 p-3 text-center">
+            <div className="text-lg font-bold text-ink">{counts?.active ?? 0}</div>
+            <div className="text-xs text-muted">In progress</div>
+          </div>
+          <div className="rounded-lg border border-ink/10 p-3 text-center">
+            <div className="text-lg font-bold text-ink">{counts?.awaiting_admin ?? 0}</div>
+            <div className="text-xs text-muted">With admin</div>
+          </div>
+          <div className="rounded-lg border border-ink/10 p-3 text-center">
+            <div className="text-lg font-bold text-ink">{counts?.completed ?? 0}</div>
+            <div className="text-xs text-muted">Completed</div>
+          </div>
+          <div className="rounded-lg border border-ink/10 p-3 text-center">
+            <div className="text-lg font-bold text-ink">{counts?.declined ?? 0}</div>
+            <div className="text-xs text-muted">Declined</div>
+          </div>
+        </div>
       </Card>
 
       <Card className="p-4 sm:p-5">
@@ -306,7 +485,7 @@ function SchoolsPipelinePanel() {
             <dd className="text-xs text-muted">
               {target
                 ? reached >= target
-                  ? 'Target met'
+                  ? 'Target met ✓'
                   : `${Math.round((reached / target) * 100)}% of target`
                 : 'No target set'}
             </dd>
@@ -331,7 +510,7 @@ function SchoolsPipelinePanel() {
               {selfies ? `${selfies.captured} / ${selfies.required}` : '—'}
             </dd>
             <dd className="text-xs text-muted">
-              {selfies && selfies.missing > 0 ? `${selfies.missing} missing` : 'Up to date'}
+              {selfies && selfies.missing > 0 ? `${selfies.missing} missing` : 'Complete ✓'}
             </dd>
           </div>
         </dl>
@@ -342,15 +521,11 @@ function SchoolsPipelinePanel() {
           <div>
             <h2 className="text-sm font-semibold text-ink">Your schools</h2>
             <p className="mt-1 text-xs text-muted">
-              {counts
-                ? `${counts.active} in progress · ${counts.awaiting_admin} with the admin · ${counts.completed} completed · ${counts.declined} declined`
-                : loading
-                  ? 'Loading…'
-                  : 'No schools logged yet.'}
+              Each entry tracks one school from gate selfie to the stamped final copy.
             </p>
           </div>
           <div className="sm:w-64">
-            <Label htmlFor="pipeline-search">Search your schools</Label>
+            <Label htmlFor="pipeline-search">Filter by school</Label>
             <Input
               id="pipeline-search"
               value={query}
@@ -362,7 +537,7 @@ function SchoolsPipelinePanel() {
 
         {visible.length === 0 ? (
           <p className="mt-4 text-sm text-muted">
-            {loading ? 'Loading your schools…' : 'Nothing matches that search.'}
+            {loading ? 'Loading your schools…' : 'Nothing matches that search. Start logging schools from the mobile app.'}
           </p>
         ) : (
           <ul className="mt-4 space-y-2.5">
@@ -393,7 +568,7 @@ function SchoolsPipelinePanel() {
                   </p>
 
                   {job.stamped_uploaded ? (
-                    <p className="mt-1 text-xs text-muted">Stamped +1 copy on file.</p>
+                    <p className="mt-1 text-xs text-ok font-medium">✓ Stamped +1 copy uploaded — log complete.</p>
                   ) : null}
 
                   {documentId ? (
@@ -401,7 +576,7 @@ function SchoolsPipelinePanel() {
                       href={`/api/booklists/documents/${documentId}/download`}
                       className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary/90"
                     >
-                      Download the formatted booklist
+                      Download formatted booklist for printing
                     </a>
                   ) : null}
                 </li>
