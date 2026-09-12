@@ -170,6 +170,7 @@ function SchoolsPipelinePanel() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [schoolList, setSchoolList] = useState<BaSchoolMatch[]>([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState('');
 
   async function load() {
     setLoading(true);
@@ -245,8 +246,17 @@ function SchoolsPipelinePanel() {
         <h2 className="text-sm font-semibold text-ink">School master list</h2>
         <p className="mt-1 text-xs text-muted">Search and select from the schools available to you. New schools can still be added from the mobile visit flow.</p>
         <div className="mt-3">
-          <Label htmlFor="master-school-search">Find a school</Label>
+          <Label htmlFor="master-school-search">Search the school list</Label>
           <Input id="master-school-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Type a school name or region" />
+        </div>
+        <div className="mt-3">
+          <Label htmlFor="school-to-log">Choose the school to log</Label>
+          <Select id="school-to-log" value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}>
+            <option value="">Select a school from the database</option>
+            {schoolList.filter((school) => `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())).map((school) => (
+              <option key={school.school_id} value={school.school_id}>{school.school_name}{school.school_region ? ` — ${school.school_region}` : ''}</option>
+            ))}
+          </Select>
         </div>
         <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-ink/10">
           {schoolList.filter((school) => `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())).map((school) => (
