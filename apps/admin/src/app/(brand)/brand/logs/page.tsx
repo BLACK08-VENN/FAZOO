@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireClient } from '@/lib/client-auth';
 import { PageHeader } from '@/components/page';
 import { BaWebLogs } from './web-logs';
+import { BaDailyTargetCard } from './ba-daily-target-card';
 import { SchoolBooklistWorkflow } from './school-booklist-workflow';
 
 export default async function BrandAmbassadorLogsPage() {
@@ -27,7 +28,10 @@ export default async function BrandAmbassadorLogsPage() {
     <>
       <PageHeader title={heading.title} description={heading.description} />
       {organizationKind === 'schools' ? (
-        <SchoolBooklistWorkflow organizationId={profile.organization_id} userId={profile.id} />
+        <>
+          <BaDailyTargetCard />
+          <SchoolBooklistWorkflow organizationId={profile.organization_id} userId={profile.id} />
+        </>
       ) : (
         <BaWebLogs
           organizationId={profile.organization_id}
