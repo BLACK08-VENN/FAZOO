@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireClient } from '@/lib/client-auth';
 import { PageHeader } from '@/components/page';
 import { BaWebLogs } from './web-logs';
+import { SchoolBooklistPanel } from './school-booklist-panel';
 
 export default async function BrandAmbassadorLogsPage() {
   const { client, profile, brand } = await requireClient();
@@ -15,7 +16,7 @@ export default async function BrandAmbassadorLogsPage() {
     organizationKind === 'schools'
       ? {
           title: 'My schools',
-          description: `Where every school you have logged for ${brand.name} has got to in the booklist pipeline.`,
+          description: `Create school booklist logs for ${brand.name} and follow every school from first approach to stamped-copy completion.`,
         }
       : {
           title: 'Create a field log',
@@ -25,11 +26,15 @@ export default async function BrandAmbassadorLogsPage() {
   return (
     <>
       <PageHeader title={heading.title} description={heading.description} />
-      <BaWebLogs
-        organizationId={profile.organization_id}
-        userId={profile.id}
-        organizationKind={organizationKind}
-      />
+      {organizationKind === 'schools' ? (
+        <SchoolBooklistPanel organizationId={profile.organization_id} userId={profile.id} />
+      ) : (
+        <BaWebLogs
+          organizationId={profile.organization_id}
+          userId={profile.id}
+          organizationKind="retail"
+        />
+      )}
     </>
   );
 }
