@@ -87,7 +87,7 @@ export default function SchoolVisit() {
     searchGeneration.current = generation;
     setSearching(true);
     try {
-      const result = await searchSchools(term.trim() || null, regionFilter, 25);
+      const result = await searchSchools(term.trim() || null, regionFilter, 100);
       if (generation !== searchGeneration.current) return;
       setMatches(result.schools);
       setRegions(result.regions);
