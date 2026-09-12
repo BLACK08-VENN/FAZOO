@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { requireClient } from '@/lib/client-auth';
 import { PageHeader } from '@/components/page';
 import { BaWebLogs } from './web-logs';
-import { SchoolBooklistPanel } from './school-booklist-panel';
+import { SchoolBooklistWorkflow } from './school-booklist-workflow';
 
 export default async function BrandAmbassadorLogsPage() {
   const { client, profile, brand } = await requireClient();
@@ -27,7 +27,7 @@ export default async function BrandAmbassadorLogsPage() {
     <>
       <PageHeader title={heading.title} description={heading.description} />
       {organizationKind === 'schools' ? (
-        <SchoolBooklistPanel organizationId={profile.organization_id} userId={profile.id} />
+        <SchoolBooklistWorkflow organizationId={profile.organization_id} userId={profile.id} />
       ) : (
         <BaWebLogs
           organizationId={profile.organization_id}
