@@ -392,7 +392,13 @@ export default function SchoolVisit() {
             autoCorrect={false}
             autoCapitalize="words"
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(value) => {
+              setQuery(value);
+              setDraft((current) => ({
+                ...current,
+                name: current.name.trim() ? current.name : value,
+              }));
+            }}
           />
 
           {regions.length > 0 ? (
@@ -404,10 +410,19 @@ export default function SchoolVisit() {
               {searching ? 'Searching…' : `${matches.length} match${matches.length === 1 ? '' : 'es'}`}
             </Text>
             <PrimaryButton
-              label="Not on the list? Add it"
+              label={query.trim() ? `Can't find "${query.trim()}"? Add it` : 'Not on the list? Add it'}
               variant="ghost"
               onPress={() => {
-                setAddingSchool((current) => !current);
+                setAddingSchool((current) => {
+                  const next = !current;
+                  if (next) {
+                    setDraft((draftValue) => ({
+                      ...draftValue,
+                      name: draftValue.name.trim() || query.trim(),
+                    }));
+                  }
+                  return next;
+                });
                 setError(null);
               }}
             />
