@@ -187,6 +187,11 @@ function SchoolsPipelinePanel() {
       setCounts(pipeline.counts);
       setJobs(pipeline.jobs);
 
+      const schoolListResult = await client.rpc('ba_search_schools', { p_limit: 100 });
+      if (schoolListResult.error) throw new Error(schoolListResult.error.message);
+      const schoolListPayload = schoolListResult.data as unknown as { schools?: BaSchoolMatch[] };
+      setSchoolList(schoolListPayload.schools ?? []);
+
       // `ba_school_pipeline` reports that a formatted document exists but not
       // its id, and the download route needs the id. One extra RLS-scoped read
       // over the jobs that actually have one, rather than a detail call each.
