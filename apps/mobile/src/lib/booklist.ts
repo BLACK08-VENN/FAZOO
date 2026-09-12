@@ -52,8 +52,9 @@ export async function searchSchools(
       p_limit: limit,
     });
     return { regions: result.regions ?? [], schools: result.schools ?? [] };
-  } catch {
-    throw new Error('Could not reach the school list. Check your connection and try again.');
+  } catch (error) {
+    const detail = error instanceof Error && error.message ? ` (${error.message})` : '';
+    throw new Error(`Could not reach the school list${detail}. Check your connection and try again.`);
   }
 }
 
