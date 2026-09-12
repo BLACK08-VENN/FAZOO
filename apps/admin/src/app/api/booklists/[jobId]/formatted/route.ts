@@ -3,9 +3,8 @@ import { isElevated, requireStaff } from '@/lib/auth';
 import { isAcceptableFormattedUpload, publishFormattedDocument } from '@/server/documents';
 
 /**
- * Publish the admin's finished Word document. This is the artefact the BA
- * downloads, prints and takes back to the school, so it is the gate between
- * "converted" and "with the school for approval".
+ * Publish the admin's finished Word document. This is the printable source the
+ * admin uses to create the print order before dispatching copies to the school.
  */
 export async function POST(
   request: NextRequest,
@@ -30,11 +29,11 @@ export async function POST(
 
   const file = form.get('file');
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ error: 'Choose the formatted document to upload' }, { status: 400 });
+    return NextResponse.json({ error: 'Choose the final Word document to upload' }, { status: 400 });
   }
   if (!isAcceptableFormattedUpload(file.type)) {
     return NextResponse.json(
-      { error: 'Upload a Word document (.docx or .doc) or a PDF' },
+      { error: 'Upload a Word document (.docx or .doc)' },
       { status: 415 },
     );
   }
