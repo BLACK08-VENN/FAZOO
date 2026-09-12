@@ -219,7 +219,147 @@ export default async function BaPerformancePage({
         </p>
       </Card>
 
-      <TableWrap>
+      <div className="space-y-3 md:hidden" role="list" aria-label="Brand ambassador performance">
+        {rows.length === 0 ? (
+          <Card className="p-6 text-center">
+            <p className="text-sm text-muted">No approved brand ambassadors match that filter.</p>
+          </Card>
+        ) : (
+          rows.map((row) => {
+            const target = row.target_schools;
+            const reached = row.schools_visited;
+            const met = target !== null && target > 0 && reached >= target;
+            const selfieGap = row.selfies_required - row.selfies_captured;
+            const dRow = daily?.rows.find((item) => item.ba_id === row.ba_id);
+            const dailyMet =
+              dRow?.target_daily_schools !== null &&
+              dRow?.target_daily_schools !== undefined &&
+              dRow.schools_visited_today >= dRow.target_daily_schools;
+
+            return (
+              <Card key={row.ba_id} className="overflow-hidden" role="listitem">
+                <div className="border-b border-ink/8 bg-charcoal px-4 py-3 text-white">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-base font-semibold">{row.full_name}</h2>
+                      {row.phone ? <p className="mt-0.5 text-xs text-white/65">{row.phone}</p> : null}
+                    </div>
+                    <AgencyBadge agency={row.agency} selfieRequired={row.selfie_required} />
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                        Schools reached
+                      </p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums text-ink">{reached}</p>
+                      {target !== null && target > 0 ? (
+                        <Badge tone={met ? 'success' : 'warning'}>
+                          {met ? 'Target met' : `${Math.round((reached / target) * 100)}% of target`}
+                        </Badge>
+                      ) : (
+                        <p className="text-xs text-muted">No period target</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                        Daily target
+                      </p>
+                      {dRow?.target_daily_schools !== null &&
+                      dRow?.target_daily_schools !== undefined ? (
+                        <>
+                          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
+                            {dRow.schools_visited_today}/{dRow.target_daily_schools}
+                          </p>
+                          <Badge tone={dailyMet ? 'success' : 'warning'}>
+                            {dailyMet ? 'Met today' : `${dRow.days_met_last_7_days}/7 days met`}
+                          </Badge>
+                        </>
+                      ) : (
+                        <p className="mt-2 text-sm text-muted">Not set</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                        Booklists
+                      </p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-ink">
+                        {row.booklists_collected}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                        Declines
+                      </p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-ink">{row.declines}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                        Gate selfies
+                      </p>
+                      {row.selfies_required === 0 ? (
+                        <p className="mt-1 text-sm text-muted">Not required</p>
+                      ) : (
+                        <p
+                          className={`mt-1 text-sm font-semibold tabular-nums ${selfieGap === 0 ? 'text-ok' : 'text-bad'}`}
+                        >
+                          {row.selfies_captured}/{row.selfies_required}
+                          {selfieGap > 0 ? ` · ${selfieGap} missing` : ' · Complete'}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                        All-time schools
+                      </p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-ink">
+                        {row.schools_visited_all_time}
+                      </p>
+                      <p className="text-xs text-muted">{row.visits} visits this period</p>
+                    </div>
+                  </div>
+
+                  {row.target_period_start ? (
+                    <p className="mt-4 border-t border-ink/8 pt-3 text-xs text-muted">
+                      Target period {nairobiDate(row.target_period_start)} →{' '}
+                      {nairobiDate(row.target_period_end)} · {target ?? 0} schools
+                    </p>
+                  ) : null}
+
+                  {canAct ? (
+                    <form action={setAgency} className="mt-4 flex gap-2 border-t border-ink/8 pt-4">
+                      <input type="hidden" name="ba_id" value={row.ba_id} />
+                      <Label htmlFor={`mobile-agency-${row.ba_id}`} className="sr-only">
+                        Agency for {row.full_name}
+                      </Label>
+                      <select
+                        id={`mobile-agency-${row.ba_id}`}
+                        name="agency"
+                        defaultValue={row.agency ?? ''}
+                        className="h-11 min-w-0 flex-1 rounded-lg border border-ink/15 bg-white px-3 text-sm text-ink focus:border-primary focus:outline-2 focus:outline-offset-1 focus:outline-primary"
+                      >
+                        <option value="">Agency not set</option>
+                        {AGENCIES.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <Button type="submit" variant="outline" className="min-h-11">
+                        Set
+                      </Button>
+                    </form>
+                  ) : null}
+                </div>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      <TableWrap className="hidden md:block">
         <Table>
           <caption className="sr-only">Brand ambassador performance for the selected period</caption>
           <thead>
@@ -238,7 +378,7 @@ export default async function BaPerformancePage({
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <EmptyRow colSpan={9}>
+              <EmptyRow colSpan={10}>
                 No approved brand ambassadors match that filter.
               </EmptyRow>
             ) : (
