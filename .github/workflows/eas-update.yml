@@ -1,0 +1,56 @@
+name: Publish mobile update
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/config/**"
+      - "packages/database/**"
+      - "packages/types/**"
+      - "packages/validation/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "eas.json"
+      - ".github/workflows/eas-update.yml"
+
+concurrency:
+  group: eas-update-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: EAS production update
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify Expo token is configured
+        run: test -n "$EXPO_TOKEN"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify mobile app
+        run: |
+          pnpm --filter @fazoo/mobile typecheck
+          pnpm --filter @fazoo/mobile lint
+          pnpm --filter @fazoo/mobile test
+
+      - name: Publish production update
+        working-directory: apps/mobile
+        run: pnpm dlx eas-cli@24.3.0 update --channel production --environment production --platform all --message "BA school search and manual school entry"
