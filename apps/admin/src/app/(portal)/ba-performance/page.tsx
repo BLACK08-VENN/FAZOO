@@ -518,3 +518,58 @@ export default async function BaPerformancePage({
                   ))}
                 </Select>
               </div>
+              <div>
+                <Label htmlFor="tg-start">Period start</Label>
+                <Input id="tg-start" name="period_start" type="date" required />
+              </div>
+              <div>
+                <Label htmlFor="tg-end">Period end</Label>
+                <Input id="tg-end" name="period_end" type="date" required />
+              </div>
+              <div>
+                <Label htmlFor="tg-target">Target schools (period)</Label>
+                <Input
+                  id="tg-target"
+                  name="target_schools"
+                  type="number"
+                  min="0"
+                  step="1"
+                  defaultValue="20"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="tg-daily">Daily target (AEL)</Label>
+                <Input
+                  id="tg-daily"
+                  name="target_daily_schools"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="e.g. 7"
+                />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-6">
+                <Button type="submit">Save target</Button>
+                <p className="mt-2 text-xs text-muted">
+                  Saving over an existing period for the same BA updates that target rather than
+                  creating a second one. Leave the daily field blank to use the agency default.
+                </p>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      ) : null}
+
+      <p className="mt-4 text-xs text-muted">
+        Schools reached counts distinct schools, so visiting the same school twice does not inflate
+        it. “All time” ignores the period filter and is the figure to quote for a BA&apos;s cumulative
+        coverage. {NOT_YET} means the value has not been recorded.
+      </p>
+    </>
+  );
+}
+
+export function generateMetadata() {
+  return { title: 'BA performance — Fazoo' };
+}
