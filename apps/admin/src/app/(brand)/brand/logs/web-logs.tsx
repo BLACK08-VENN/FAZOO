@@ -177,7 +177,13 @@ function SchoolsPipelinePanel() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [schoolList, setSchoolList] = useState<BaSchoolMatch[]>([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState('');
+  const [selectedSchool, setSelectedSchool] = useState<BaSchoolMatch | null>(null);
+  const [schoolQuery, setSchoolQuery] = useState('');
+  const [region, setRegion] = useState('');
+  const [regions, setRegions] = useState<string[]>([]);
+  const [searching, setSearching] = useState(true);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [retrySearch, setRetrySearch] = useState(0);
   const [schoolError, setSchoolError] = useState<string | null>(null);
   const [schoolCreating, setSchoolCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -203,11 +209,6 @@ function SchoolsPipelinePanel() {
       const pipeline = pipelineResult.data as unknown as BaSchoolPipelineResult;
       setCounts(pipeline.counts);
       setJobs(pipeline.jobs);
-
-      const schoolListResult = await client.rpc('ba_search_schools', { p_limit: 100 });
-      if (schoolListResult.error) throw new Error(schoolListResult.error.message);
-      const schoolListPayload = schoolListResult.data as unknown as { schools?: BaSchoolMatch[] };
-      setSchoolList(schoolListPayload.schools ?? []);
 
       // `ba_school_pipeline` reports that a formatted document exists but not
       // its id, and the download route needs the id. One extra RLS-scoped read
@@ -245,10 +246,10 @@ function SchoolsPipelinePanel() {
 
     try {
       const { data, error: createError } = await client.rpc('ba_create_school', {
-        p_name: newSchoolData.name,
-        p_region: newSchoolData.region || null,
-        p_address: newSchoolData.address || null,
-        p_contact_person_name: newSchoolData.contactName || null,
+        p_name: newSchoolData.name.trim(),
+        p_region: newSchoolData.region.trim() || undefined,
+        p_address: newSchoolData.address.trim() || undefined,
+        p_contact_person_name: newSchoolData.contactName.trim() || undefined,
         p_client_request_id: crypto.randomUUID(),
       });
 
@@ -261,7 +262,14 @@ function SchoolsPipelinePanel() {
       setNewSchoolData({ name: '', region: '', address: '', contactName: '' });
       setShowCreateForm(false);
       if (result.school_id) {
-        setSelectedSchoolId(result.school_id);
+        const { data: matchData } = await client.rpc('ba_search_schools', {
+          p_query: newSchoolData.name.trim(), p_limit: 100,
+        });
+        const matches = matchData as unknown as { schools?: BaSchoolMatch[] } | null;
+        setSelectedSchool(matches?.schools?.find((school) => school.school_id === result.school_id) ?? null);
+        setSchoolQuery(newSchoolData.name.trim());
+        setRegion('');
+        setRetrySearch((value) => value + 1);
       }
       await load();
     } catch (err) {
@@ -275,10 +283,36 @@ function SchoolsPipelinePanel() {
     void load();
   }, []);
 
-  const filteredSchools = schoolList.filter(
-    (school) =>
-      `${school.school_name} ${school.school_region ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())
-  );
+  useEffect(() => {
+    let cancelled = false;
+    setSearching(true);
+    setSearchError(null);
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data, error: lookupError } = await client.rpc('ba_search_schools', {
+          p_query: schoolQuery.trim() || undefined,
+          p_region: region || undefined,
+          p_limit: 50,
+        });
+        if (cancelled) return;
+        if (lookupError) throw new Error(lookupError.message);
+        const result = data as unknown as { schools?: BaSchoolMatch[]; regions?: string[] };
+        setSchoolList(result.schools ?? []);
+        setRegions(result.regions ?? []);
+      } catch {
+        if (!cancelled) {
+          setSchoolList([]);
+          setSearchError('Could not load schools. Check your connection and try again.');
+        }
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [client, schoolQuery, region, retrySearch]);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -307,29 +341,62 @@ function SchoolsPipelinePanel() {
         </p>
 
         <div className="mt-4 space-y-3">
-          <div>
-            <Label htmlFor="school-search">Search the school list</Label>
-            <Input
-              id="school-search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Type a school name or region"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="school-select">Choose a school</Label>
-            <Select id="school-select" value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}>
-              <option value="">Select a school from the database</option>
-              {filteredSchools.map((school) => (
-                <option key={school.school_id} value={school.school_id}>
-                  {school.school_name}
-                  {school.school_region ? ` — ${school.school_region}` : ''}
-                  {school.has_active_job ? ' (active log)' : ''}
-                </option>
-              ))}
-            </Select>
-          </div>
+          {selectedSchool ? (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4" role="status">
+              <p className="text-xs font-semibold text-primary">✓ Selected school</p>
+              <p className="mt-1 break-words font-semibold text-ink">{selectedSchool.school_name}</p>
+              <p className="mt-1 text-sm text-muted">{selectedSchool.school_region ?? 'Area not recorded'}</p>
+              <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => {
+                setSelectedSchool(null);
+                window.setTimeout(() => document.getElementById('school-search')?.focus(), 0);
+              }}>Change school</Button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <Label htmlFor="school-search">Find your school</Label>
+                <Input id="school-search" value={schoolQuery}
+                  onChange={(event) => { setSchoolQuery(event.target.value); setSearching(true); }}
+                  autoComplete="off" className="min-h-12 text-base"
+                  placeholder="Start typing the school name"
+                  aria-describedby="school-search-status" />
+              </div>
+              <div>
+                <Label htmlFor="school-region">Area (optional)</Label>
+                <Select id="school-region" value={region} className="min-h-11 text-base"
+                  onChange={(event) => { setRegion(event.target.value); setSearching(true); }}>
+                  <option value="">All areas</option>
+                  {regions.map((area) => <option key={area} value={area}>{area}</option>)}
+                </Select>
+              </div>
+              <p id="school-search-status" role="status" className="text-sm text-muted">
+                {searching ? 'Searching schools…' : searchError ? searchError :
+                  schoolList.length === 0 ? 'No schools found. Try another name or area, or add the school below.' :
+                  schoolList.length === 50 ? 'Showing 50 schools. Type more of the name to narrow the list.' :
+                  `${schoolList.length} schools found. Tap one to select it.`}
+              </p>
+              {searchError ? <Button type="button" variant="outline"
+                onClick={() => setRetrySearch((value) => value + 1)}>Try again</Button> : null}
+              {!searching && !searchError && schoolList.length > 0 ? (
+                <ul aria-label="Matching schools" className="max-h-80 overflow-y-auto overscroll-contain rounded-xl border border-ink/10">
+                  {schoolList.map((school) => (
+                    <li key={school.school_id} className="border-b border-ink/10 last:border-0">
+                      <button type="button"
+                        className="flex min-h-16 w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-primary"
+                        onClick={() => { setSelectedSchool(school); setShowCreateForm(false); setSchoolError(null); }}>
+                        <span className="min-w-0">
+                          <span className="block break-words text-sm font-semibold text-ink">{school.school_name}</span>
+                          <span className="mt-1 block text-xs text-muted">{school.school_region ?? 'Area not recorded'}</span>
+                          {school.has_active_job ? <span className="mt-1 block text-xs font-medium text-warn">Active log</span> : null}
+                        </span>
+                        <span className="shrink-0 text-sm font-semibold text-primary">Select</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          )}
 
           {schoolError ? (
             <div className="rounded-lg border border-bad/25 bg-bad/10 px-3 py-2 text-xs font-medium text-bad">
@@ -338,24 +405,15 @@ function SchoolsPipelinePanel() {
           ) : null}
 
           <div className="flex gap-2">
-            {selectedSchoolId && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setSelectedSchoolId('');
-                  setSchoolError(null);
-                }}
-              >
-                Clear selection
-              </Button>
-            )}
             <Button
               type="button"
-              onClick={() => setShowCreateForm(!showCreateForm)}
+              onClick={() => {
+                if (!showCreateForm) setNewSchoolData((current) => ({ ...current, name: schoolQuery.trim(), region }));
+                setShowCreateForm(!showCreateForm);
+              }}
               className="flex-1"
             >
-              {showCreateForm ? 'Cancel' : 'Add school manually'}
+              {showCreateForm ? 'Cancel' : 'School not listed? Add it'}
             </Button>
           </div>
 
@@ -377,7 +435,7 @@ function SchoolsPipelinePanel() {
                     id="new-school-region"
                     value={newSchoolData.region}
                     onChange={(e) => setNewSchoolData({ ...newSchoolData, region: e.target.value })}
-                    placeholder="e.g. Lagos, Abuja"
+                    placeholder="Town or area"
                   />
                 </div>
                 <div>
@@ -404,35 +462,13 @@ function SchoolsPipelinePanel() {
                   disabled={schoolCreating || !newSchoolData.name.trim()}
                   className="w-full"
                 >
-                  {schoolCreating ? 'Creating…' : 'Create school & start log'}
+                  {schoolCreating ? 'Creating…' : 'Save school'}
                 </Button>
               </div>
             </Card>
           )}
 
-          <div className="mt-3 max-h-48 overflow-y-auto rounded-lg border border-ink/10">
-            {filteredSchools.length === 0 ? (
-              <p className="px-3 py-3 text-sm text-muted">No schools match. Try different keywords or add manually.</p>
-            ) : (
-              filteredSchools.map((school) => (
-                <div
-                  key={school.school_id}
-                  className={`flex items-center justify-between border-b border-ink/5 px-3 py-2 last:border-0 cursor-pointer hover:bg-ink/5 ${
-                    selectedSchoolId === school.school_id ? 'bg-primary/10' : ''
-                  }`}
-                  onClick={() => setSelectedSchoolId(school.school_id)}
-                >
-                  <div>
-                    <span className="text-sm font-medium text-ink">{school.school_name}</span>
-                    {school.has_active_job && (
-                      <span className="ml-2 text-xs font-semibold text-warn">Active log</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted">{school.school_region ?? 'Region unknown'}</span>
-                </div>
-              ))
-            )}
-          </div>
+
         </div>
       </Card>
 

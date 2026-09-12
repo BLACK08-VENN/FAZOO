@@ -407,6 +407,8 @@ export interface AdminPipelineJob {
   latest_print_order: string | null;
   /** Dispatch means from the newest print order (e.g. 'courier', 'boda_boda'). */
   print_order_dispatch_means: DispatchMeans | null;
+  print_order_dispatch_carrier?: string | null;
+  print_order_dispatch_tracking_ref?: string | null;
   visit_count: number;
   last_visit_date: IsoDate | null;
 }

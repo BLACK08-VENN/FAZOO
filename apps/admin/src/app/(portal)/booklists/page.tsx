@@ -364,7 +364,7 @@ export default async function BooklistPipelinePage({
                     <Td>
                       {sc.dispatchMeans ? (
                         <div className="flex flex-col gap-1">
-                          <Badge tone="success" className="inline-flex w-fit">
+                          <Badge tone="success">
                             {sc.dispatchMeans}
                           </Badge>
                           {sc.arrived && (
