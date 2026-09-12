@@ -10,11 +10,6 @@ import { OcrBadge } from '@/components/stage-badge';
 
 type Feedback = { tone: 'ok' | 'bad'; text: string } | null;
 
-/**
- * The two document operations that cannot be plain server actions: both move
- * bytes, so they go through the API routes that own the multipart handling,
- * the OCR vendor call and the service-role storage writes.
- */
 export function DocumentWorkspace({
   jobId,
   ocrStatus,
@@ -45,28 +40,24 @@ export function DocumentWorkspace({
         message?: string;
         outcome?: 'draft_created' | 'manual_required' | 'failed';
       };
-      if (!response.ok) {
-        throw new Error(body.error ?? body.message ?? 'Conversion failed.');
-      }
+      if (!response.ok) throw new Error(body.error ?? body.message ?? 'Conversion failed.');
+
       if (body.outcome === 'draft_created') {
         setFeedback({
           tone: 'ok',
-          text: 'Auto-conversion produced an editable draft. Check it below, then format and publish the final Word document.',
+          text: 'Auto-conversion produced an editable draft. Check it, format it, then publish the final Word document below.',
         });
       } else {
         setFeedback({
           tone: 'bad',
           text: body.message
-            ? `${body.message} Format the document by hand and publish it below.`
-            : 'Auto-conversion could not produce a usable draft. Format the document by hand and publish it below.',
+            ? `${body.message} Format the document manually and publish the final Word file below.`
+            : 'Auto-conversion could not produce a usable draft. Format it manually and publish the final Word file below.',
         });
       }
       startTransition(() => router.refresh());
     } catch (error) {
-      setFeedback({
-        tone: 'bad',
-        text: error instanceof Error ? error.message : 'Conversion failed.',
-      });
+      setFeedback({ tone: 'bad', text: error instanceof Error ? error.message : 'Conversion failed.' });
     } finally {
       setConverting(false);
     }
@@ -77,7 +68,7 @@ export function DocumentWorkspace({
     const form = new FormData(event.currentTarget);
     const file = form.get('file');
     if (!(file instanceof File) || file.size === 0) {
-      setFeedback({ tone: 'bad', text: 'Choose the formatted Word document to publish.' });
+      setFeedback({ tone: 'bad', text: 'Choose the final Word document to publish.' });
       return;
     }
 
@@ -99,16 +90,13 @@ export function DocumentWorkspace({
 
       setFeedback({
         tone: 'ok',
-        text: 'Formatted document published. The BA can now download, print and take it back to the school.',
+        text: 'Final Word document published. The print request is now ready for admin production and shipping.',
       });
       event.currentTarget.reset();
       setPerGrade('unchanged');
       startTransition(() => router.refresh());
     } catch (error) {
-      setFeedback({
-        tone: 'bad',
-        text: error instanceof Error ? error.message : 'Upload failed.',
-      });
+      setFeedback({ tone: 'bad', text: error instanceof Error ? error.message : 'Upload failed.' });
     } finally {
       setUploading(false);
     }
@@ -133,20 +121,15 @@ export function DocumentWorkspace({
 
       <Card>
         <CardHeader
-          title="1. Convert what the school gave you"
-          description="Auto-OCR produces an editable draft. It is a starting point — you still format and publish the final Word document."
+          title="1. Convert the school booklist"
+          description="The BA may upload handwriting, a photo, scan, PDF or other softcopy. Use auto-conversion as a draft, then prepare the final Word document."
           actions={<OcrBadge status={ocrStatus} />}
         />
         <CardBody>
           {!hasRawDocument ? (
-            <p className="text-sm text-muted">
-              No document has been uploaded for this school yet. The BA uploads it from the app
-              after the school offers the booklist.
-            </p>
+            <p className="text-sm text-muted">The BA has not uploaded the original booklist yet.</p>
           ) : !canAct ? (
-            <p className="text-sm text-muted">
-              Your role can view this pipeline but not run conversions. Ask an administrator.
-            </p>
+            <p className="text-sm text-muted">Your role can view this pipeline but not run conversions. Ask an administrator.</p>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button type="button" onClick={() => void runConversion()} disabled={busy}>
@@ -154,8 +137,8 @@ export function DocumentWorkspace({
               </Button>
               <p className="text-xs text-muted">
                 {ocrStatus === 'manual_required' || ocrStatus === 'failed'
-                  ? 'Auto-conversion could not produce a usable draft — upload your own formatted document below.'
-                  : 'Long PDFs can take a few minutes. You can leave this page and come back.'}
+                  ? 'Auto-conversion could not make a usable draft. Prepare the Word document manually.'
+                  : 'Review the converted content carefully before publishing the final Word document.'}
               </p>
             </div>
           )}
@@ -164,8 +147,8 @@ export function DocumentWorkspace({
 
       <Card>
         <CardHeader
-          title="2. Publish the formatted document"
-          description="This is the file the BA downloads, prints and takes back to the school for approval. Publishing it moves the school to “Formatted — ready to print”."
+          title="2. Publish the final Word document"
+          description="FAZOO stores the final printable version as a Word file. Publishing it makes the job ready for the admin print order and delivery process."
           actions={
             formattedPublishedAt ? (
               <span className="text-xs font-medium text-ok">Published — you can replace it</span>
@@ -176,16 +159,16 @@ export function DocumentWorkspace({
         />
         <CardBody>
           {!canAct ? (
-            <p className="text-sm text-muted">Only administrators can publish a formatted document.</p>
+            <p className="text-sm text-muted">Only administrators can publish the final Word document.</p>
           ) : (
             <form onSubmit={publishFormatted} className="space-y-4">
               <div>
-                <Label htmlFor="formatted-file">Word document (.docx or .doc) or PDF</Label>
+                <Label htmlFor="formatted-file">Word document (.docx or .doc)</Label>
                 <Input
                   id="formatted-file"
                   name="file"
                   type="file"
-                  accept=".docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+                  accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
                   required
                 />
                 <p className="mt-1 text-xs text-muted">Maximum 4 MB.</p>
@@ -206,14 +189,10 @@ export function DocumentWorkspace({
               </div>
               <div>
                 <Label htmlFor="formatted-note">Note for the timeline</Label>
-                <Input
-                  id="formatted-note"
-                  name="note"
-                  placeholder="e.g. Reformatted the handwriting into a per-grade table"
-                />
+                <Input id="formatted-note" name="note" placeholder="e.g. Reformatted the handwriting into a per-grade table" />
               </div>
               <Button type="submit" disabled={busy}>
-                {uploading ? 'Publishing…' : formattedPublishedAt ? 'Replace document' : 'Publish document'}
+                {uploading ? 'Publishing…' : formattedPublishedAt ? 'Replace Word document' : 'Publish Word document'}
               </Button>
             </form>
           )}
