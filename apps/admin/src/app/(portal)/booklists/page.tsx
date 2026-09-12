@@ -69,6 +69,8 @@ interface SchoolStatusColumns {
   copiesToPrint: number | null;
   dueDate: string | null;
   dispatchMeans: string | null;
+  dispatchCarrier: string | null;
+  trackingRef: string | null;
   arrived: boolean;
   status: 'success' | 'pending';
 }
@@ -96,6 +98,8 @@ function schoolStatusColumns(job: AdminPipelineJob): SchoolStatusColumns {
     copiesToPrint: job.copies_to_print,
     dueDate: job.due_date,
     dispatchMeans,
+    dispatchCarrier: job.print_order_dispatch_carrier ?? null,
+    trackingRef: job.print_order_dispatch_tracking_ref ?? null,
     arrived: Boolean(job.received_at),
     status: job.stage === 'completed' ? 'success' : 'pending',
   };
@@ -299,7 +303,8 @@ export default async function BooklistPipelinePage({
               <Th>Attached document (Word)</Th>
               <Th className="text-right">Copies to print</Th>
               <Th>Due date</Th>
-              <Th>Dispatch (means)</Th>
+              <Th>Shipping method</Th>
+              <Th>Carrier / Reference</Th>
               <Th>Arrived?</Th>
               <Th>BA (handled the log)</Th>
               <Th>Stamped document</Th>
@@ -308,7 +313,7 @@ export default async function BooklistPipelinePage({
           </thead>
           <tbody>
             {jobs.length === 0 ? (
-              <EmptyRow colSpan={10}>
+              <EmptyRow colSpan={11}>
                 {board.total === 0 && !query && !stage
                   ? 'No schools have been logged yet. They appear here as soon as a BA records a gate visit.'
                   : 'No schools match that search or filter.'}
@@ -358,9 +363,37 @@ export default async function BooklistPipelinePage({
                     </Td>
                     <Td>
                       {sc.dispatchMeans ? (
-                        <span className="text-xs font-medium">{sc.dispatchMeans}</span>
+                        <div className="flex flex-col gap-1">
+                          <Badge tone="success" className="inline-flex w-fit">
+                            {sc.dispatchMeans}
+                          </Badge>
+                          {sc.arrived && (
+                            <span className="text-xs font-semibold text-ok">✓ Delivered</span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-xs text-muted">Not dispatched</span>
+                        <Link
+                          href={`/booklists/${job.job_id}`}
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          Add shipping method
+                        </Link>
+                      )}
+                    </Td>
+                    <Td className="text-xs">
+                      {sc.dispatchCarrier || sc.trackingRef ? (
+                        <div className="space-y-1">
+                          {sc.dispatchCarrier && (
+                            <p className="font-medium text-ink">{sc.dispatchCarrier}</p>
+                          )}
+                          {sc.trackingRef && (
+                            <p className="text-muted">
+                              Ref: <span className="font-mono">{sc.trackingRef}</span>
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted">—</span>
                       )}
                     </Td>
                     <Td>
