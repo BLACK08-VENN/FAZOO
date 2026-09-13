@@ -18,8 +18,12 @@ import { Card } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 
 type Props = { organizationId: string; userId: string };
-type Outcome = '' | 'booklist_offered' | 'declined';
-type PipelineJob = BaPipelineJob & { due_date?: string | null };
+type Outcome = '' | 'booklist_offered' | 'declined' | 'follow_up';
+type PipelineJob = BaPipelineJob & {
+  due_date?: string | null;
+  follow_up_date?: string | null;
+  follow_up_notes?: string | null;
+};
 type Fix = { latitude: number; longitude: number; accuracy: number | null };
 type StepState = 'done' | 'current' | 'pending' | 'na';
 type GradeBooklistDraft = {
@@ -98,6 +102,18 @@ function stepState(job: PipelineJob): Array<[string, StepState]> {
     ];
   }
 
+  if (job.stage === 'on_hold' && job.follow_up_date) {
+    return [
+      ['School approached', 'done'],
+      ['Follow-up scheduled', 'current'],
+      ['Booklist supplied', 'pending'],
+      ['Convert to Word', 'pending'],
+      ['Print +1', 'pending'],
+      ['Ship to school', 'pending'],
+      ['Stamped proof', 'pending'],
+    ];
+  }
+
   const wordDone = [
     'formatted',
     'pending_school_approval',
@@ -131,7 +147,7 @@ function stepState(job: PipelineJob): Array<[string, StepState]> {
 function nextAction(job: PipelineJob) {
   switch (job.stage) {
     case 'engaged':
-      return 'Record whether the school supplied or denied the booklist.';
+      return 'Record whether the school supplied the booklist, asked you to return later, or denied the request.';
     case 'declined':
       return 'Closed as denied. No printing is required.';
     case 'booklist_offered':
@@ -153,7 +169,9 @@ function nextAction(job: PipelineJob) {
     case 'completed':
       return 'Complete. The stamped +1 proof is stored in FAZOO.';
     case 'on_hold':
-      return 'This job is on hold. Check the admin note.';
+      return job.follow_up_date
+        ? `Return to the school on ${readableDate(job.follow_up_date)}${job.follow_up_notes ? ` — ${job.follow_up_notes}` : ''}.`
+        : 'This job is on hold. Check the admin note.';
     case 'cancelled':
       return 'This job has been cancelled.';
   }
@@ -218,6 +236,8 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
   const [contactPhone, setContactPhone] = useState('');
   const [declineReason, setDeclineReason] = useState('');
   const [declineNotes, setDeclineNotes] = useState('');
+  const [followUpDate, setFollowUpDate] = useState('');
+  const [followUpNotes, setFollowUpNotes] = useState('');
   const [gradeBooklists, setGradeBooklists] = useState<GradeBooklistDraft[]>([blankGradeBooklist()]);
   const [dueDate, setDueDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -367,6 +387,8 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
     setContactPhone('');
     setDeclineReason('');
     setDeclineNotes('');
+    setFollowUpDate('');
+    setFollowUpNotes('');
     setGradeBooklists([blankGradeBooklist()]);
     setDueDate('');
   }
@@ -379,9 +401,13 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
     if (!selected) return setError('Choose a school from the list or add it manually.');
     if (!fix) return setError('Capture your GPS location first.');
     if (stats?.selfie_required && !selfie) return setError('A gate selfie is required for this visit.');
-    if (!outcome) return setError('Choose Booklist supplied or Booklist denied.');
+    if (!outcome) return setError('Choose Booklist supplied, Follow-up required, or Booklist denied.');
     if (outcome === 'declined' && !declineReason && !declineNotes.trim()) {
       return setError('Record why the school denied the request.');
+    }
+    if (outcome === 'follow_up') {
+      if (!followUpDate) return setError('Choose the date the school asked you to return.');
+      if (followUpDate < today) return setError('The follow-up date cannot be in the past.');
     }
 
     const preparedGrades = gradeBooklists.map((grade) => ({
@@ -442,6 +468,26 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
       visitCreated = true;
       const visit = visitData as unknown as BaStartSchoolVisitResult;
 
+      if (outcome === 'follow_up') {
+        const { error: followUpFailure } = await client.rpc(
+          'ba_schedule_booklist_follow_up' as never,
+          {
+            p_visit_id: visit.visit_id,
+            p_follow_up_date: followUpDate,
+            p_follow_up_notes: followUpNotes.trim() || undefined,
+            p_client_request_id: crypto.randomUUID(),
+          } as never,
+        );
+        if (followUpFailure) throw new Error(followUpFailure.message);
+
+        setSuccess(
+          `${selected.school_name}: follow-up scheduled for ${readableDate(followUpDate)}. The school remains open under your booklist pipeline.`,
+        );
+        clearForm();
+        await loadPipeline();
+        return;
+      }
+
       const { data: outcomeData, error: outcomeFailure } = await client.rpc('ba_record_visit_outcome', {
         p_visit_id: visit.visit_id,
         p_client_request_id: crypto.randomUUID(),
@@ -495,6 +541,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
             if (gradePath) await client.storage.from('booklist-documents').remove([gradePath]);
             throw gradeFailure;
           }
+
         }
         setSuccess(
           `${selected.school_name}: ${preparedGrades.length} separate grade print order${preparedGrades.length === 1 ? '' : 's'} sent to admin. Each document keeps its own copy quantity. Due ${readableDate(dueDate)}.`,
@@ -717,8 +764,8 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
 
         <Card className="p-4 sm:p-5">
           <h2 className="text-base font-semibold text-ink">3. Booklist outcome</h2>
-          <p className="mt-1 text-xs text-muted">Record whether the school supplied the booklist or denied the request.</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <p className="mt-1 text-xs text-muted">Record whether the school supplied the booklist, asked you to return later, or denied the request.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <button
               type="button"
               onClick={() => setOutcome('booklist_offered')}
@@ -729,6 +776,14 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
             </button>
             <button
               type="button"
+              onClick={() => setOutcome('follow_up')}
+              className={`rounded-xl border p-4 text-left ${outcome === 'follow_up' ? 'border-warn/40 bg-warn/5' : 'border-ink/10'}`}
+            >
+              <span className="block text-sm font-semibold text-ink">Follow-up required</span>
+              <span className="mt-1 block text-xs text-muted">School asked the BA to return on a specific date.</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setOutcome('declined')}
               className={`rounded-xl border p-4 text-left ${outcome === 'declined' ? 'border-bad/40 bg-bad/5' : 'border-ink/10'}`}
             >
@@ -736,6 +791,20 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
               <span className="mt-1 block text-xs text-muted">School would not provide the booklist.</span>
             </button>
           </div>
+
+          {outcome === 'follow_up' ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="follow-up-date">Return date *</Label>
+                <Input id="follow-up-date" type="date" min={today} value={followUpDate} onChange={(event) => setFollowUpDate(event.target.value)} />
+                <p className="mt-1 text-xs text-muted">The school stays open and will appear as a scheduled follow-up.</p>
+              </div>
+              <div>
+                <Label htmlFor="follow-up-notes">Follow-up note</Label>
+                <textarea id="follow-up-notes" className={TEXTAREA} rows={3} value={followUpNotes} onChange={(event) => setFollowUpNotes(event.target.value)} placeholder="e.g. Headteacher asked me to return when the booklists are ready." />
+              </div>
+            </div>
+          ) : null}
 
           {outcome === 'declined' ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -761,18 +830,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
                     <h3 className="text-sm font-semibold text-ink">Print request</h3>
                     <p className="mt-1 text-xs text-muted">Add each grade or class separately. FAZOO adds one extra copy for stamping to every grade.</p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      setGradeBooklists((rows) => [
-                        ...rows,
-                        blankGradeBooklist(crypto.randomUUID()),
-                      ])
-                    }
-                  >
-                    Add another grade
-                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setGradeBooklists((rows) => [...rows, blankGradeBooklist(crypto.randomUUID())])}>Add another grade</Button>
                 </div>
 
                 <div className="mt-4 space-y-4">
@@ -781,213 +839,54 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
                     return (
                       <div key={grade.key} className="rounded-xl border border-ink/10 bg-white p-4">
                         <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold text-ink">
-                            {grade.gradeLabel.trim() || `Grade request ${index + 1}`}
-                          </p>
-                          {gradeBooklists.length > 1 ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => setGradeBooklists((rows) => rows.filter((row) => row.key !== grade.key))}
-                            >
-                              Remove
-                            </Button>
-                          ) : null}
+                          <p className="text-sm font-semibold text-ink">{grade.gradeLabel.trim() || `Grade request ${index + 1}`}</p>
+                          {gradeBooklists.length > 1 ? <Button type="button" variant="outline" onClick={() => setGradeBooklists((rows) => rows.filter((row) => row.key !== grade.key))}>Remove</Button> : null}
                         </div>
-
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <Label htmlFor={`grade-name-${grade.key}`}>Grade / class *</Label>
-                            <Input
-                              id={`grade-name-${grade.key}`}
-                              value={grade.gradeLabel}
-                              onChange={(event) =>
-                                setGradeBooklists((rows) =>
-                                  rows.map((row) =>
-                                    row.key === grade.key ? { ...row, gradeLabel: event.target.value } : row,
-                                  ),
-                                )
-                              }
-                              placeholder="e.g. Grade 1"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor={`copies-${grade.key}`}>Copies requested *</Label>
-                            <Input
-                              id={`copies-${grade.key}`}
-                              type="number"
-                              min={1}
-                              step={1}
-                              inputMode="numeric"
-                              value={grade.copies}
-                              onChange={(event) =>
-                                setGradeBooklists((rows) =>
-                                  rows.map((row) =>
-                                    row.key === grade.key ? { ...row, copies: event.target.value } : row,
-                                  ),
-                                )
-                              }
-                            />
-                            {Number.isInteger(requested) && requested > 0 ? (
-                              <p className="mt-1 text-xs font-medium text-primary">
-                                {requested.toLocaleString()} + 1 = {(requested + 1).toLocaleString()} copies to print for this grade.
-                              </p>
-                            ) : null}
-                          </div>
-                          <div>
-                            <Label htmlFor={`source-format-${grade.key}`}>Source format *</Label>
-                            <Select
-                              id={`source-format-${grade.key}`}
-                              value={grade.sourceFormat}
-                              onChange={(event) =>
-                                setGradeBooklists((rows) =>
-                                  rows.map((row) =>
-                                    row.key === grade.key ? { ...row, sourceFormat: event.target.value } : row,
-                                  ),
-                                )
-                              }
-                            >
-                              <option value="">Choose format</option>
-                              {SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor={`booklist-file-${grade.key}`}>Booklist file / photo *</Label>
-                            <Input
-                              id={`booklist-file-${grade.key}`}
-                              type="file"
-                              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.rtf"
-                              onChange={(event) =>
-                                setGradeBooklists((rows) =>
-                                  rows.map((row) =>
-                                    row.key === grade.key ? { ...row, file: event.target.files?.[0] || null } : row,
-                                  ),
-                                )
-                              }
-                            />
-                            <p className="mt-1 text-xs text-muted">Maximum 12 MB.</p>
-                          </div>
+                          <div><Label htmlFor={`grade-name-${grade.key}`}>Grade / class *</Label><Input id={`grade-name-${grade.key}`} value={grade.gradeLabel} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, gradeLabel: event.target.value } : row))} placeholder="e.g. Grade 1" /></div>
+                          <div><Label htmlFor={`copies-${grade.key}`}>Copies requested *</Label><Input id={`copies-${grade.key}`} type="number" min={1} step={1} inputMode="numeric" value={grade.copies} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, copies: event.target.value } : row))} />{Number.isInteger(requested) && requested > 0 ? <p className="mt-1 text-xs font-medium text-primary">{requested.toLocaleString()} + 1 = {(requested + 1).toLocaleString()} copies to print for this grade.</p> : null}</div>
+                          <div><Label htmlFor={`source-format-${grade.key}`}>Source format *</Label><Select id={`source-format-${grade.key}`} value={grade.sourceFormat} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, sourceFormat: event.target.value } : row))}><option value="">Choose format</option>{SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}</Select></div>
+                          <div><Label htmlFor={`booklist-file-${grade.key}`}>Booklist file / photo *</Label><Input id={`booklist-file-${grade.key}`} type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, file: event.target.files?.[0] || null } : row))} /><p className="mt-1 text-xs text-muted">Maximum 12 MB.</p></div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="due-date">Due date *</Label>
-                    <Input id="due-date" type="date" min={today} value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
-                  </div>
-                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2"><div><Label htmlFor="due-date">Due date *</Label><Input id="due-date" type="date" min={today} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div></div>
               </section>
             </div>
           ) : null}
         </Card>
 
-        <div className="space-y-2">
-          <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>
-            {submitting ? 'Saving log…' : outcome === 'declined' ? 'Record denial' : 'Save booklist log'}
-          </Button>
-          {!submitting && (!selected || !fix || !outcome) ? (
-            <p className="text-xs text-muted" role="status">
-              Before saving: {
-                [
-                  !selected ? 'select a school' : null,
-                  !fix ? 'capture GPS location' : null,
-                  !outcome ? 'choose the booklist outcome' : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              }. You can still tap Save to see the exact requirement.
-            </p>
-          ) : null}
-        </div>
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting || !selected || !fix || !outcome}>
+          {submitting ? 'Saving log…' : outcome === 'declined' ? 'Record denial' : outcome === 'follow_up' ? 'Schedule follow-up' : 'Save booklist log'}
+        </Button>
       </form>
 
       <Card className="p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-ink">Booklist pipeline</h2>
-            <p className="mt-1 text-xs text-muted">Track every school from approach to stamped-copy completion.</p>
-          </div>
-          <AgencyBadge agency={stats?.agency} selfieRequired={stats?.selfie_required} />
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.active || 0}</p><p className="text-xs text-muted">In progress</p></div>
-          <div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.awaiting_admin || 0}</p><p className="text-xs text-muted">With admin</p></div>
-          <div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.completed || 0}</p><p className="text-xs text-muted">Completed</p></div>
-          <div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.declined || 0}</p><p className="text-xs text-muted">Denied</p></div>
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          <div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Schools reached this month</p><p className="mt-1 text-lg font-bold">{reached}{target ? <span className="text-sm font-medium text-muted"> / {target}</span> : null}</p></div>
-          <div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Booklists collected</p><p className="mt-1 text-lg font-bold">{stats?.booklists_collected || 0}</p></div>
-          <div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Denials recorded</p><p className="mt-1 text-lg font-bold">{stats?.declines_recorded || 0}</p></div>
-        </div>
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-ink">Booklist pipeline</h2><p className="mt-1 text-xs text-muted">Track every school from approach to stamped-copy completion.</p></div><AgencyBadge agency={stats?.agency} selfieRequired={stats?.selfie_required} /></div>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.active || 0}</p><p className="text-xs text-muted">In progress</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.awaiting_admin || 0}</p><p className="text-xs text-muted">With admin</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.completed || 0}</p><p className="text-xs text-muted">Completed</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.declined || 0}</p><p className="text-xs text-muted">Denied</p></div></div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3"><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Schools reached this month</p><p className="mt-1 text-lg font-bold">{reached}{target ? <span className="text-sm font-medium text-muted"> / {target}</span> : null}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Booklists collected</p><p className="mt-1 text-lg font-bold">{stats?.booklists_collected || 0}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Denials recorded</p><p className="mt-1 text-lg font-bold">{stats?.declines_recorded || 0}</p></div></div>
       </Card>
 
       <Card className="p-4 sm:p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-ink">Status by school</h2>
-            <p className="mt-1 text-xs text-muted">Every operational step is visible here.</p>
-          </div>
-          <div className="sm:w-72">
-            <Label htmlFor="pipeline-search">Find a school</Label>
-            <Input id="pipeline-search" value={pipelineQuery} onChange={(event) => setPipelineQuery(event.target.value)} placeholder="School name or area" />
-          </div>
-        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-base font-semibold text-ink">Status by school</h2><p className="mt-1 text-xs text-muted">Every operational step is visible here.</p></div><div className="sm:w-72"><Label htmlFor="pipeline-search">Find a school</Label><Input id="pipeline-search" value={pipelineQuery} onChange={(event) => setPipelineQuery(event.target.value)} placeholder="School name or area" /></div></div>
 
-        {visibleJobs.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">{loading ? 'Loading schools…' : 'No school logs match this search.'}</p>
-        ) : (
+        {visibleJobs.length === 0 ? <p className="mt-4 text-sm text-muted">{loading ? 'Loading schools…' : 'No school logs match this search.'}</p> : (
           <ul className="mt-4 space-y-3">
             {visibleJobs.map((job) => (
               <li key={job.job_id} className="rounded-xl border border-ink/10 bg-white/80 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-ink">{job.school_name}</p>
-                    <p className="text-xs text-muted">{job.school_region || 'Area not recorded'}</p>
-                  </div>
-                  <StageBadge stage={job.stage} />
-                </div>
-                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
-                  <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>
-                </div>
+                <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold text-ink">{job.school_name}</p><p className="text-xs text-muted">{job.school_region || 'Area not recorded'}</p></div><StageBadge stage={job.stage} /></div>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">{job.stage === 'on_hold' && job.follow_up_date ? <span>Follow-up: <strong className="text-ink">{readableDate(job.follow_up_date)}</strong></span> : <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>}</div>
                 <Progress job={job} />
                 <p className="mt-3 rounded-lg bg-lavender px-3 py-2 text-xs font-medium text-ink">Next: {nextAction(job)}</p>
-
-                {job.stage === 'received' && !job.stamped_uploaded ? (
-                  <div className="mt-4 rounded-xl border border-ok/25 bg-ok/5 p-3">
-                    <p className="text-sm font-semibold text-ink">Final proof: stamped +1 copy</p>
-                    <p className="mt-1 text-xs text-muted">Upload the extra copy after the school stamps it. This closes the log.</p>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-                      <div className="flex-1">
-                        <Label htmlFor={`stamped-${job.job_id}`}>Stamped copy</Label>
-                        <Input
-                          id={`stamped-${job.job_id}`}
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(event) => setStampedFiles((value) => ({ ...value, [job.job_id]: event.target.files?.[0] || null }))}
-                        />
-                      </div>
-                      <Button type="button" onClick={() => void submitStamped(job)} disabled={stampedBusy === job.job_id || !stampedFiles[job.job_id]}>
-                        {stampedBusy === job.job_id ? 'Uploading…' : 'Upload and complete'}
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
-                {job.stage === 'completed' || job.stamped_uploaded ? (
-                  <p className="mt-3 text-xs font-semibold text-ok">✓ Stamped +1 proof is on file. Log complete.</p>
-                ) : null}
+                {job.stage === 'received' && !job.stamped_uploaded ? <div className="mt-4 rounded-xl border border-ok/25 bg-ok/5 p-3"><p className="text-sm font-semibold text-ink">Final proof: stamped +1 copy</p><p className="mt-1 text-xs text-muted">Upload the extra copy after the school stamps it. This closes the log.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"><div className="flex-1"><Label htmlFor={`stamped-${job.job_id}`}>Stamped copy</Label><Input id={`stamped-${job.job_id}`} type="file" accept="image/*,.pdf" onChange={(event) => setStampedFiles((value) => ({ ...value, [job.job_id]: event.target.files?.[0] || null }))} /></div><Button type="button" onClick={() => void submitStamped(job)} disabled={stampedBusy === job.job_id || !stampedFiles[job.job_id]}>{stampedBusy === job.job_id ? 'Uploading…' : 'Upload and complete'}</Button></div></div> : null}
+                {job.stage === 'completed' || job.stamped_uploaded ? <p className="mt-3 text-xs font-semibold text-ok">✓ Stamped +1 proof is on file. Log complete.</p> : null}
               </li>
             ))}
           </ul>
         )}
-        <div className="mt-4">
-          <Button type="button" variant="outline" onClick={() => void loadPipeline()} disabled={loading}>
-            {loading ? 'Refreshing…' : 'Refresh status'}
-          </Button>
-        </div>
+        <div className="mt-4"><Button type="button" variant="outline" onClick={() => void loadPipeline()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh status'}</Button></div>
       </Card>
     </div>
   );
