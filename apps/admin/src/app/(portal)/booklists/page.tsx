@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { revalidatePath } from 'next/cache';
 import type { BaAgency, BooklistStage } from '@fazoo/types';
 import { BOOKLIST_STAGE_LABELS } from '@fazoo/config';
 import { requireStaff } from '@/lib/auth';
@@ -39,6 +40,10 @@ type SearchParams = {
   from?: string;
   to?: string;
   page?: string;
+};
+
+type AdminPipelineJobWithPrintables = AdminPipelineJob & {
+  printables_shipped?: boolean;
 };
 
 function isStage(value: string | undefined): value is BooklistStage {
@@ -87,15 +92,44 @@ function formatDate(value: string): string {
 }
 
 function schoolStatusColumns(job: AdminPipelineJob): SchoolStatusColumns {
+  const jobWithPrintables = job as AdminPipelineJobWithPrintables;
   return {
     rawDocId: job.raw_document_id ?? null,
     stampedDocId: job.stamped_document_id ?? null,
     copiesToPrint: job.copies_to_print,
     dueDate: job.due_date,
-    shipped: Boolean(job.dispatched_at) || ['dispatched', 'received', 'completed'].includes(job.stage),
+    shipped: Boolean(jobWithPrintables.printables_shipped),
     arrived: Boolean(job.received_at),
     status: job.stage === 'completed' ? 'success' : 'pending',
   };
+}
+
+async function setPrintablesShippingStatus(formData: FormData) {
+  'use server';
+
+  const jobId = String(formData.get('job_id') ?? '');
+  const requestedStatus = String(formData.get('shipped') ?? '');
+
+  if (!isUuid(jobId)) throw new Error('Invalid booklist job.');
+  if (requestedStatus !== 'true' && requestedStatus !== 'false') {
+    throw new Error('Invalid printables shipping status.');
+  }
+
+  const { client, profile } = await requireStaff();
+  if (profile.role !== 'super_admin' && profile.role !== 'organization_admin') {
+    throw new Error('Only an admin can update printables shipping status.');
+  }
+
+  const { error } = await client.rpc(
+    'admin_set_printables_shipping_status' as never,
+    {
+      p_job_id: jobId,
+      p_shipped: requestedStatus === 'true',
+    } as never,
+  );
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/booklists');
 }
 
 export default async function BooklistPipelinePage({
@@ -354,9 +388,43 @@ export default async function BooklistPipelinePage({
                       {sc.dueDate ? formatDate(sc.dueDate) : <span className="text-muted">—</span>}
                     </Td>
                     <Td>
-                      <Badge tone={sc.shipped ? 'success' : 'danger'}>
-                        {sc.shipped ? 'Shipped' : 'Pending'}
-                      </Badge>
+                      {canAct ? (
+                        <form action={setPrintablesShippingStatus} className="flex flex-wrap gap-1.5">
+                          <input type="hidden" name="job_id" value={job.job_id} />
+                          <button
+                            type="submit"
+                            name="shipped"
+                            value="false"
+                            aria-pressed={!sc.shipped}
+                            title="Mark printables pending"
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
+                              !sc.shipped
+                                ? 'bg-red-100 text-red-700 ring-1 ring-red-200'
+                                : 'border border-red-200 bg-white text-red-700 hover:bg-red-50'
+                            }`}
+                          >
+                            Pending
+                          </button>
+                          <button
+                            type="submit"
+                            name="shipped"
+                            value="true"
+                            aria-pressed={sc.shipped}
+                            title="Mark printables shipped"
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 ${
+                              sc.shipped
+                                ? 'bg-green-100 text-green-700 ring-1 ring-green-200'
+                                : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
+                            }`}
+                          >
+                            Shipped
+                          </button>
+                        </form>
+                      ) : (
+                        <Badge tone={sc.shipped ? 'success' : 'danger'}>
+                          {sc.shipped ? 'Shipped' : 'Pending'}
+                        </Badge>
+                      )}
                     </Td>
                     <Td>
                       <Badge tone={sc.arrived ? 'success' : 'warning'}>
