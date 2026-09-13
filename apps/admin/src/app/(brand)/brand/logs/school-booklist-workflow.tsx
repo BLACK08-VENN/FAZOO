@@ -384,7 +384,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
 
     const requested = Number(copies);
     if (outcome === 'booklist_offered') {
-      if (!contactName.trim()) return setError('Enter the name of the person who gave you the booklist.');
       if (!sourceFormat) return setError('Choose how the school supplied the booklist.');
       if (!booklistFile) return setError('Attach the booklist supplied by the school.');
       if (!Number.isInteger(requested) || requested < 1) return setError('Enter a valid number of copies requested.');
@@ -743,26 +742,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
           {outcome === 'booklist_offered' ? (
             <div className="mt-5 space-y-5">
               <section>
-                <h3 className="text-sm font-semibold text-ink">Person who gave the booklist</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <div>
-                    <Label htmlFor="contact-name">Name *</Label>
-                    <Input id="contact-name" value={contactName} onChange={(event) => setContactName(event.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact-role">Role / designation</Label>
-                    <Input id="contact-role" value={contactRole} onChange={(event) => setContactRole(event.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact-phone">Phone</Label>
-                    <Input id="contact-phone" inputMode="tel" value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} />
-                  </div>
-                </div>
-              </section>
-
-              <section>
                 <h3 className="text-sm font-semibold text-ink">Original booklist</h3>
-                <p className="mt-1 text-xs text-muted">Upload what the school gave you. Admin will convert it into the final Word document for printing.</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="source-format">Source format *</Label>
