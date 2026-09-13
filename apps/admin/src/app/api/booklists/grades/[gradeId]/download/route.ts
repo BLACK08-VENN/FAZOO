@@ -19,7 +19,7 @@ export async function GET(
   }
 
   const kind = request.nextUrl.searchParams.get('kind') === 'word' ? 'word' : 'raw';
-  const proxy = request.nextUrl.searchParams.get('proxy') === '1';
+  const proxy = kind === 'raw' || request.nextUrl.searchParams.get('proxy') === '1';
   const gradeTable = (client as any).from('booklist_grade_requests');
   const { data, error } = await gradeTable
     .select(
@@ -67,8 +67,8 @@ export async function GET(
 
     // Browser OCR must not follow the signed Supabase URL itself. Some browsers,
     // PWAs and privacy settings turn that cross-origin redirect into a generic
-    // "Failed to fetch". Stream the file through this authenticated same-origin
-    // route instead, while keeping the normal download link as a redirect.
+    // "Failed to fetch". Stream raw source files through this authenticated
+    // same-origin route instead. Word downloads can still use the signed redirect.
     const upstream = await fetch(url, {
       cache: 'no-store',
       redirect: 'follow',
