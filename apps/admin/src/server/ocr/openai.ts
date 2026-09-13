@@ -4,6 +4,15 @@ import type { OcrInput, OcrProvider, OcrResult } from './types';
 const OPENAI_API_BASE = 'https://api.openai.com/v1';
 const DEFAULT_MODEL = 'gpt-5.6-luna';
 const MAX_OPENAI_BYTES = 20 * 1024 * 1024;
+const OPENAI_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+const BOOKLIST_PROMPT = [
+  'Convert this school booklist into a faithful editable text draft for a Word document.',
+  'Transcribe every readable heading, class/grade, item, book title, publisher/brand, quantity, size, and note in the same logical order as the source.',
+  'Do not summarize, omit, combine, correct, or invent items.',
+  'If text is genuinely unreadable, write [unclear] instead of guessing.',
+  'Return plain text only. Put headings on their own lines and keep each booklist item on its own line.',
+].join(' ');
 
 function extensionForMime(mimeType: string): string {
   switch (mimeType.toLowerCase()) {
@@ -64,8 +73,7 @@ function toResult(text: string, model: string): OcrResult {
     provider: 'openai-document-vision',
     model,
     // The Responses API does not expose a calibrated OCR confidence score.
-    // Callers intentionally store this provider's confidence as null and mark
-    // the generated Word file for human review before printing.
+    // The generated Word file must still be checked against the original before printing.
     confidence: 100,
     pageCount: 1,
     blocks: lines.map((line) => ({ kind: 'paragraph' as const, text: line })),
@@ -92,33 +100,56 @@ export function createOpenAiProvider(): OcrProvider {
         throw new Error('This document is larger than the 20 MB FAZOO AI conversion limit.');
       }
 
-      const filename = `fazoo-booklist.${extensionForMime(input.mimeType)}`;
+      const mimeType = input.mimeType.toLowerCase();
+      const isImage = mimeType.startsWith('image/');
+      if (isImage && !OPENAI_IMAGE_TYPES.has(mimeType)) {
+        throw new Error(
+          `FAZOO AI currently supports JPG, PNG, and WebP photos. Convert this ${mimeType.replace('image/', '').toUpperCase()} image to JPG or PNG and retry.`,
+        );
+      }
+
       let fileId: string | null = null;
 
       try {
-        const form = new FormData();
-        form.append('purpose', 'user_data');
-        form.append(
-          'file',
-          new Blob([Buffer.from(input.bytes)], { type: input.mimeType }),
-          filename,
-        );
+        let sourceContent: Record<string, unknown>;
 
-        const uploadResponse = await fetch(`${OPENAI_API_BASE}/files`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey}` },
-          body: form,
-          cache: 'no-store',
-        });
-        const uploadPayload = (await uploadResponse.json().catch(() => null)) as
-          | { id?: string; error?: { message?: string } }
-          | null;
-        if (!uploadResponse.ok || !uploadPayload?.id) {
-          throw new Error(
-            `OpenAI file upload failed: ${openAiError(uploadPayload, `HTTP ${uploadResponse.status}`)}`,
+        if (OPENAI_IMAGE_TYPES.has(mimeType)) {
+          const base64 = Buffer.from(input.bytes).toString('base64');
+          sourceContent = {
+            type: 'input_image',
+            image_url: `data:${mimeType};base64,${base64}`,
+            detail: 'high',
+          };
+        } else {
+          const filename = `fazoo-booklist.${extensionForMime(mimeType)}`;
+          const form = new FormData();
+          form.append('purpose', 'user_data');
+          form.append(
+            'file',
+            new Blob([Buffer.from(input.bytes)], { type: mimeType }),
+            filename,
           );
+
+          const uploadResponse = await fetch(`${OPENAI_API_BASE}/files`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${apiKey}` },
+            body: form,
+            cache: 'no-store',
+          });
+          const uploadPayload = (await uploadResponse.json().catch(() => null)) as
+            | { id?: string; error?: { message?: string } }
+            | null;
+          if (!uploadResponse.ok || !uploadPayload?.id) {
+            throw new Error(
+              `OpenAI file upload failed: ${openAiError(uploadPayload, `HTTP ${uploadResponse.status}`)}`,
+            );
+          }
+          fileId = uploadPayload.id;
+          sourceContent = {
+            type: 'input_file',
+            file_id: fileId,
+          };
         }
-        fileId = uploadPayload.id;
 
         const response = await fetch(`${OPENAI_API_BASE}/responses`, {
           method: 'POST',
@@ -133,19 +164,10 @@ export function createOpenAiProvider(): OcrProvider {
               {
                 role: 'user',
                 content: [
-                  {
-                    type: 'input_file',
-                    file_id: fileId,
-                  },
+                  sourceContent,
                   {
                     type: 'input_text',
-                    text: [
-                      'Convert this school booklist into a faithful editable text draft for a Word document.',
-                      'Transcribe every readable heading, class/grade, item, book title, publisher/brand, quantity, size, and note in the same logical order as the source.',
-                      'Do not summarize, omit, combine, correct, or invent items.',
-                      'If text is genuinely unreadable, write [unclear] instead of guessing.',
-                      'Return plain text only. Put headings on their own lines and keep each booklist item on its own line.',
-                    ].join(' '),
+                    text: BOOKLIST_PROMPT,
                   },
                 ],
               },
