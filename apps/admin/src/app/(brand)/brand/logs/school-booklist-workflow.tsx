@@ -495,7 +495,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
             if (gradePath) await client.storage.from('booklist-documents').remove([gradePath]);
             throw gradeFailure;
           }
-
         }
         setSuccess(
           `${selected.school_name}: ${preparedGrades.length} separate grade print order${preparedGrades.length === 1 ? '' : 's'} sent to admin. Each document keeps its own copy quantity. Due ${readableDate(dueDate)}.`,
@@ -885,9 +884,24 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
           ) : null}
         </Card>
 
-        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting || !selected || !fix || !outcome}>
-          {submitting ? 'Saving log…' : outcome === 'declined' ? 'Record denial' : 'Save booklist log'}
-        </Button>
+        <div className="space-y-2">
+          <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>
+            {submitting ? 'Saving log…' : outcome === 'declined' ? 'Record denial' : 'Save booklist log'}
+          </Button>
+          {!submitting && (!selected || !fix || !outcome) ? (
+            <p className="text-xs text-muted" role="status">
+              Before saving: {
+                [
+                  !selected ? 'select a school' : null,
+                  !fix ? 'capture GPS location' : null,
+                  !outcome ? 'choose the booklist outcome' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              }. You can still tap Save to see the exact requirement.
+            </p>
+          ) : null}
+        </div>
       </form>
 
       <Card className="p-4 sm:p-5">
