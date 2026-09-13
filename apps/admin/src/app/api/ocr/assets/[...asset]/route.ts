@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 const TESSERACT_VERSION = '5.1.1';
 const CORE_VERSION = '5.1.1';
 const PDFJS_VERSION = '3.11.174';
+const MAX_FETCH_ATTEMPTS = 3;
 
 const STATIC_ASSETS: Record<string, { url: string; contentType: string }> = {
   'tesseract.min.js': {
@@ -55,6 +56,30 @@ function resolveAsset(parts: string[]): { url: string; contentType: string } | n
   return null;
 }
 
+async function fetchAsset(url: string): Promise<Response> {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= MAX_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: { 'User-Agent': 'FAZOO-OCR/1.0' },
+      });
+
+      if (response.ok || response.status < 500 || attempt === MAX_FETCH_ATTEMPTS) {
+        return response;
+      }
+    } catch (error) {
+      lastError = error;
+      if (attempt === MAX_FETCH_ATTEMPTS) throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, attempt * 350));
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Could not load OCR asset');
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ asset: string[] }> },
@@ -66,10 +91,7 @@ export async function GET(
   }
 
   try {
-    const upstream = await fetch(resolved.url, {
-      cache: 'force-cache',
-      headers: { 'User-Agent': 'FAZOO-OCR/1.0' },
-    });
+    const upstream = await fetchAsset(resolved.url);
     if (!upstream.ok) {
       return NextResponse.json(
         { error: `OCR asset provider returned ${upstream.status}` },
@@ -82,6 +104,7 @@ export async function GET(
       headers: {
         'Content-Type': upstream.headers.get('content-type') || resolved.contentType,
         'Cache-Control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400',
+        'CDN-Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400',
         'X-Content-Type-Options': 'nosniff',
       },
     });
