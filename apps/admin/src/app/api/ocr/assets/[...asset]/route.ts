@@ -37,9 +37,10 @@ function resolveAsset(parts: string[]): { url: string; contentType: string } | n
   const joined = parts.join('/');
   if (STATIC_ASSETS[joined]) return STATIC_ASSETS[joined];
 
-  if (parts.length === 2 && parts[0] === 'core' && CORE_ASSETS.has(parts[1])) {
+  const coreAsset = parts[1];
+  if (parts.length === 2 && parts[0] === 'core' && coreAsset && CORE_ASSETS.has(coreAsset)) {
     return {
-      url: `https://cdn.jsdelivr.net/npm/tesseract.js-core@${CORE_VERSION}/${parts[1]}`,
+      url: `https://cdn.jsdelivr.net/npm/tesseract.js-core@${CORE_VERSION}/${coreAsset}`,
       contentType: 'application/javascript; charset=utf-8',
     };
   }
