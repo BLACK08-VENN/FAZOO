@@ -11,7 +11,17 @@ const TESSERACT_CORE = `${OCR_ASSET_BASE}/core`;
 const TESSERACT_LANG = `${OCR_ASSET_BASE}/lang`;
 const PDFJS_SCRIPT = `${OCR_ASSET_BASE}/pdf.min.js`;
 const PDFJS_WORKER = `${OCR_ASSET_BASE}/pdf.worker.min.js`;
+
+const TESSERACT_VERSION = '5.1.1';
+const PDFJS_VERSION = '3.11.174';
+const DIRECT_TESSERACT_SCRIPT = `https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/${TESSERACT_VERSION}/tesseract.min.js`;
+const DIRECT_TESSERACT_WORKER = `https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/${TESSERACT_VERSION}/worker.min.js`;
+const DIRECT_TESSERACT_CORE = `https://cdn.jsdelivr.net/npm/tesseract.js-core@${TESSERACT_VERSION}`;
+const DIRECT_TESSERACT_LANG = 'https://tessdata.projectnaptha.com/4.0.0';
+const DIRECT_PDFJS_SCRIPT = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
+const DIRECT_PDFJS_WORKER = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
 const MAX_PDF_PAGES = 20;
+const NETWORK_ATTEMPTS = 3;
 
 type TesseractApi = {
   recognize: (
@@ -53,6 +63,32 @@ type ConvertResponse = {
   outcome?: 'draft_created' | 'manual_required' | 'failed';
 };
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  attempts = NETWORK_ATTEMPTS,
+): Promise<Response> {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(input, init);
+      if (response.ok || response.status < 500 || attempt === attempts) return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) throw error;
+    }
+
+    await sleep(attempt * 500);
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Network request failed.');
+}
+
 function loadExternalScript(src: string, id: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const existing = document.getElementById(id) as HTMLScriptElement | null;
@@ -83,6 +119,19 @@ function loadExternalScript(src: string, id: string): Promise<void> {
   });
 }
 
+async function loadScriptWithFallback(
+  primary: string,
+  fallback: string,
+  id: string,
+  fallbackId: string,
+): Promise<void> {
+  try {
+    await loadExternalScript(primary, id);
+  } catch {
+    await loadExternalScript(fallback, fallbackId);
+  }
+}
+
 function extensionFromResponse(response: Response): string {
   try {
     const pathname = new URL(response.url).pathname;
@@ -91,6 +140,11 @@ function extensionFromResponse(response: Response): string {
   } catch {
     return '';
   }
+}
+
+function isNetworkLikeError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return /failed to fetch|network|fetch|load|worker|core|traineddata/i.test(message);
 }
 
 export function GradeOrderActions({
@@ -116,17 +170,33 @@ export function GradeOrderActions({
     image: string | HTMLCanvasElement,
     label: string,
   ): Promise<{ text: string; confidence: number }> {
-    const { data } = await api.recognize(image, 'eng', {
-      workerPath: TESSERACT_WORKER,
-      corePath: TESSERACT_CORE,
-      langPath: TESSERACT_LANG,
-      logger: (message) => {
-        if (message.status === 'recognizing text' && typeof message.progress === 'number') {
-          setFeedback(`${label}: reading text ${Math.round(message.progress * 100)}%`);
-        }
-      },
-    });
-    return { text: data.text ?? '', confidence: Number(data.confidence ?? 0) };
+    const logger = (message: { status?: string; progress?: number }) => {
+      if (message.status === 'recognizing text' && typeof message.progress === 'number') {
+        setFeedback(`${label}: reading text ${Math.round(message.progress * 100)}%`);
+      }
+    };
+
+    try {
+      const { data } = await api.recognize(image, 'eng', {
+        workerPath: TESSERACT_WORKER,
+        corePath: TESSERACT_CORE,
+        langPath: TESSERACT_LANG,
+        logger,
+      });
+      return { text: data.text ?? '', confidence: Number(data.confidence ?? 0) };
+    } catch (error) {
+      if (!isNetworkLikeError(error)) throw error;
+
+      setFeedback(`${label}: connection interrupted, retrying OCR…`);
+      await sleep(600);
+      const { data } = await api.recognize(image, 'eng', {
+        workerPath: DIRECT_TESSERACT_WORKER,
+        corePath: DIRECT_TESSERACT_CORE,
+        langPath: DIRECT_TESSERACT_LANG,
+        logger,
+      });
+      return { text: data.text ?? '', confidence: Number(data.confidence ?? 0) };
+    }
   }
 
   async function runBrowserOcr(
@@ -136,7 +206,12 @@ export function GradeOrderActions({
     const libraries = window as BrowserLibraries;
     if (!libraries.Tesseract) {
       setFeedback('Loading the free Tesseract OCR engine…');
-      await loadExternalScript(TESSERACT_SCRIPT, 'fazoo-tesseract');
+      await loadScriptWithFallback(
+        TESSERACT_SCRIPT,
+        DIRECT_TESSERACT_SCRIPT,
+        'fazoo-tesseract',
+        'fazoo-tesseract-direct',
+      );
     }
     const tesseract = (window as BrowserLibraries).Tesseract;
     if (!tesseract) throw new Error('Tesseract did not load correctly.');
@@ -156,14 +231,27 @@ export function GradeOrderActions({
 
     if (!libraries.pdfjsLib) {
       setFeedback('Loading the free PDF reader…');
-      await loadExternalScript(PDFJS_SCRIPT, 'fazoo-pdfjs');
+      await loadScriptWithFallback(
+        PDFJS_SCRIPT,
+        DIRECT_PDFJS_SCRIPT,
+        'fazoo-pdfjs',
+        'fazoo-pdfjs-direct',
+      );
     }
     const pdfjs = (window as BrowserLibraries).pdfjsLib;
     if (!pdfjs) throw new Error('The PDF reader did not load correctly.');
     pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
 
     setFeedback('Opening PDF for free OCR…');
-    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    let pdf: PdfDocument;
+    try {
+      pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    } catch (error) {
+      if (!isNetworkLikeError(error)) throw error;
+      pdfjs.GlobalWorkerOptions.workerSrc = DIRECT_PDFJS_WORKER;
+      pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    }
+
     if (pdf.numPages > MAX_PDF_PAGES) {
       throw new Error(`This free browser converter currently supports PDFs up to ${MAX_PDF_PAGES} pages.`);
     }
@@ -214,7 +302,7 @@ export function GradeOrderActions({
     pageCount: number;
   }): Promise<ConvertResponse> {
     setFeedback('Creating the editable Word document…');
-    const response = await fetch(`/api/booklists/grades/${gradeRequestId}/convert`, {
+    const response = await fetchWithRetry(`/api/booklists/grades/${gradeRequestId}/convert`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clientOcr: payload }),
@@ -225,7 +313,9 @@ export function GradeOrderActions({
   }
 
   async function serverConvert(): Promise<ConvertResponse> {
-    const response = await fetch(`/api/booklists/grades/${gradeRequestId}/convert`, { method: 'POST' });
+    const response = await fetchWithRetry(`/api/booklists/grades/${gradeRequestId}/convert`, {
+      method: 'POST',
+    });
     const body = (await response.json()) as ConvertResponse;
     if (!response.ok) throw new Error(body.error ?? body.message ?? 'Conversion failed.');
     return body;
@@ -237,7 +327,10 @@ export function GradeOrderActions({
     setFailed(false);
     try {
       setFeedback('Checking the original document…');
-      const rawResponse = await fetch(`/api/booklists/grades/${gradeRequestId}/download?kind=raw`);
+      const rawResponse = await fetchWithRetry(
+        `/api/booklists/grades/${gradeRequestId}/download?kind=raw`,
+        { cache: 'no-store' },
+      );
       if (!rawResponse.ok) {
         throw new Error('Could not read the original uploaded document.');
       }
@@ -263,10 +356,11 @@ export function GradeOrderActions({
       }
     } catch (error) {
       setFailed(true);
+      const message = error instanceof Error ? error.message : 'Conversion failed.';
       setFeedback(
-        error instanceof Error
-          ? `Free Tesseract conversion failed: ${error.message}`
-          : 'Free Tesseract conversion failed.',
+        isNetworkLikeError(error)
+          ? 'OCR connection was interrupted after retries. Please tap Retry conversion once more.'
+          : `Free Tesseract conversion failed: ${message}`,
       );
     } finally {
       setBusy(false);
