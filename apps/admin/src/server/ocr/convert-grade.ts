@@ -108,9 +108,10 @@ async function updateGrade(
   gradeId: string,
   values: Record<string, unknown>,
 ): Promise<void> {
-  const { error } = await serviceSupabase()
+  const db: any = serviceSupabase();
+  const { error } = await db
     .from('booklist_grade_requests')
-    .update({ ...values, updated_at: new Date().toISOString() } as never)
+    .update({ ...values, updated_at: new Date().toISOString() })
     .eq('id', gradeId);
   if (error) throw new Error(error.message);
 }
@@ -125,7 +126,7 @@ async function storeWord(
   confidence: number | null,
   pageCount: number | null,
 ): Promise<{ storagePath: string; mimeType: string }> {
-  const db = serviceSupabase();
+  const db: any = serviceSupabase();
   const storagePath = `${grade.organization_id}/grade-requests/${grade.id}/word-${Date.now()}.${ext}`;
   const { error: uploadError } = await db.storage
     .from(BOOKLIST_BUCKET)
@@ -148,7 +149,7 @@ async function storeWord(
       word_published_at: new Date().toISOString(),
       word_published_by: actorId,
       updated_at: new Date().toISOString(),
-    } as never)
+    })
     .eq('id', grade.id);
 
   if (updateError) {
@@ -162,7 +163,7 @@ export async function convertGradeBooklistDocument(
   gradeRequestId: string,
   actorId: string,
 ): Promise<GradeConvertResult> {
-  const db = serviceSupabase();
+  const db: any = serviceSupabase();
   const { data: gradeData, error: gradeError } = await db
     .from('booklist_grade_requests')
     .select('id, organization_id, job_id, grade_label, storage_bucket, storage_path, mime_type, source_format')
@@ -172,7 +173,7 @@ export async function convertGradeBooklistDocument(
   if (gradeError || !gradeData) {
     return { outcome: 'failed', message: `Grade print order not found: ${gradeError?.message ?? 'unknown'}` };
   }
-  const grade = gradeData as unknown as GradeRow;
+  const grade = gradeData as GradeRow;
 
   const { data: jobData, error: jobError } = await db
     .from('booklist_jobs')
@@ -186,7 +187,7 @@ export async function convertGradeBooklistDocument(
   if (jobError || !jobData) {
     return { outcome: 'failed', message: `Parent school job not found: ${jobError?.message ?? 'unknown'}` };
   }
-  const job = jobData as unknown as JobRow;
+  const job = jobData as JobRow;
   if (job.organization_id !== grade.organization_id) {
     return { outcome: 'failed', message: 'The grade order does not belong to the parent school job.' };
   }
