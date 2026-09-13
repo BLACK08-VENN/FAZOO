@@ -4,9 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
-const TESSERACT_SCRIPT = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-const PDFJS_SCRIPT = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const OCR_ASSET_BASE = '/api/ocr/assets';
+const TESSERACT_SCRIPT = `${OCR_ASSET_BASE}/tesseract.min.js`;
+const TESSERACT_WORKER = `${OCR_ASSET_BASE}/worker.min.js`;
+const TESSERACT_CORE = `${OCR_ASSET_BASE}/core`;
+const TESSERACT_LANG = `${OCR_ASSET_BASE}/lang`;
+const PDFJS_SCRIPT = `${OCR_ASSET_BASE}/pdf.min.js`;
+const PDFJS_WORKER = `${OCR_ASSET_BASE}/pdf.worker.min.js`;
 const MAX_PDF_PAGES = 20;
 
 type TesseractApi = {
@@ -15,6 +19,9 @@ type TesseractApi = {
     language: string,
     options?: {
       logger?: (message: { status?: string; progress?: number }) => void;
+      workerPath?: string;
+      corePath?: string;
+      langPath?: string;
     },
   ) => Promise<{ data: { text: string; confidence: number } }>;
 };
@@ -63,7 +70,6 @@ function loadExternalScript(src: string, id: string): Promise<void> {
     script.id = id;
     script.src = src;
     script.async = true;
-    script.crossOrigin = 'anonymous';
     script.addEventListener(
       'load',
       () => {
@@ -111,6 +117,9 @@ export function GradeOrderActions({
     label: string,
   ): Promise<{ text: string; confidence: number }> {
     const { data } = await api.recognize(image, 'eng', {
+      workerPath: TESSERACT_WORKER,
+      corePath: TESSERACT_CORE,
+      langPath: TESSERACT_LANG,
       logger: (message) => {
         if (message.status === 'recognizing text' && typeof message.progress === 'number') {
           setFeedback(`${label}: reading text ${Math.round(message.progress * 100)}%`);
