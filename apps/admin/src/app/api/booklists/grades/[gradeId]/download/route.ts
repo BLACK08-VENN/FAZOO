@@ -17,8 +17,8 @@ export async function GET(
   }
 
   const kind = request.nextUrl.searchParams.get('kind') === 'word' ? 'word' : 'raw';
-  const { data, error } = await client
-    .from('booklist_grade_requests')
+  const gradeTable = (client as any).from('booklist_grade_requests');
+  const { data, error } = await gradeTable
     .select(
       'id, organization_id, grade_label, storage_bucket, storage_path, mime_type, word_storage_bucket, word_storage_path, word_mime_type, booklist_jobs(veda_schools(name))',
     )
@@ -30,7 +30,7 @@ export async function GET(
     return NextResponse.json({ error: 'Grade print order not found' }, { status: 404 });
   }
 
-  const row = data as unknown as {
+  const row = data as {
     grade_label: string;
     storage_bucket: string;
     storage_path: string;
@@ -43,7 +43,10 @@ export async function GET(
 
   const storagePath = kind === 'word' ? row.word_storage_path : row.storage_path;
   if (!storagePath) {
-    return NextResponse.json({ error: kind === 'word' ? 'Word document not generated yet' : 'Original document not found' }, { status: 404 });
+    return NextResponse.json(
+      { error: kind === 'word' ? 'Word document not generated yet' : 'Original document not found' },
+      { status: 404 },
+    );
   }
   const bucket = kind === 'word' ? row.word_storage_bucket : row.storage_bucket;
   const extension = storagePath.split('.').pop() || (kind === 'word' ? 'docx' : 'bin');
