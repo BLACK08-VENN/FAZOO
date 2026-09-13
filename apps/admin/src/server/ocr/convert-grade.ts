@@ -246,12 +246,12 @@ export async function convertGradeBooklistDocument(
       if (!provider) {
         await updateGrade(grade.id, {
           conversion_status: 'manual_required',
-          conversion_error: 'Azure Document Intelligence is not configured for automated image/PDF/Office conversion.',
+          conversion_error: 'Server AI conversion is not configured. Add OPENAI_API_KEY in Vercel to enable OpenAI document conversion.',
           conversion_finished_at: new Date().toISOString(),
         });
         return {
           outcome: 'manual_required',
-          message: 'Automated conversion is not configured for this file type. Configure Azure Document Intelligence or upload a Word/TXT/RTF source.',
+          message: 'OpenAI document conversion is not configured yet. Add OPENAI_API_KEY to the FAZOO Vercel environment, then retry this conversion.',
         };
       }
       result = await provider.analyze({ bytes, mimeType });
@@ -280,7 +280,11 @@ export async function convertGradeBooklistDocument(
       baName: job.profiles?.full_name ?? null,
       generatedAt: new Date(),
     });
-    const needsReview = result.provider.startsWith('azure') && result.confidence < OCR_MIN_CONFIDENCE;
+
+    const isOpenAi = result.provider.startsWith('openai');
+    const needsReview = isOpenAi || (result.provider.startsWith('azure') && result.confidence < OCR_MIN_CONFIDENCE);
+    const reportedConfidence = isOpenAi ? null : result.confidence;
+
     const stored = await storeWord(
       grade,
       docx,
@@ -288,7 +292,7 @@ export async function convertGradeBooklistDocument(
       'docx',
       actorId,
       result.provider,
-      result.confidence,
+      reportedConfidence,
       result.pageCount,
     );
 
@@ -296,12 +300,14 @@ export async function convertGradeBooklistDocument(
       outcome: 'draft_created',
       storagePath: stored.storagePath,
       mimeType: stored.mimeType,
-      confidence: result.confidence,
+      confidence: reportedConfidence,
       pageCount: result.pageCount,
       needsReview,
-      message: needsReview
-        ? `${grade.grade_label} was converted to Word. OCR confidence is ${result.confidence.toFixed(0)}%, so review the Word document before printing.`
-        : `${grade.grade_label} was converted to Word and is ready for review and printing.`,
+      message: isOpenAi
+        ? `${grade.grade_label} was converted to Word with FAZOO AI. Review it against the original before printing.`
+        : needsReview
+          ? `${grade.grade_label} was converted to Word. OCR confidence is ${result.confidence.toFixed(0)}%, so review the Word document before printing.`
+          : `${grade.grade_label} was converted to Word and is ready for review and printing.`,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
