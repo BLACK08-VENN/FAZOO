@@ -22,6 +22,17 @@ type Outcome = '' | 'booklist_offered' | 'declined';
 type PipelineJob = BaPipelineJob & { due_date?: string | null };
 type Fix = { latitude: number; longitude: number; accuracy: number | null };
 type StepState = 'done' | 'current' | 'pending' | 'na';
+type GradeBooklistDraft = {
+  key: string;
+  gradeLabel: string;
+  copies: string;
+  sourceFormat: string;
+  file: File | null;
+};
+
+function blankGradeBooklist(key = 'grade-1'): GradeBooklistDraft {
+  return { key, gradeLabel: '', copies: '', sourceFormat: '', file: null };
+}
 
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const TEXTAREA =
@@ -133,9 +144,9 @@ function nextAction(job: PipelineJob) {
     case 'formatted':
     case 'pending_school_approval':
     case 'school_approved':
-      return `Word document ready. Admin should create the print order${total ? ` for ${total.toLocaleString()} copies including the +1` : ''}.`;
+      return `Word document ready. Admin should create the print order${total ? ` for ${total.toLocaleString()} copies including stamped extras` : ''}.`;
     case 'in_production':
-      return `Printing in progress${total ? `: ${total.toLocaleString()} copies including the +1` : ''}.`;
+      return `Printing in progress${total ? `: ${total.toLocaleString()} copies including stamped extras` : ''}.`;
     case 'dispatched':
       return 'Printed copies have been shipped to the school. Delivery is being tracked.';
     case 'received':
@@ -208,12 +219,8 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
   const [contactPhone, setContactPhone] = useState('');
   const [declineReason, setDeclineReason] = useState('');
   const [declineNotes, setDeclineNotes] = useState('');
-  const [sourceFormat, setSourceFormat] = useState('');
-  const [booklistFile, setBooklistFile] = useState<File | null>(null);
-  const [copies, setCopies] = useState('');
+  const [gradeBooklists, setGradeBooklists] = useState<GradeBooklistDraft[]>([blankGradeBooklist()]);
   const [dueDate, setDueDate] = useState('');
-  const [perGrade, setPerGrade] = useState<'unknown' | 'yes' | 'no'>('unknown');
-  const [gradeNotes, setGradeNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const [pipelineQuery, setPipelineQuery] = useState('');
@@ -361,12 +368,8 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
     setContactPhone('');
     setDeclineReason('');
     setDeclineNotes('');
-    setSourceFormat('');
-    setBooklistFile(null);
-    setCopies('');
+    setGradeBooklists([blankGradeBooklist()]);
     setDueDate('');
-    setPerGrade('unknown');
-    setGradeNotes('');
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -382,13 +385,27 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
       return setError('Record why the school denied the request.');
     }
 
-    const requested = Number(copies);
+    const preparedGrades = gradeBooklists.map((grade) => ({
+      ...grade,
+      gradeLabel: grade.gradeLabel.trim(),
+      requested: Number(grade.copies),
+    }));
     if (outcome === 'booklist_offered') {
-      if (!sourceFormat) return setError('Choose how the school supplied the booklist.');
-      if (!booklistFile) return setError('Attach the booklist supplied by the school.');
-      if (!Number.isInteger(requested) || requested < 1) return setError('Enter a valid number of copies requested.');
       if (!dueDate) return setError('Enter the due date.');
       if (dueDate < today) return setError('The due date cannot be in the past.');
+      if (preparedGrades.length < 1) return setError('Add at least one grade or class booklist.');
+
+      const labels = preparedGrades.map((grade) => grade.gradeLabel.toLowerCase());
+      if (labels.some((label) => !label)) return setError('Enter the grade or class name for every booklist.');
+      if (new Set(labels).size !== labels.length) return setError('Each grade or class can only be added once.');
+
+      for (const grade of preparedGrades) {
+        if (!grade.sourceFormat) return setError(`Choose the source format for ${grade.gradeLabel}.`);
+        if (!grade.file) return setError(`Attach the booklist for ${grade.gradeLabel}.`);
+        if (!Number.isInteger(grade.requested) || grade.requested < 1) {
+          return setError(`Enter a valid number of copies for ${grade.gradeLabel}.`);
+        }
+      }
     }
 
     setSubmitting(true);
@@ -409,21 +426,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
           selfie,
         );
         uploaded.push({ bucket: 'daily-log-photos', path: selfiePath });
-      }
-
-      const documentRequestId = crypto.randomUUID();
-      let rawPath: string | null = null;
-      if (outcome === 'booklist_offered' && booklistFile) {
-        rawPath = await upload(
-          client,
-          'booklist-documents',
-          organizationId,
-          userId,
-          documentRequestId,
-          'booklist',
-          booklistFile,
-        );
-        uploaded.push({ bucket: 'booklist-documents', path: rawPath });
       }
 
       const { data: visitData, error: visitFailure } = await client.rpc('ba_start_school_visit', {
@@ -450,40 +452,60 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
         p_contact_person_name: contactName.trim() || undefined,
         p_contact_person_role: contactRole.trim() || undefined,
         p_contact_person_phone: contactPhone.trim() || undefined,
-        p_is_per_grade: perGrade === 'unknown' ? undefined : perGrade === 'yes',
+        p_is_per_grade: outcome === 'booklist_offered' ? true : undefined,
       });
       if (outcomeFailure) throw new Error(outcomeFailure.message);
       const recorded = outcomeData as unknown as BaRecordVisitOutcomeResult;
 
       if (outcome === 'booklist_offered') {
-        if (!rawPath || !booklistFile) throw new Error('Booklist upload was not completed.');
+        let totalRequested = 0;
+        let totalToPrint = 0;
 
-        const { error: requestFailure } = await client.rpc(
-          'ba_capture_booklist_request' as never,
-          {
-            p_job_id: recorded.job_id,
-            p_copies_requested: requested,
-            p_due_date: dueDate,
-            p_client_request_id: crypto.randomUUID(),
-          } as never,
-        );
-        if (requestFailure) throw new Error(requestFailure.message);
+        for (const [index, grade] of preparedGrades.entries()) {
+          const file = grade.file;
+          if (!file) throw new Error(`Attach the booklist for ${grade.gradeLabel}.`);
 
-        const { error: documentFailure } = await client.rpc('ba_submit_booklist_document', {
-          p_visit_id: visit.visit_id,
-          p_storage_path: rawPath,
-          p_client_request_id: documentRequestId,
-          p_mime_type: booklistFile.type || undefined,
-          p_file_size_bytes: booklistFile.size,
-          p_source_format: sourceFormat,
-          p_captured_on_site: ['handwritten', 'printed', 'photo'].includes(sourceFormat),
-          p_is_per_grade: perGrade === 'unknown' ? undefined : perGrade === 'yes',
-          p_grade_notes: gradeNotes.trim() || undefined,
-        });
-        if (documentFailure) throw new Error(documentFailure.message);
+          const gradeRequestId = crypto.randomUUID();
+          let gradePath: string | null = null;
+          try {
+            gradePath = await upload(
+              client,
+              'booklist-documents',
+              organizationId,
+              userId,
+              gradeRequestId,
+              `booklist-grade-${index + 1}`,
+              file,
+            );
+
+            const { error: gradeFailure } = await client.rpc(
+              'ba_submit_grade_booklist' as never,
+              {
+                p_job_id: recorded.job_id,
+                p_visit_id: visit.visit_id,
+                p_grade_label: grade.gradeLabel,
+                p_copies_requested: grade.requested,
+                p_due_date: dueDate,
+                p_storage_path: gradePath,
+                p_client_request_id: gradeRequestId,
+                p_mime_type: file.type || undefined,
+                p_file_size_bytes: file.size,
+                p_source_format: grade.sourceFormat,
+                p_sort_order: index,
+              } as never,
+            );
+            if (gradeFailure) throw new Error(gradeFailure.message);
+          } catch (gradeFailure) {
+            if (gradePath) await client.storage.from('booklist-documents').remove([gradePath]);
+            throw gradeFailure;
+          }
+
+          totalRequested += grade.requested;
+          totalToPrint += grade.requested + 1;
+        }
 
         setSuccess(
-          `${selected.school_name}: booklist sent to admin. ${requested.toLocaleString()} requested + 1 stamped copy = ${(requested + 1).toLocaleString()} copies to print. Due ${readableDate(dueDate)}.`,
+          `${selected.school_name}: ${preparedGrades.length} grade booklist${preparedGrades.length === 1 ? '' : 's'} sent to admin. ${totalRequested.toLocaleString()} requested + ${preparedGrades.length.toLocaleString()} stamped cop${preparedGrades.length === 1 ? 'y' : 'ies'} = ${totalToPrint.toLocaleString()} copies to print. Due ${readableDate(dueDate)}.`,
         );
       } else {
         setSuccess(`${selected.school_name}: denial recorded.`);
@@ -551,6 +573,11 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
 
   const target = stats?.target?.target_schools ?? stats?.default_target_schools_per_month ?? null;
   const reached = stats?.schools_visited_this_month ?? 0;
+  const draftRequestedTotal = gradeBooklists.reduce((sum, grade) => {
+    const quantity = Number(grade.copies);
+    return sum + (Number.isInteger(quantity) && quantity > 0 ? quantity : 0);
+  }, 0);
+  const draftPrintTotal = draftRequestedTotal + gradeBooklists.filter((grade) => Number(grade.copies) > 0).length;
 
   return (
     <div className="space-y-5">
@@ -742,52 +769,134 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
           {outcome === 'booklist_offered' ? (
             <div className="mt-5 space-y-5">
               <section>
-                <h3 className="text-sm font-semibold text-ink">Original booklist</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <Label htmlFor="source-format">Source format *</Label>
-                    <Select id="source-format" value={sourceFormat} onChange={(event) => setSourceFormat(event.target.value)}>
-                      <option value="">Choose format</option>
-                      {SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}
-                    </Select>
+                    <h3 className="text-sm font-semibold text-ink">Print request</h3>
+                    <p className="mt-1 text-xs text-muted">Add each grade or class separately. FAZOO adds one extra copy for stamping to every grade.</p>
                   </div>
-                  <div>
-                    <Label htmlFor="booklist-file">Booklist file / photo *</Label>
-                    <Input id="booklist-file" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.rtf" onChange={(event) => setBooklistFile(event.target.files?.[0] || null)} />
-                    <p className="mt-1 text-xs text-muted">Maximum 12 MB.</p>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      setGradeBooklists((rows) => [
+                        ...rows,
+                        blankGradeBooklist(crypto.randomUUID()),
+                      ])
+                    }
+                  >
+                    Add another grade
+                  </Button>
                 </div>
-              </section>
 
-              <section>
-                <h3 className="text-sm font-semibold text-ink">Print request</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="copies">Copies requested *</Label>
-                    <Input id="copies" type="number" min={1} step={1} inputMode="numeric" value={copies} onChange={(event) => setCopies(event.target.value)} />
-                    {Number(copies) > 0 ? (
-                      <p className="mt-1 text-xs font-medium text-primary">Print total: {(Number(copies) + 1).toLocaleString()} — requested copies + 1 for stamping.</p>
-                    ) : null}
-                  </div>
+                <div className="mt-4 space-y-4">
+                  {gradeBooklists.map((grade, index) => {
+                    const requested = Number(grade.copies);
+                    return (
+                      <div key={grade.key} className="rounded-xl border border-ink/10 bg-white p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-ink">
+                            {grade.gradeLabel.trim() || `Grade request ${index + 1}`}
+                          </p>
+                          {gradeBooklists.length > 1 ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setGradeBooklists((rows) => rows.filter((row) => row.key !== grade.key))}
+                            >
+                              Remove
+                            </Button>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <Label htmlFor={`grade-name-${grade.key}`}>Grade / class *</Label>
+                            <Input
+                              id={`grade-name-${grade.key}`}
+                              value={grade.gradeLabel}
+                              onChange={(event) =>
+                                setGradeBooklists((rows) =>
+                                  rows.map((row) =>
+                                    row.key === grade.key ? { ...row, gradeLabel: event.target.value } : row,
+                                  ),
+                                )
+                              }
+                              placeholder="e.g. Grade 1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`copies-${grade.key}`}>Copies requested *</Label>
+                            <Input
+                              id={`copies-${grade.key}`}
+                              type="number"
+                              min={1}
+                              step={1}
+                              inputMode="numeric"
+                              value={grade.copies}
+                              onChange={(event) =>
+                                setGradeBooklists((rows) =>
+                                  rows.map((row) =>
+                                    row.key === grade.key ? { ...row, copies: event.target.value } : row,
+                                  ),
+                                )
+                              }
+                            />
+                            {Number.isInteger(requested) && requested > 0 ? (
+                              <p className="mt-1 text-xs font-medium text-primary">
+                                {requested.toLocaleString()} + 1 = {(requested + 1).toLocaleString()} copies to print for this grade.
+                              </p>
+                            ) : null}
+                          </div>
+                          <div>
+                            <Label htmlFor={`source-format-${grade.key}`}>Source format *</Label>
+                            <Select
+                              id={`source-format-${grade.key}`}
+                              value={grade.sourceFormat}
+                              onChange={(event) =>
+                                setGradeBooklists((rows) =>
+                                  rows.map((row) =>
+                                    row.key === grade.key ? { ...row, sourceFormat: event.target.value } : row,
+                                  ),
+                                )
+                              }
+                            >
+                              <option value="">Choose format</option>
+                              {SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor={`booklist-file-${grade.key}`}>Booklist file / photo *</Label>
+                            <Input
+                              id={`booklist-file-${grade.key}`}
+                              type="file"
+                              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.rtf"
+                              onChange={(event) =>
+                                setGradeBooklists((rows) =>
+                                  rows.map((row) =>
+                                    row.key === grade.key ? { ...row, file: event.target.files?.[0] || null } : row,
+                                  ),
+                                )
+                              }
+                            />
+                            <p className="mt-1 text-xs text-muted">Maximum 12 MB.</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="due-date">Due date *</Label>
                     <Input id="due-date" type="date" min={today} value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
                   </div>
-                </div>
-              </section>
-
-              <section className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="per-grade">Booklist per grade?</Label>
-                  <Select id="per-grade" value={perGrade} onChange={(event) => setPerGrade(event.target.value as typeof perGrade)}>
-                    <option value="unknown">Not sure</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="grade-notes">Grade notes</Label>
-                  <Input id="grade-notes" value={gradeNotes} onChange={(event) => setGradeNotes(event.target.value)} placeholder="Optional, e.g. PP1–Grade 6" />
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Print summary</p>
+                    <p className="mt-1 text-sm font-semibold text-ink">
+                      {draftRequestedTotal.toLocaleString()} requested + {gradeBooklists.filter((grade) => Number(grade.copies) > 0).length.toLocaleString()} stamped {gradeBooklists.filter((grade) => Number(grade.copies) > 0).length === 1 ? 'copy' : 'copies'} = {draftPrintTotal.toLocaleString()} total
+                    </p>
+                  </div>
                 </div>
               </section>
             </div>
@@ -847,7 +956,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
                   <span>Requested: <strong className="text-ink">{job.copies_requested?.toLocaleString() || '—'}</strong></span>
-                  <span>Print total: <strong className="text-ink">{job.copies_to_print?.toLocaleString() || '—'}</strong>{job.copies_to_print ? ' incl. +1' : ''}</span>
+                  <span>Print total: <strong className="text-ink">{job.copies_to_print?.toLocaleString() || '—'}</strong>{job.copies_to_print ? ' incl. stamped extras' : ''}</span>
                   <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>
                 </div>
                 <Progress job={job} />
