@@ -1,7 +1,13 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/sign-in', '/forgot-password', '/not-authorized', '/how-it-works'];
+const PUBLIC_PATHS = [
+  '/sign-in',
+  '/forgot-password',
+  '/not-authorized',
+  '/how-it-works',
+  '/api/ocr/assets',
+];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -9,7 +15,7 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
-    // Unconfigured environment: allow static assets, block portal routes.
+    // Unconfigured environment: allow public paths, block portal routes.
     if (!PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))) {
       return NextResponse.redirect(new URL('/sign-in', request.url));
     }
