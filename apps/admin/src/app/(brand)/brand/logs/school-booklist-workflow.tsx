@@ -129,7 +129,6 @@ function stepState(job: PipelineJob): Array<[string, StepState]> {
 }
 
 function nextAction(job: PipelineJob) {
-  const total = job.copies_to_print ?? (job.copies_requested ? job.copies_requested + 1 : null);
   switch (job.stage) {
     case 'engaged':
       return 'Record whether the school supplied or denied the booklist.';
@@ -144,9 +143,9 @@ function nextAction(job: PipelineJob) {
     case 'formatted':
     case 'pending_school_approval':
     case 'school_approved':
-      return `Word document ready. Admin should create the print order${total ? ` for ${total.toLocaleString()} copies including stamped extras` : ''}.`;
+      return 'Word document ready. Admin should create the separate grade print order(s).';
     case 'in_production':
-      return `Printing in progress${total ? `: ${total.toLocaleString()} copies including stamped extras` : ''}.`;
+      return 'Printing in progress for the separate grade print order(s).';
     case 'dispatched':
       return 'Printed copies have been shipped to the school. Delivery is being tracked.';
     case 'received':
@@ -458,9 +457,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
       const recorded = outcomeData as unknown as BaRecordVisitOutcomeResult;
 
       if (outcome === 'booklist_offered') {
-        let totalRequested = 0;
-        let totalToPrint = 0;
-
         for (const [index, grade] of preparedGrades.entries()) {
           const file = grade.file;
           if (!file) throw new Error(`Attach the booklist for ${grade.gradeLabel}.`);
@@ -500,12 +496,9 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
             throw gradeFailure;
           }
 
-          totalRequested += grade.requested;
-          totalToPrint += grade.requested + 1;
         }
-
         setSuccess(
-          `${selected.school_name}: ${preparedGrades.length} grade booklist${preparedGrades.length === 1 ? '' : 's'} sent to admin. ${totalRequested.toLocaleString()} requested + ${preparedGrades.length.toLocaleString()} stamped cop${preparedGrades.length === 1 ? 'y' : 'ies'} = ${totalToPrint.toLocaleString()} copies to print. Due ${readableDate(dueDate)}.`,
+          `${selected.school_name}: ${preparedGrades.length} separate grade print order${preparedGrades.length === 1 ? '' : 's'} sent to admin. Each document keeps its own copy quantity. Due ${readableDate(dueDate)}.`,
         );
       } else {
         setSuccess(`${selected.school_name}: denial recorded.`);
@@ -573,11 +566,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
 
   const target = stats?.target?.target_schools ?? stats?.default_target_schools_per_month ?? null;
   const reached = stats?.schools_visited_this_month ?? 0;
-  const draftRequestedTotal = gradeBooklists.reduce((sum, grade) => {
-    const quantity = Number(grade.copies);
-    return sum + (Number.isInteger(quantity) && quantity > 0 ? quantity : 0);
-  }, 0);
-  const draftPrintTotal = draftRequestedTotal + gradeBooklists.filter((grade) => Number(grade.copies) > 0).length;
 
   return (
     <div className="space-y-5">
@@ -891,12 +879,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
                     <Label htmlFor="due-date">Due date *</Label>
                     <Input id="due-date" type="date" min={today} value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
                   </div>
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Print summary</p>
-                    <p className="mt-1 text-sm font-semibold text-ink">
-                      {draftRequestedTotal.toLocaleString()} requested + {gradeBooklists.filter((grade) => Number(grade.copies) > 0).length.toLocaleString()} stamped {gradeBooklists.filter((grade) => Number(grade.copies) > 0).length === 1 ? 'copy' : 'copies'} = {draftPrintTotal.toLocaleString()} total
-                    </p>
-                  </div>
                 </div>
               </section>
             </div>
@@ -955,8 +937,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
                   <StageBadge stage={job.stage} />
                 </div>
                 <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
-                  <span>Requested: <strong className="text-ink">{job.copies_requested?.toLocaleString() || '—'}</strong></span>
-                  <span>Print total: <strong className="text-ink">{job.copies_to_print?.toLocaleString() || '—'}</strong>{job.copies_to_print ? ' incl. stamped extras' : ''}</span>
                   <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>
                 </div>
                 <Progress job={job} />

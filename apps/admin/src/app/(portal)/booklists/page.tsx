@@ -11,6 +11,7 @@ import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { pipelineBoard } from '@/server/booklists';
 import type { AdminPipelineJob } from '@fazoo/types';
+import { GradeOrderActions } from './grade-order-actions';
 
 const PAGE_SIZE = 50;
 
@@ -46,6 +47,33 @@ type AdminPipelineJobWithPrintables = AdminPipelineJob & {
   printables_shipped?: boolean;
 };
 
+type GradePrintOrder = {
+  grade_request_id: string;
+  job_id: string;
+  school_id: string;
+  school_name: string;
+  school_region: string | null;
+  grade_label: string;
+  copies_requested: number;
+  copies_to_print: number;
+  due_date: string | null;
+  source_format: string | null;
+  raw_storage_path: string;
+  raw_mime_type: string | null;
+  conversion_status: string;
+  conversion_provider: string | null;
+  conversion_confidence: number | null;
+  conversion_error: string | null;
+  word_storage_path: string | null;
+  word_mime_type: string | null;
+  word_published_at: string | null;
+  printables_shipped: boolean;
+  ba_id: string | null;
+  ba_name: string | null;
+  ba_agency: BaAgency | null;
+  created_at: string;
+};
+
 function isStage(value: string | undefined): value is BooklistStage {
   return value !== undefined && value in BOOKLIST_STAGE_LABELS;
 }
@@ -71,7 +99,6 @@ function hrefWith(params: SearchParams, overrides: Record<string, string | undef
 interface SchoolStatusColumns {
   rawDocId: string | null;
   stampedDocId: string | null;
-  copiesToPrint: number | null;
   dueDate: string | null;
   shipped: boolean;
   arrived: boolean;
@@ -96,7 +123,6 @@ function schoolStatusColumns(job: AdminPipelineJob): SchoolStatusColumns {
   return {
     rawDocId: job.raw_document_id ?? null,
     stampedDocId: job.stamped_document_id ?? null,
-    copiesToPrint: job.copies_to_print,
     dueDate: job.due_date,
     shipped: Boolean(jobWithPrintables.printables_shipped),
     arrived: Boolean(job.received_at),
@@ -132,6 +158,33 @@ async function setPrintablesShippingStatus(formData: FormData) {
   revalidatePath('/booklists');
 }
 
+
+async function setGradePrintablesShippingStatus(formData: FormData) {
+  'use server';
+
+  const gradeRequestId = String(formData.get('grade_request_id') ?? '');
+  const requestedStatus = String(formData.get('shipped') ?? '');
+  if (!isUuid(gradeRequestId)) throw new Error('Invalid grade print order.');
+  if (requestedStatus !== 'true' && requestedStatus !== 'false') {
+    throw new Error('Invalid printables shipping status.');
+  }
+
+  const { client, profile } = await requireStaff();
+  if (profile.role !== 'super_admin' && profile.role !== 'organization_admin') {
+    throw new Error('Only an admin can update grade printables shipping status.');
+  }
+
+  const { error } = await client.rpc(
+    'admin_set_grade_printables_shipping_status' as never,
+    {
+      p_grade_request_id: gradeRequestId,
+      p_shipped: requestedStatus === 'true',
+    } as never,
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath('/booklists');
+}
+
 export default async function BooklistPipelinePage({
   searchParams,
 }: {
@@ -152,7 +205,7 @@ export default async function BooklistPipelinePage({
 
   // Regions and BAs come from the caller's own organization via RLS, so the
   // filter dropdowns can never offer a value from another tenant.
-  const [regionsResult, basResult, board] = await Promise.all([
+  const [regionsResult, basResult, board, gradeOrdersResult] = await Promise.all([
     client
       .from('veda_schools')
       .select('region')
@@ -166,6 +219,7 @@ export default async function BooklistPipelinePage({
       .eq('account_status', 'approved')
       .order('full_name'),
     pipelineBoard(client, { query, stage, region, baId, agency, from, to, limit: PAGE_SIZE, offset }),
+    client.rpc('admin_grade_print_orders' as never, { p_limit: 500 } as never),
   ]);
 
   const regions = Array.from(
@@ -183,6 +237,18 @@ export default async function BooklistPipelinePage({
   }>;
 
   const jobs = board.jobs;
+  if (gradeOrdersResult.error) throw new Error(gradeOrdersResult.error.message);
+  const gradePayload = gradeOrdersResult.data as unknown as { status?: string; orders?: GradePrintOrder[] };
+  const gradeOrders = (gradePayload.orders ?? []).filter((order) => {
+    if (query && !`${order.school_name} ${order.school_region ?? ''} ${order.grade_label}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (region && order.school_region !== region) return false;
+    if (baId && order.ba_id !== baId) return false;
+    if (agency && order.ba_agency !== agency) return false;
+    const createdDate = order.created_at?.slice(0, 10) ?? '';
+    if (from && createdDate && createdDate < from) return false;
+    if (to && createdDate && createdDate > to) return false;
+    return true;
+  });
   const totalPages = Math.max(1, Math.ceil(board.total / PAGE_SIZE));
   const canAct = profile.role === 'super_admin' || profile.role === 'organization_admin';
 
@@ -318,6 +384,97 @@ export default async function BooklistPipelinePage({
         </form>
       </Card>
 
+      <section className="mb-6" aria-labelledby="grade-orders-heading">
+        <div className="mb-3">
+          <h2 id="grade-orders-heading" className="text-base font-semibold text-ink">Separate grade print orders</h2>
+          <p className="mt-1 text-xs text-muted">Each row is one document and one print order. Orders can share the same school and BA, but their quantities and Word files stay separate.</p>
+        </div>
+        <TableWrap>
+          <Table>
+            <caption className="sr-only">Separate grade and class print orders</caption>
+            <thead>
+              <tr>
+                <Th>School</Th>
+                <Th>Grade / class</Th>
+                <Th>Documents</Th>
+                <Th className="text-right">Copies for this order</Th>
+                <Th>Due date</Th>
+                <Th>BA</Th>
+                <Th>Printables</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {gradeOrders.length === 0 ? (
+                <EmptyRow colSpan={7}>No separate grade print orders match the current filters.</EmptyRow>
+              ) : (
+                gradeOrders.map((order) => (
+                  <tr key={order.grade_request_id} className="transition-colors hover:bg-lavender/40">
+                    <Td>
+                      <Link href={`/booklists/${order.job_id}`} className="font-medium text-primary hover:underline">
+                        {order.school_name}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-muted">{order.school_region ?? 'Region not recorded'}</p>
+                    </Td>
+                    <Td>
+                      <span className="font-semibold text-ink">{order.grade_label}</span>
+                      {order.source_format ? <p className="mt-0.5 text-[11px] text-muted">Source: {order.source_format}</p> : null}
+                    </Td>
+                    <Td>
+                      <GradeOrderActions
+                        gradeRequestId={order.grade_request_id}
+                        conversionStatus={order.conversion_status}
+                        hasWord={Boolean(order.word_storage_path)}
+                        conversionError={order.conversion_error}
+                        canAct={canAct}
+                      />
+                    </Td>
+                    <Td className="text-right tabular-nums">
+                      <span className="font-semibold text-ink">{order.copies_to_print.toLocaleString()}</span>
+                      <p className="mt-0.5 text-[11px] text-muted">{order.copies_requested.toLocaleString()} requested + 1 stamped</p>
+                    </Td>
+                    <Td className="whitespace-nowrap text-xs">
+                      {order.due_date ? formatDate(order.due_date) : <span className="text-muted">—</span>}
+                    </Td>
+                    <Td>
+                      {order.ba_name ?? <span className="text-muted">Unassigned</span>}
+                      <div className="mt-1"><AgencyBadge agency={order.ba_agency} /></div>
+                    </Td>
+                    <Td>
+                      {canAct ? (
+                        <form action={setGradePrintablesShippingStatus} className="flex flex-wrap gap-1.5">
+                          <input type="hidden" name="grade_request_id" value={order.grade_request_id} />
+                          <button
+                            type="submit"
+                            name="shipped"
+                            value="false"
+                            aria-pressed={!order.printables_shipped}
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${!order.printables_shipped ? 'bg-red-100 text-red-700 ring-1 ring-red-200' : 'border border-red-200 bg-white text-red-700 hover:bg-red-50'}`}
+                          >Pending</button>
+                          <button
+                            type="submit"
+                            name="shipped"
+                            value="true"
+                            aria-pressed={order.printables_shipped}
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${order.printables_shipped ? 'bg-green-100 text-green-700 ring-1 ring-green-200' : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'}`}
+                          >Shipped</button>
+                        </form>
+                      ) : (
+                        <Badge tone={order.printables_shipped ? 'success' : 'danger'}>{order.printables_shipped ? 'Shipped' : 'Pending'}</Badge>
+                      )}
+                    </Td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </Table>
+        </TableWrap>
+      </section>
+
+      <div className="mb-3">
+        <h2 className="text-base font-semibold text-ink">School workflow</h2>
+        <p className="mt-1 text-xs text-muted">School-level progress only. Multi-grade copy quantities are intentionally kept in the separate orders above.</p>
+      </div>
+
       <TableWrap>
         <Table>
           <caption className="sr-only">
@@ -328,7 +485,6 @@ export default async function BooklistPipelinePage({
               <Th>Name of school</Th>
               <Th>Region / location</Th>
               <Th>Attached document (Word)</Th>
-              <Th className="text-right">Copies to print</Th>
               <Th>Due date</Th>
               <Th>Printables</Th>
               <Th>Arrived?</Th>
@@ -339,7 +495,7 @@ export default async function BooklistPipelinePage({
           </thead>
           <tbody>
             {jobs.length === 0 ? (
-              <EmptyRow colSpan={10}>
+              <EmptyRow colSpan={9}>
                 {board.total === 0 && !query && !stage
                   ? 'No schools have been logged yet. They appear here as soon as a BA records a gate visit.'
                   : 'No schools match that search or filter.'}
@@ -375,13 +531,6 @@ export default async function BooklistPipelinePage({
                         </a>
                       ) : (
                         <span className="text-xs text-muted">No doc yet</span>
-                      )}
-                    </Td>
-                    <Td className="text-right tabular-nums">
-                      {sc.copiesToPrint === null ? (
-                        <span className="text-muted">—</span>
-                      ) : (
-                        sc.copiesToPrint.toLocaleString()
                       )}
                     </Td>
                     <Td className="whitespace-nowrap text-xs">
