@@ -3,11 +3,15 @@ import { isElevated, requireStaff } from '@/lib/auth';
 import { serviceSupabase } from '@fazoo/database';
 import { RATE_LIMIT_EXPORT_MAX, RATE_LIMIT_EXPORT_WINDOW_S } from '@fazoo/config';
 import { convertGradeBooklistDocument } from '@/server/ocr/convert-grade';
+import {
+  createGradeBooklistFromTesseract,
+  type BrowserOcrPayload,
+} from '@/server/ocr/tesseract-grade';
 
 export const maxDuration = 300;
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ gradeId: string }> },
 ) {
   const { profile } = await requireStaff();
@@ -36,7 +40,20 @@ export async function POST(
     // Best effort. A missing limiter must not block conversion.
   }
 
-  const result = await convertGradeBooklistDocument(gradeId, profile.id);
+  let browserOcr: BrowserOcrPayload | null = null;
+  if (request.headers.get('content-type')?.includes('application/json')) {
+    const body = (await request.json().catch(() => null)) as
+      | { clientOcr?: BrowserOcrPayload }
+      | null;
+    if (body?.clientOcr) {
+      browserOcr = body.clientOcr;
+    }
+  }
+
+  const result = browserOcr
+    ? await createGradeBooklistFromTesseract(gradeId, profile.id, browserOcr)
+    : await convertGradeBooklistDocument(gradeId, profile.id);
+
   if (result.outcome === 'failed') {
     return NextResponse.json({ ...result, error: result.message }, { status: 502 });
   }
