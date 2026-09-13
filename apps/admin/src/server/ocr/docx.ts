@@ -32,6 +32,7 @@ export interface DocxContext {
   schoolRegion: string | null;
   isPerGrade: boolean;
   gradeNotes: string | null;
+  gradeLabel?: string | null;
   baName: string | null;
   generatedAt: Date;
 }
@@ -86,7 +87,6 @@ function blocksToChildren(blocks: OcrBlock[]): (Paragraph | Table)[] {
   for (const block of blocks) {
     if (block.kind === 'table') {
       children.push(tableBlock(block.rows));
-      // Word requires a paragraph between adjacent tables or they merge.
       children.push(new Paragraph({ spacing: { after: 60 }, children: [] }));
     } else if (block.kind === 'heading') {
       children.push(heading(block.text));
@@ -101,7 +101,9 @@ export async function buildBooklistDocx(
   result: OcrResult,
   context: DocxContext,
 ): Promise<Uint8Array> {
-  const title = `${context.schoolName} — Book List`;
+  const title = context.gradeLabel
+    ? `${context.schoolName} — ${context.gradeLabel} Book List`
+    : `${context.schoolName} — Book List`;
   const subtitle = [
     context.schoolRegion ? `Region: ${context.schoolRegion}` : null,
     context.isPerGrade ? 'Issued per grade' : 'Single school-wide list',
