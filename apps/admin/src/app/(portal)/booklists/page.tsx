@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { BaAgency, BooklistStage } from '@fazoo/types';
-import { BOOKLIST_STAGE_LABELS, DISPATCH_MEANS_LABELS } from '@fazoo/config';
+import { BOOKLIST_STAGE_LABELS } from '@fazoo/config';
 import { requireStaff } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
 import { AgencyBadge, StageBadge } from '@/components/stage-badge';
@@ -68,9 +68,7 @@ interface SchoolStatusColumns {
   stampedDocId: string | null;
   copiesToPrint: number | null;
   dueDate: string | null;
-  dispatchMeans: string | null;
-  dispatchCarrier: string | null;
-  trackingRef: string | null;
+  shipped: boolean;
   arrived: boolean;
   status: 'success' | 'pending';
 }
@@ -89,17 +87,12 @@ function formatDate(value: string): string {
 }
 
 function schoolStatusColumns(job: AdminPipelineJob): SchoolStatusColumns {
-  const dispatchMeans = job.print_order_dispatch_means
-    ? (DISPATCH_MEANS_LABELS[job.print_order_dispatch_means] ?? job.print_order_dispatch_means)
-    : null;
   return {
     rawDocId: job.raw_document_id ?? null,
     stampedDocId: job.stamped_document_id ?? null,
     copiesToPrint: job.copies_to_print,
     dueDate: job.due_date,
-    dispatchMeans,
-    dispatchCarrier: job.print_order_dispatch_carrier ?? null,
-    trackingRef: job.print_order_dispatch_tracking_ref ?? null,
+    shipped: Boolean(job.dispatched_at) || ['dispatched', 'received', 'completed'].includes(job.stage),
     arrived: Boolean(job.received_at),
     status: job.stage === 'completed' ? 'success' : 'pending',
   };
@@ -303,8 +296,7 @@ export default async function BooklistPipelinePage({
               <Th>Attached document (Word)</Th>
               <Th className="text-right">Copies to print</Th>
               <Th>Due date</Th>
-              <Th>Shipping method</Th>
-              <Th>Carrier / Reference</Th>
+              <Th>Printables</Th>
               <Th>Arrived?</Th>
               <Th>BA (handled the log)</Th>
               <Th>Stamped document</Th>
@@ -313,7 +305,7 @@ export default async function BooklistPipelinePage({
           </thead>
           <tbody>
             {jobs.length === 0 ? (
-              <EmptyRow colSpan={11}>
+              <EmptyRow colSpan={10}>
                 {board.total === 0 && !query && !stage
                   ? 'No schools have been logged yet. They appear here as soon as a BA records a gate visit.'
                   : 'No schools match that search or filter.'}
@@ -362,39 +354,9 @@ export default async function BooklistPipelinePage({
                       {sc.dueDate ? formatDate(sc.dueDate) : <span className="text-muted">—</span>}
                     </Td>
                     <Td>
-                      {sc.dispatchMeans ? (
-                        <div className="flex flex-col gap-1">
-                          <Badge tone="success">
-                            {sc.dispatchMeans}
-                          </Badge>
-                          {sc.arrived && (
-                            <span className="text-xs font-semibold text-ok">✓ Delivered</span>
-                          )}
-                        </div>
-                      ) : (
-                        <Link
-                          href={`/booklists/${job.job_id}`}
-                          className="text-xs font-medium text-primary hover:underline"
-                        >
-                          Add shipping method
-                        </Link>
-                      )}
-                    </Td>
-                    <Td className="text-xs">
-                      {sc.dispatchCarrier || sc.trackingRef ? (
-                        <div className="space-y-1">
-                          {sc.dispatchCarrier && (
-                            <p className="font-medium text-ink">{sc.dispatchCarrier}</p>
-                          )}
-                          {sc.trackingRef && (
-                            <p className="text-muted">
-                              Ref: <span className="font-mono">{sc.trackingRef}</span>
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
+                      <Badge tone={sc.shipped ? 'success' : 'danger'}>
+                        {sc.shipped ? 'Shipped' : 'Pending'}
+                      </Badge>
                     </Td>
                     <Td>
                       <Badge tone={sc.arrived ? 'success' : 'warning'}>
