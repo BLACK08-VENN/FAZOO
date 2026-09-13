@@ -10,6 +10,9 @@ import type { OcrProvider } from './types';
  * OpenAI when `OPENAI_API_KEY` is present, then fall back to Azure when its
  * credentials are configured. With no usable provider the pipeline stays in
  * the manual conversion state instead of failing unexpectedly.
+ *
+ * Provider credentials are intentionally read from the server environment and
+ * are never exposed to the browser bundle.
  */
 export function resolveOcrProvider(): OcrProvider | null {
   const requested = (process.env.DOCUMENT_AI_PROVIDER ?? '').trim().toLowerCase();
