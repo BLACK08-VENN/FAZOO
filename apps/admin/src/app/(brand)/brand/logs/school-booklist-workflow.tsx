@@ -234,6 +234,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
   const [declineNotes, setDeclineNotes] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
+  const [isMultipleBooklists, setIsMultipleBooklists] = useState<boolean | null>(null);
   const [gradeBooklists, setGradeBooklists] = useState<GradeBooklistDraft[]>([blankGradeBooklist()]);
   const [dueDate, setDueDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -331,7 +332,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
   }
 
   function clearForm() {
-    setSelected(null); setQuery(''); setSelfie(null); setOutcome(''); setContactName(''); setContactRole(''); setContactPhone(''); setDeclineReason(''); setDeclineNotes(''); setFollowUpDate(''); setFollowUpNotes(''); setGradeBooklists([blankGradeBooklist()]); setDueDate('');
+    setSelected(null); setQuery(''); setSelfie(null); setOutcome(''); setContactName(''); setContactRole(''); setContactPhone(''); setDeclineReason(''); setDeclineNotes(''); setFollowUpDate(''); setFollowUpNotes(''); setIsMultipleBooklists(null); setGradeBooklists([blankGradeBooklist()]); setDueDate('');
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -345,18 +346,27 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
       if (!followUpDate) return setError('Choose the date the school asked you to return.');
       if (followUpDate < today) return setError('The follow-up date cannot be in the past.');
     }
-    const preparedGrades = gradeBooklists.map((grade) => ({ ...grade, gradeLabel: grade.gradeLabel.trim(), requested: Number(grade.copies) }));
+    const preparedGrades = gradeBooklists.map((grade, index) => ({
+      ...grade,
+      gradeLabel: isMultipleBooklists ? grade.gradeLabel.trim() : index === 0 ? 'General booklist' : grade.gradeLabel.trim(),
+      requested: Number(grade.copies),
+    }));
     if (outcome === 'booklist_offered') {
+      if (isMultipleBooklists === null) return setError('Tell us whether the school gave you more than one booklist.');
       if (!dueDate) return setError('Enter the due date.');
       if (dueDate < today) return setError('The due date cannot be in the past.');
-      if (preparedGrades.length < 1) return setError('Add at least one grade or class booklist.');
-      const labels = preparedGrades.map((grade) => grade.gradeLabel.toLowerCase());
-      if (labels.some((label) => !label)) return setError('Enter the grade or class name for every booklist.');
-      if (new Set(labels).size !== labels.length) return setError('Each grade or class can only be added once.');
-      for (const grade of preparedGrades) {
-        if (!grade.sourceFormat) return setError(`Choose the source format for ${grade.gradeLabel}.`);
-        if (!grade.file) return setError(`Attach the booklist for ${grade.gradeLabel}.`);
-        if (!Number.isInteger(grade.requested) || grade.requested < 1) return setError(`Enter a valid number of copies for ${grade.gradeLabel}.`);
+      const activeBooklists = isMultipleBooklists ? preparedGrades : preparedGrades.slice(0, 1);
+      if (isMultipleBooklists) {
+        if (activeBooklists.length < 1) return setError('Add at least one grade or class booklist.');
+        const labels = activeBooklists.map((grade) => grade.gradeLabel.toLowerCase());
+        if (labels.some((label) => !label)) return setError('Enter the grade or class name for every booklist.');
+        if (new Set(labels).size !== labels.length) return setError('Each grade or class can only be added once.');
+      }
+      for (const grade of activeBooklists) {
+        const label = isMultipleBooklists ? grade.gradeLabel : 'the general booklist';
+        if (!grade.sourceFormat) return setError(`Choose the source format for ${label}.`);
+        if (!grade.file) return setError(`Attach ${label}.`);
+        if (!Number.isInteger(grade.requested) || grade.requested < 1) return setError(`Enter a valid number of copies for ${label}.`);
       }
     }
 
@@ -382,17 +392,18 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
         clearForm(); await loadPipeline(); return;
       }
 
-      const { data: outcomeData, error: outcomeFailure } = await client.rpc('ba_record_visit_outcome', { p_visit_id: visit.visit_id, p_client_request_id: crypto.randomUUID(), p_outcome: outcome, p_declined_reason_code: outcome === 'declined' ? declineReason || undefined : undefined, p_declined_reason_notes: outcome === 'declined' ? declineNotes.trim() || undefined : undefined, p_contact_person_name: contactName.trim() || undefined, p_contact_person_role: contactRole.trim() || undefined, p_contact_person_phone: contactPhone.trim() || undefined, p_is_per_grade: outcome === 'booklist_offered' ? true : undefined });
+      const { data: outcomeData, error: outcomeFailure } = await client.rpc('ba_record_visit_outcome', { p_visit_id: visit.visit_id, p_client_request_id: crypto.randomUUID(), p_outcome: outcome, p_declined_reason_code: outcome === 'declined' ? declineReason || undefined : undefined, p_declined_reason_notes: outcome === 'declined' ? declineNotes.trim() || undefined : undefined, p_contact_person_name: contactName.trim() || undefined, p_contact_person_role: contactRole.trim() || undefined, p_contact_person_phone: contactPhone.trim() || undefined, p_is_per_grade: outcome === 'booklist_offered' ? isMultipleBooklists === true : undefined });
       if (outcomeFailure) throw new Error(outcomeFailure.message);
       const recorded = outcomeData as unknown as BaRecordVisitOutcomeResult;
       if (outcome === 'booklist_offered') {
-        for (const [index, grade] of preparedGrades.entries()) {
+        const activeBooklists = isMultipleBooklists ? preparedGrades : preparedGrades.slice(0, 1);
+        for (const [index, grade] of activeBooklists.entries()) {
           const file = grade.file;
-          if (!file) throw new Error(`Attach the booklist for ${grade.gradeLabel}.`);
+          if (!file) throw new Error(isMultipleBooklists ? `Attach the booklist for ${grade.gradeLabel}.` : 'Attach the general booklist.');
           const gradeRequestId = crypto.randomUUID();
           let gradePath: string | null = null;
           try {
-            gradePath = await upload(client, 'booklist-documents', organizationId, userId, gradeRequestId, `booklist-grade-${index + 1}`, file);
+            gradePath = await upload(client, 'booklist-documents', organizationId, userId, gradeRequestId, isMultipleBooklists ? `booklist-grade-${index + 1}` : 'general-booklist', file);
             const { error: gradeFailure } = await client.rpc('ba_submit_grade_booklist' as never, { p_job_id: recorded.job_id, p_visit_id: visit.visit_id, p_grade_label: grade.gradeLabel, p_copies_requested: grade.requested, p_due_date: dueDate, p_storage_path: gradePath, p_client_request_id: gradeRequestId, p_mime_type: file.type || undefined, p_file_size_bytes: file.size, p_source_format: grade.sourceFormat, p_sort_order: index } as never);
             if (gradeFailure) throw new Error(gradeFailure.message);
           } catch (gradeFailure) {
@@ -400,7 +411,11 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
             throw gradeFailure;
           }
         }
-        setSuccess(`${selected.school_name}: ${preparedGrades.length} separate grade print order${preparedGrades.length === 1 ? '' : 's'} sent to admin. Each document keeps its own copy quantity. Due ${readableDate(dueDate)}.`);
+        setSuccess(
+          isMultipleBooklists
+            ? `${selected.school_name}: ${activeBooklists.length} separate grade print order${activeBooklists.length === 1 ? '' : 's'} sent to admin. Due ${readableDate(dueDate)}.`
+            : `${selected.school_name}: general booklist sent to admin. Due ${readableDate(dueDate)}.`,
+        );
       } else setSuccess(`${selected.school_name}: denial recorded.`);
       clearForm(); await loadPipeline();
     } catch (submitFailure) {
@@ -454,7 +469,91 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
           <div className="mt-4 grid gap-3 sm:grid-cols-3"><button type="button" onClick={() => setOutcome('booklist_offered')} className={`rounded-xl border p-4 text-left ${outcome === 'booklist_offered' ? 'border-primary bg-primary/5' : 'border-ink/10'}`}><span className="block text-sm font-semibold text-ink">Booklist supplied</span><span className="mt-1 block text-xs text-muted">Paper, photo, scan or softcopy received.</span></button><button type="button" onClick={() => setOutcome('follow_up')} className={`rounded-xl border p-4 text-left ${outcome === 'follow_up' ? 'border-warn/40 bg-warn/5' : 'border-ink/10'}`}><span className="block text-sm font-semibold text-ink">Follow-up required</span><span className="mt-1 block text-xs text-muted">School asked the BA to return on a specific date.</span></button><button type="button" onClick={() => setOutcome('declined')} className={`rounded-xl border p-4 text-left ${outcome === 'declined' ? 'border-bad/40 bg-bad/5' : 'border-ink/10'}`}><span className="block text-sm font-semibold text-ink">Booklist denied</span><span className="mt-1 block text-xs text-muted">School would not provide the booklist.</span></button></div>
           {outcome === 'follow_up' ? <div className="mt-4 grid gap-3 sm:grid-cols-2"><div><Label htmlFor="follow-up-date">Return date *</Label><Input id="follow-up-date" type="date" min={today} value={followUpDate} onChange={(event) => setFollowUpDate(event.target.value)} /><p className="mt-1 text-xs text-muted">The school stays open and will appear as a scheduled follow-up.</p></div><div><Label htmlFor="follow-up-notes">Follow-up note</Label><textarea id="follow-up-notes" className={TEXTAREA} rows={3} value={followUpNotes} onChange={(event) => setFollowUpNotes(event.target.value)} placeholder="e.g. Headteacher asked me to return when the booklists are ready." /></div></div> : null}
           {outcome === 'declined' ? <div className="mt-4 grid gap-3 sm:grid-cols-2"><div><Label htmlFor="decline-reason">Reason</Label><Select id="decline-reason" value={declineReason} onChange={(event) => setDeclineReason(event.target.value)}><option value="">Choose reason</option>{DECLINE_REASONS.map((reason) => <option key={reason.code} value={reason.code}>{reason.label}</option>)}</Select></div><div><Label htmlFor="decline-notes">Notes</Label><textarea id="decline-notes" className={TEXTAREA} rows={3} value={declineNotes} onChange={(event) => setDeclineNotes(event.target.value)} placeholder="Optional details" /></div></div> : null}
-          {outcome === 'booklist_offered' ? <div className="mt-5 space-y-5"><section><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-sm font-semibold text-ink">Print request</h3><p className="mt-1 text-xs text-muted">Add each grade or class separately. FAZOO adds one extra copy for stamping to every grade.</p></div><Button type="button" variant="outline" onClick={() => setGradeBooklists((rows) => [...rows, blankGradeBooklist(crypto.randomUUID())])}>Add another grade</Button></div><div className="mt-4 space-y-4">{gradeBooklists.map((grade, index) => { const requested = Number(grade.copies); return <div key={grade.key} className="rounded-xl border border-ink/10 bg-white p-4"><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-ink">{grade.gradeLabel.trim() || `Grade request ${index + 1}`}</p>{gradeBooklists.length > 1 ? <Button type="button" variant="outline" onClick={() => setGradeBooklists((rows) => rows.filter((row) => row.key !== grade.key))}>Remove</Button> : null}</div><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><Label htmlFor={`grade-name-${grade.key}`}>Grade / class *</Label><Input id={`grade-name-${grade.key}`} value={grade.gradeLabel} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, gradeLabel: event.target.value } : row))} placeholder="e.g. Grade 1" /></div><div><Label htmlFor={`copies-${grade.key}`}>Copies requested *</Label><Input id={`copies-${grade.key}`} type="number" min={1} step={1} inputMode="numeric" value={grade.copies} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, copies: event.target.value } : row))} />{Number.isInteger(requested) && requested > 0 ? <p className="mt-1 text-xs font-medium text-primary">{requested.toLocaleString()} + 1 = {(requested + 1).toLocaleString()} copies to print for this grade.</p> : null}</div><div><Label htmlFor={`source-format-${grade.key}`}>Source format *</Label><Select id={`source-format-${grade.key}`} value={grade.sourceFormat} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, sourceFormat: event.target.value } : row))}><option value="">Choose format</option>{SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}</Select></div><div><Label htmlFor={`booklist-file-${grade.key}`}>Booklist file / photo *</Label><Input id={`booklist-file-${grade.key}`} type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, file: event.target.files?.[0] || null } : row))} /><p className="mt-1 text-xs text-muted">Maximum 12 MB.</p></div></div></div>; })}</div><div className="mt-4 grid gap-3 sm:grid-cols-2"><div><Label htmlFor="due-date">Due date *</Label><Input id="due-date" type="date" min={today} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div></div></section></div> : null}
+          {outcome === 'booklist_offered' ? (
+            <div className="mt-5 space-y-5">
+              <section>
+                <h3 className="text-sm font-semibold text-ink">Booklist upload</h3>
+                <p className="mt-1 text-xs text-muted">Did the school give you more than one separate booklist?</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => { setIsMultipleBooklists(false); setGradeBooklists((rows) => [rows[0] || blankGradeBooklist()]); }}
+                    className={`rounded-xl border p-4 text-left ${isMultipleBooklists === false ? 'border-primary bg-primary/5' : 'border-ink/10'}`}
+                  >
+                    <span className="block text-sm font-semibold text-ink">No — one general booklist</span>
+                    <span className="mt-1 block text-xs text-muted">Upload one document for the whole school. No grade details needed.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMultipleBooklists(true)}
+                    className={`rounded-xl border p-4 text-left ${isMultipleBooklists === true ? 'border-primary bg-primary/5' : 'border-ink/10'}`}
+                  >
+                    <span className="block text-sm font-semibold text-ink">Yes — separate booklists</span>
+                    <span className="mt-1 block text-xs text-muted">Add each grade or class and its own document.</span>
+                  </button>
+                </div>
+
+                {isMultipleBooklists === false ? (
+                  <div className="mt-4 rounded-xl border border-ink/10 bg-white p-4">
+                    <p className="text-sm font-semibold text-ink">General school booklist</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label htmlFor="general-copies">Copies requested *</Label>
+                        <Input id="general-copies" type="number" min={1} step={1} inputMode="numeric" value={gradeBooklists[0]?.copies || ''} onChange={(event) => setGradeBooklists((rows) => [{ ...(rows[0] || blankGradeBooklist()), copies: event.target.value }])} />
+                      </div>
+                      <div>
+                        <Label htmlFor="general-source-format">Source format *</Label>
+                        <Select id="general-source-format" value={gradeBooklists[0]?.sourceFormat || ''} onChange={(event) => setGradeBooklists((rows) => [{ ...(rows[0] || blankGradeBooklist()), sourceFormat: event.target.value }])}>
+                          <option value="">Choose format</option>
+                          {SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}
+                        </Select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="general-booklist-file">General booklist document *</Label>
+                        <Input id="general-booklist-file" type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.pdf,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => [{ ...(rows[0] || blankGradeBooklist()), file: event.target.files?.[0] || null }])} />
+                        <p className="mt-1 text-xs text-muted">Upload the one document exactly as received. Maximum 12 MB.</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {isMultipleBooklists === true ? (
+                  <>
+                    <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-ink">Grade / class booklists</p>
+                        <p className="mt-1 text-xs text-muted">Add each separate booklist. Each one keeps its own copy quantity.</p>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => setGradeBooklists((rows) => [...rows, blankGradeBooklist(crypto.randomUUID())])}>Add another grade</Button>
+                    </div>
+                    <div className="mt-4 space-y-4">
+                      {gradeBooklists.map((grade, index) => {
+                        const requested = Number(grade.copies);
+                        return (
+                          <div key={grade.key} className="rounded-xl border border-ink/10 bg-white p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-sm font-semibold text-ink">{grade.gradeLabel.trim() || `Grade request ${index + 1}`}</p>
+                              {gradeBooklists.length > 1 ? <Button type="button" variant="outline" onClick={() => setGradeBooklists((rows) => rows.filter((row) => row.key !== grade.key))}>Remove</Button> : null}
+                            </div>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                              <div><Label htmlFor={`grade-name-${grade.key}`}>Grade / class *</Label><Input id={`grade-name-${grade.key}`} value={grade.gradeLabel} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, gradeLabel: event.target.value } : row))} placeholder="e.g. Grade 1" /></div>
+                              <div><Label htmlFor={`copies-${grade.key}`}>Copies requested *</Label><Input id={`copies-${grade.key}`} type="number" min={1} step={1} inputMode="numeric" value={grade.copies} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, copies: event.target.value } : row))} />{Number.isInteger(requested) && requested > 0 ? <p className="mt-1 text-xs font-medium text-primary">{requested.toLocaleString()} + 1 = {(requested + 1).toLocaleString()} copies to print for this grade.</p> : null}</div>
+                              <div><Label htmlFor={`source-format-${grade.key}`}>Source format *</Label><Select id={`source-format-${grade.key}`} value={grade.sourceFormat} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, sourceFormat: event.target.value } : row))}><option value="">Choose format</option>{SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}</Select></div>
+                              <div><Label htmlFor={`booklist-file-${grade.key}`}>Booklist document *</Label><Input id={`booklist-file-${grade.key}`} type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.pdf,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, file: event.target.files?.[0] || null } : row))} /><p className="mt-1 text-xs text-muted">Maximum 12 MB.</p></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : null}
+
+                {isMultipleBooklists !== null ? (
+                  <div className="mt-4 sm:max-w-sm"><Label htmlFor="due-date">Due date *</Label><Input id="due-date" type="date" min={today} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div>
+                ) : null}
+              </section>
+            </div>
+          ) : null}
         </Card>
         <div className="space-y-2">
           <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={submitting}>
