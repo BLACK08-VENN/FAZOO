@@ -813,7 +813,7 @@ begin
                (public.ba_visit_rules(pr.organization_id, pr.agency)->>'selfie_required')::boolean
                                             as selfie_required,
                coalesce(t.target_schools,
-                 (public.ba_visit_rules(pr.organization_id, pr.agency)->'target_schools_per_month')::integer)
+                 (public.ba_visit_rules(pr.organization_id, pr.agency)->>'target_schools_per_month')::integer)
                                             as target_schools,
                t.period_start               as target_period_start,
                t.period_end                 as target_period_end,
