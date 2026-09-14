@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, isElevated } from '@/lib/auth';
+import { DeleteLogForm } from './delete-log-form';
 import { mapsLink, formatLagosDisplay } from '@/lib/format';
 import { Badge, attendanceTone, completionBadge } from '@/components/ui/badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
@@ -11,7 +12,7 @@ export default async function DailyLogDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { client } = await requireStaff();
+  const { client, profile } = await requireStaff();
   const { id } = await params;
 
   const { data: raw } = await client
@@ -186,6 +187,14 @@ export default async function DailyLogDetailPage({
           </tbody>
         </Table>
       </TableWrap>
+      {isElevated(profile.role) ? (
+        <DeleteLogForm
+          id={log.id}
+          label={`${log.profiles?.full_name ?? 'this BA'} · ${log.attendance_date} · ${log.stores?.name ?? 'store'}`}
+          salesCount={log.sales_entries?.length ?? 0}
+          photoCount={log.daily_log_photos?.length ?? 0}
+        />
+      ) : null}
     </>
   );
 }

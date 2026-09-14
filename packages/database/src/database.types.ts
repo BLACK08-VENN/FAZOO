@@ -1766,6 +1766,10 @@ export type Database = {
       }
       admin_delete_ba: { Args: { p_profile_id: string }; Returns: Json }
       admin_delete_campaign: { Args: { p_campaign_id: string }; Returns: Json }
+      admin_delete_daily_log: {
+        Args: { p_daily_log_id: string; p_client_request_id: string }
+        Returns: Json
+      }
       admin_delete_organization: { Args: { p_org_id: string }; Returns: Json }
       admin_delete_sku: { Args: { p_sku_id: string }; Returns: Json }
       admin_delete_store: { Args: { p_store_id: string }; Returns: Json }

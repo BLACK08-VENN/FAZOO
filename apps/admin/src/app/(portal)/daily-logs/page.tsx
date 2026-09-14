@@ -82,7 +82,7 @@ export default async function DailyLogsPage({
             ) : (
               rows.map((r) => (
                 <tr key={r.id} className="hover:bg-lavender/60">
-                  <Td>{r.attendance_date}</Td>
+                  <Td><Link className="text-deep underline-offset-2 hover:underline" href={`/daily-logs/${r.id}`}>{r.attendance_date}</Link></Td>
                   <Td className="font-medium">
                     <Link className="text-deep underline-offset-2 hover:underline" href={`/brand-ambassadors/${r.ba_id}`}>
                       {r.ba_name}
