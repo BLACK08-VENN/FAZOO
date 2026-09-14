@@ -704,8 +704,8 @@ export default function SchoolVisit() {
               Upload the booklist from {school.school_name}
             </Text>
             <Text className="font-sans text-sm leading-6 text-muted">
-              Handwritten, printed, a scan or a softcopy — all of them work. Our admin converts it into an
-              editable Word document you can print and take back for approval.
+              Attach the file the school gave you in any format, or photograph it here. Our admin will
+              prepare a Word document and share it with the school for approval.
             </Text>
           </Card>
 
@@ -721,7 +721,7 @@ export default function SchoolVisit() {
           <Card className="mb-4">
             <Text className="font-sans mb-2 text-base font-semibold text-ink">Or choose a file</Text>
             <Text className="font-sans mb-3 text-sm leading-6 text-muted">
-              PDF, Word or an image already on your phone — for example one the school sent by WhatsApp.
+              Choose the original file in any format, including one the school sent by WhatsApp. Maximum 20 MB.
             </Text>
             <PrimaryButton
               label={docFile ? docFile.name : 'Choose a file'}

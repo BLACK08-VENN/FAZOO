@@ -387,7 +387,7 @@ export default async function BooklistPipelinePage({
       <section className="mb-6" aria-labelledby="grade-orders-heading">
         <div className="mb-3">
           <h2 id="grade-orders-heading" className="text-base font-semibold text-ink">Separate grade print orders</h2>
-          <p className="mt-1 text-xs text-muted">Each row is one document and one print order. Orders can share the same school and BA, but their quantities and Word files stay separate.</p>
+          <p className="mt-1 text-xs text-muted">Download each BA attachment, prepare the Word document manually, then share it in the school WhatsApp group for approval.</p>
         </div>
         <TableWrap>
           <Table>
@@ -484,7 +484,7 @@ export default async function BooklistPipelinePage({
             <tr>
               <Th>Name of school</Th>
               <Th>Region / location</Th>
-              <Th>Attached document (Word)</Th>
+              <Th>BA attachment</Th>
               <Th>Due date</Th>
               <Th>Printables</Th>
               <Th>Arrived?</Th>
@@ -527,7 +527,7 @@ export default async function BooklistPipelinePage({
                           href={`/api/booklists/documents/${sc.rawDocId}/download`}
                           className="text-xs font-medium text-primary hover:underline"
                         >
-                          View Word doc
+                          Download original
                         </a>
                       ) : (
                         <span className="text-xs text-muted">No doc yet</span>

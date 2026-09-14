@@ -20,7 +20,7 @@ export async function GET(
 
   const kind = request.nextUrl.searchParams.get('kind') === 'word' ? 'word' : 'raw';
   const proxy = kind === 'raw' || request.nextUrl.searchParams.get('proxy') === '1';
-  const gradeTable = (client as any).from('booklist_grade_requests');
+  const gradeTable = client.from('booklist_grade_requests' as never);
   const { data, error } = await gradeTable
     .select(
       'id, organization_id, grade_label, storage_bucket, storage_path, mime_type, word_storage_bucket, word_storage_path, word_mime_type, booklist_jobs(veda_schools(name))',
@@ -82,8 +82,8 @@ export async function GET(
     }
 
     const headers = new Headers({
-      'Content-Type': mimeType || upstream.headers.get('content-type') || 'application/octet-stream',
-      'Content-Disposition': `inline; filename="${fileName}"`,
+      'Content-Type': kind === 'raw' ? 'application/octet-stream' : (mimeType || upstream.headers.get('content-type') || 'application/octet-stream'),
+      'Content-Disposition': `attachment; filename="${fileName}"`,
       'Cache-Control': 'private, no-store, max-age=0',
       'X-Content-Type-Options': 'nosniff',
       'X-Fazoo-File-Extension': extension.toLowerCase(),

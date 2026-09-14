@@ -91,8 +91,8 @@ async function waitForLibrary<T>(read: () => T | undefined, label: string): Prom
 
 function extensionFromResponse(response: Response): string {
   const disposition = response.headers.get('content-disposition') ?? '';
-  const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
-  const filename = filenameMatch?.[1] ? decodeURIComponent(filenameMatch[1].replace(/\"/g, '')) : '';
+  const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+  const filename = filenameMatch?.[1] ? decodeURIComponent(filenameMatch[1].replace(/"/g, '')) : '';
   if (filename.includes('.')) return filename.split('.').pop()!.toLowerCase();
 
   try {
@@ -124,6 +124,7 @@ export function GradeOrderActions({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [wordFile, setWordFile] = useState<File | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -309,6 +310,31 @@ export function GradeOrderActions({
     }
   }
 
+  async function publishWord() {
+    if (!wordFile) return;
+    setBusy(true);
+    setFailed(false);
+    setFeedback('Uploading the manually prepared Word document…');
+    try {
+      const form = new FormData();
+      form.set('file', wordFile);
+      form.set('client_request_id', crypto.randomUUID());
+      const response = await fetch(`/api/booklists/grades/${gradeRequestId}/word`, {
+        method: 'POST', body: form,
+      });
+      const body = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(body.error ?? 'Could not publish the Word document.');
+      setFeedback('Word document saved. Download it and share it in the school WhatsApp group for approval.');
+      setWordFile(null);
+      router.refresh();
+    } catch (error) {
+      setFailed(true);
+      setFeedback(error instanceof Error ? error.message : 'Could not publish the Word document.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <>
       <Script src={TESSERACT_SCRIPT} strategy="afterInteractive" />
@@ -330,22 +356,35 @@ export function GradeOrderActions({
             </a>
           ) : canAct ? (
             <Button type="button" size="sm" onClick={() => void convert()} disabled={busy}>
-              {busy
-                ? 'Converting free…'
-                : conversionStatus === 'failed' || conversionStatus === 'manual_required'
-                  ? 'Retry free conversion'
-                  : 'Convert to Word'}
+              {busy ? 'Making draft…' : 'Optional Word draft'}
             </Button>
           ) : null}
         </div>
+        {canAct ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              aria-label="Manually prepared Word document"
+              type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="max-w-48 text-xs"
+              onChange={(event) => setWordFile(event.target.files?.[0] ?? null)}
+            />
+            <Button type="button" size="sm" disabled={!wordFile || busy} onClick={() => void publishWord()}>
+              {hasWord ? 'Replace Word' : 'Attach Word'}
+            </Button>
+          </div>
+        ) : null}
+        {hasWord ? (
+          <p className="text-[11px] text-muted">Download the Word document and share it in the school WhatsApp group for approval.</p>
+        ) : null}
         <p className={`text-[11px] ${conversionStatus === 'succeeded' ? 'text-ok' : conversionStatus === 'failed' || conversionStatus === 'manual_required' ? 'text-bad' : 'text-muted'}`}>
           {hasWord
             ? 'Word ready'
             : conversionStatus === 'processing'
               ? 'Free conversion in progress'
               : conversionStatus === 'failed' || conversionStatus === 'manual_required'
-                ? 'Free OCR available — retry conversion'
-                : 'Waiting for conversion'}
+                ? 'Manual conversion needed'
+                : 'Waiting for admin conversion'}
         </p>
         {conversionError && !feedback ? (
           <p className="max-w-72 text-[11px] text-bad">{conversionError}</p>

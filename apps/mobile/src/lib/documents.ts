@@ -2,7 +2,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
   BOOKLIST_DOCUMENT_MAX_BYTES,
-  BOOKLIST_DOCUMENT_MIME_TYPES,
 } from '@fazoo/config';
 import { supabase } from './supabase';
 
@@ -12,8 +11,6 @@ export interface PickedDocument {
   mimeType: string;
   fileSize: number | null;
 }
-
-const ACCEPTED: string[] = [...BOOKLIST_DOCUMENT_MIME_TYPES];
 
 /**
  * Short-lived signed URL for a private document. Storage buckets stay private,
@@ -34,19 +31,19 @@ export async function signedDocumentUrl(
 }
 
 function extensionOf(name: string, mimeType: string): string {
-  const fromName = /\.([a-z0-9]{2,5})$/i.exec(name.trim())?.[1]?.toLowerCase();
+  const fromName = /\.([a-z0-9]{1,12})$/i.exec(name.trim())?.[1]?.toLowerCase();
   if (fromName) return fromName;
   const fromMime = /\/([a-z0-9.+-]+)$/i.exec(mimeType)?.[1]?.toLowerCase();
   return fromMime === 'jpeg' ? 'jpg' : (fromMime ?? 'bin');
 }
 
 /**
- * Let the BA hand over whatever the school gave them — a PDF on their phone, a
- * Word file from email, or a scan. Photographs go through the camera instead.
+ * Let the BA hand over whatever file the school gave them. The admin prepares
+ * the final Word document; the BA's original does not need to be convertible.
  */
 export async function pickBooklistFile(): Promise<PickedDocument | null> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: ACCEPTED,
+    type: '*/*',
     copyToCacheDirectory: true,
     multiple: false,
   });
@@ -55,13 +52,7 @@ export async function pickBooklistFile(): Promise<PickedDocument | null> {
   const asset = result.assets[0];
   if (!asset) return null;
 
-  // The picker already filters by ACCEPTED, but Android reports perfectly good
-  // files as octet-stream. Only reject a type we can positively identify, so a
-  // BA is never turned away at the gate by a false rejection.
   const mimeType = asset.mimeType ?? 'application/octet-stream';
-  if (mimeType !== 'application/octet-stream' && !ACCEPTED.includes(mimeType)) {
-    throw new Error('That file type is not supported. Use a photo, PDF, Word or image file.');
-  }
 
   const size = asset.size ?? null;
   if (size !== null && size > BOOKLIST_DOCUMENT_MAX_BYTES) {
