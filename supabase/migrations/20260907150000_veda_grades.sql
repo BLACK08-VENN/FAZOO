@@ -84,7 +84,7 @@ declare
 begin
   select array_agg(o.id) into v_org_list from public.organizations o where o.kind = 'schools';
 
-  foreach v_org in array v_org_list loop
+  foreach v_org in array coalesce(v_org_list, '{}'::uuid[]) loop
     -- grades
     insert into public.veda_grades (organization_id, name, code, sort_order)
     values (v_org, 'ECDE (Playgroup, PP1 & PP2)', 'ECDE', 1)

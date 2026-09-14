@@ -41,8 +41,13 @@ export default async function BaPerformancePage({
   const to = params.to?.trim() || null;
   const canAct = isElevated(profile.role);
 
-  const result = await baPerformance(client, { agency, from, to });
-  const rows = result.brand_ambassadors;
+  let result;
+  try {
+    result = await baPerformance(client, { agency, from, to });
+  } catch {
+    result = null;
+  }
+  const rows = result?.brand_ambassadors ?? [];
 
   let daily;
   try {
@@ -146,6 +151,17 @@ export default async function BaPerformancePage({
         </>
       ) : null}
 
+      {!result ? (
+        <Card className="mb-5 border-warn/30 bg-warn/5 p-4">
+          <p className="text-sm font-medium text-ink">
+            Could not load BA performance data.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            The performance board is unavailable right now. Please try again.
+          </p>
+        </Card>
+      ) : null}
+
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Brand ambassadors" value={rows.length} hint={`${aelCount} from AEL`} />
         <StatCard label="Schools reached" value={totals.schools} hint="Distinct schools, this period" />
@@ -214,7 +230,7 @@ export default async function BaPerformancePage({
           </div>
         </form>
         <p className="mt-3 text-xs text-muted">
-          Period {nairobiDate(result.period_start)} to {nairobiDate(result.period_end)}. Leaving the
+          Period {nairobiDate(result?.period_start)} to {nairobiDate(result?.period_end)}. Leaving the
           dates blank reports the current month.
         </p>
       </Card>
