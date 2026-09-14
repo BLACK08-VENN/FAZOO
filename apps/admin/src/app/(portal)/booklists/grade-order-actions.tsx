@@ -113,13 +113,11 @@ export function GradeOrderActions({
   gradeRequestId,
   conversionStatus,
   hasWord,
-  conversionError,
   canAct,
 }: {
   gradeRequestId: string;
   conversionStatus: string;
   hasWord: boolean;
-  conversionError: string | null;
   canAct: boolean;
 }) {
   const router = useRouter();
@@ -377,7 +375,7 @@ export function GradeOrderActions({
         {hasWord ? (
           <p className="text-[11px] text-muted">Download the Word document and share it in the school WhatsApp group for approval.</p>
         ) : null}
-        <p className={`text-[11px] ${conversionStatus === 'succeeded' ? 'text-ok' : conversionStatus === 'failed' || conversionStatus === 'manual_required' ? 'text-bad' : 'text-muted'}`}>
+        <p className={`text-[11px] ${conversionStatus === 'succeeded' ? 'text-ok' : conversionStatus === 'failed' || conversionStatus === 'manual_required' ? 'text-warn' : 'text-muted'}`}>
           {hasWord
             ? 'Word ready'
             : conversionStatus === 'processing'
@@ -386,11 +384,8 @@ export function GradeOrderActions({
                 ? 'Manual conversion needed'
                 : 'Waiting for admin conversion'}
         </p>
-        {conversionError && !feedback ? (
-          <p className="max-w-72 text-[11px] text-bad">{conversionError}</p>
-        ) : null}
         {feedback ? (
-          <p className={`max-w-72 text-[11px] ${failed ? 'text-bad' : 'text-ok'}`}>{feedback}</p>
+          <p className={`max-w-72 text-[11px] ${failed ? 'text-warn' : 'text-ok'}`}>{feedback}</p>
         ) : null}
       </div>
     </>

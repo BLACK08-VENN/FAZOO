@@ -39,7 +39,7 @@ const OCR_TONES: Record<OcrStatus, 'neutral' | 'success' | 'warning' | 'danger' 
   queued: 'purple',
   processing: 'purple',
   succeeded: 'success',
-  failed: 'danger',
+  failed: 'warning',
   manual_required: 'warning',
 };
 

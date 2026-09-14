@@ -424,7 +424,6 @@ export default async function BooklistPipelinePage({
                         gradeRequestId={order.grade_request_id}
                         conversionStatus={order.conversion_status}
                         hasWord={Boolean(order.word_storage_path)}
-                        conversionError={order.conversion_error}
                         canAct={canAct}
                       />
                     </Td>

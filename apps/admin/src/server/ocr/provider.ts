@@ -6,10 +6,12 @@ import type { OcrProvider } from './types';
 /**
  * Provider registry.
  *
- * `DOCUMENT_AI_PROVIDER` selects the implementation. When it is unset we prefer
- * OpenAI when `OPENAI_API_KEY` is present, then fall back to Azure when its
- * credentials are configured. With no usable provider the pipeline stays in
- * the manual conversion state instead of failing unexpectedly.
+ * `DOCUMENT_AI_PROVIDER` selects the implementation. OpenAI is only used when
+ * explicitly requested via `DOCUMENT_AI_PROVIDER=openai` — an `OPENAI_API_KEY`
+ * alone no longer opts into it, so a billing breakage cannot knock every
+ * booklist into a failed state. Azure is auto-selected when its credentials are
+ * configured. With no usable provider the pipeline stays in the manual
+ * conversion state instead of failing unexpectedly.
  *
  * Provider credentials are intentionally read from the server environment and
  * are never exposed to the browser bundle.
@@ -26,7 +28,6 @@ export function resolveOcrProvider(): OcrProvider | null {
   if (requested === 'azure') return azure.configured ? azure : null;
 
   if (requested === '') {
-    if (openai.configured) return openai;
     if (azure.configured) return azure;
     return null;
   }
@@ -47,7 +48,7 @@ export function describeOcrReadiness(): {
       provider: 'manual',
       automated: false,
       detail:
-        'No server-side document AI provider is configured. Add OPENAI_API_KEY to enable OpenAI conversion, or configure Azure Document Intelligence.',
+        'No server-side document AI provider is configured. Set DOCUMENT_AI_PROVIDER to "openai" or "azure" and provide the corresponding credentials to enable automated conversion.',
     };
   }
   return {

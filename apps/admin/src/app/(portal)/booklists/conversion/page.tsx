@@ -182,9 +182,6 @@ export default async function ConversionQueuePage({
                         {(item.ocr_confidence * 100).toFixed(0)}% confidence
                       </p>
                     ) : null}
-                    {item.ocr_error ? (
-                      <p className="mt-1 max-w-xs text-xs font-medium text-bad">{item.ocr_error}</p>
-                    ) : null}
                   </Td>
                   <Td className="text-xs">
                     {item.ba_name ?? <span className="text-muted">Unassigned</span>}

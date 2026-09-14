@@ -10,6 +10,9 @@ const TEXT_MIME = 'text/plain';
 const RTF_TYPES = new Set(['application/rtf', 'text/rtf']);
 const WORD_TYPES = new Set([DOCX_MIME, DOC_MIME]);
 
+/** A provider failure keeps the order in the manual queue rather than failing it. */
+class ManualConversionRequired extends Error {};
+
 export type GradeConvertResult =
   | {
       outcome: 'draft_created';
@@ -246,15 +249,23 @@ export async function convertGradeBooklistDocument(
       if (!provider) {
         await updateGrade(grade.id, {
           conversion_status: 'manual_required',
-          conversion_error: 'Server AI conversion is not configured. Add OPENAI_API_KEY in Vercel to enable OpenAI document conversion.',
+          conversion_error: 'Automatic conversion is not configured for this upload.',
           conversion_finished_at: new Date().toISOString(),
         });
         return {
           outcome: 'manual_required',
-          message: 'OpenAI document conversion is not configured yet. Add OPENAI_API_KEY to the FAZOO Vercel environment, then retry this conversion.',
+          message: 'Automatic conversion is not configured. Prepare the Word document manually.',
         };
       }
-      result = await provider.analyze({ bytes, mimeType });
+      result = await provider.analyze({ bytes, mimeType }).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        void updateGrade(grade.id, {
+          conversion_status: 'manual_required',
+          conversion_error: message,
+          conversion_finished_at: new Date().toISOString(),
+        });
+        throw new ManualConversionRequired(message);
+      });
     } else {
       await updateGrade(grade.id, {
         conversion_status: 'manual_required',
@@ -310,6 +321,9 @@ export async function convertGradeBooklistDocument(
           : `${grade.grade_label} was converted to Word and is ready for review and printing.`,
     };
   } catch (error) {
+    if (error instanceof ManualConversionRequired) {
+      return { outcome: 'manual_required', message: 'Automatic conversion could not read this document. Prepare the Word document manually.' };
+    }
     const message = error instanceof Error ? error.message : String(error);
     await updateGrade(grade.id, {
       conversion_status: 'failed',

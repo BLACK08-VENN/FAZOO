@@ -595,9 +595,6 @@ export default async function BooklistJobPage({
                               Confidence {(doc.ocr_confidence * 100).toFixed(0)}%
                             </p>
                           ) : null}
-                          {doc.ocr_error ? (
-                            <p className="mt-1 text-xs font-medium text-bad">{doc.ocr_error}</p>
-                          ) : null}
                         </Td>
                         <Td>
                           <a

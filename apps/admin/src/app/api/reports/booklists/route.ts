@@ -13,42 +13,29 @@ import { pipelineBoard } from '@/server/booklists';
 
 /**
  * CSV export of the booklist pipeline — one row per logged school, carrying
- * every milestone timestamp so the export is a complete audit of the journey
- * from the gate visit to the stamped +1 copy.
+ * the essential journey details: where the school is, who is handling it and
+ * the key milestones (document received, dispatched, completed).
  *
  * Honours the same filters as the /booklists board, so what a supervisor sees
  * on screen is exactly what lands in the file.
  */
 
 const COLUMNS = [
-  'Job ID',
-  'School ID',
   'School name',
   'Region',
   'Address',
-  'Stage',
   'Stage label',
   'Per grade',
-  'BA ID',
   'BA name',
   'Agency',
   'Copies requested',
   'Copies to print (incl. +1 stamped)',
   'Conversion status',
   'Document received (Africa/Nairobi)',
-  'Formatted (Africa/Nairobi)',
-  'Approved by school (Africa/Nairobi)',
   'Dispatched (Africa/Nairobi)',
-  'Received (Africa/Nairobi)',
   'Completed (Africa/Nairobi)',
-  'Latest print order',
-  'Has raw document',
-  'Has formatted document',
   'Has stamped copy',
-  'Visits',
-  'Last visit date',
   'Logged (Africa/Nairobi)',
-  'Stage updated (Africa/Nairobi)',
 ] as const;
 
 /** Hard ceiling per request, matching the other report exports. */
@@ -123,15 +110,11 @@ export async function GET(request: NextRequest) {
     chunks.push(
       encoder.encode(
         [
-          job.job_id,
-          job.school_id,
           job.school_name,
           job.school_region,
           job.school_address,
-          job.stage,
           booklistStageLabel(job.stage),
           job.is_per_grade ? 'yes' : 'no',
-          job.owner_ba_id,
           job.owner_ba_name,
           job.owner_ba_agency === 'ael'
             ? 'Advert Eyes Limited (AEL)'
@@ -142,19 +125,10 @@ export async function GET(request: NextRequest) {
           job.copies_to_print,
           job.ocr_status,
           nairobiTime(job.document_received_at),
-          nairobiTime(job.formatted_at),
-          nairobiTime(job.approved_by_school_at),
           nairobiTime(job.dispatched_at),
-          nairobiTime(job.received_at),
           nairobiTime(job.completed_at),
-          job.latest_print_order,
-          job.has_raw_document ? 'yes' : 'no',
-          job.has_formatted_document ? 'yes' : 'no',
           job.has_stamped_copy ? 'yes' : 'no',
-          job.visit_count,
-          job.last_visit_date,
           nairobiTime(job.created_at),
-          nairobiTime(job.stage_updated_at),
         ]
           .map(csvEscape)
           .join(',') + '\r\n',

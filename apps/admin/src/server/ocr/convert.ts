@@ -153,8 +153,8 @@ export async function convertBooklistDocument(
     result = await provider.analyze({ bytes, mimeType: raw.mime_type ?? 'application/octet-stream' });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    await recordResult(jobId, actorId, { status: 'failed', provider: provider.name, error: message });
-    return { outcome: 'failed', message: `OCR failed: ${message}` };
+    await recordResult(jobId, actorId, { status: 'manual_required', provider: provider.name, error: message });
+    return { outcome: 'manual_required', message: 'Automatic conversion could not read this document. Convert it by hand and upload the Word file.' };
   }
 
   const needsReview = result.confidence < OCR_MIN_CONFIDENCE;

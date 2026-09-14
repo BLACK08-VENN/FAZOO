@@ -8,7 +8,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label } from '@/components/ui/input';
 import { OcrBadge } from '@/components/stage-badge';
 
-type Feedback = { tone: 'ok' | 'bad'; text: string } | null;
+type Feedback = { tone: 'ok' | 'warn' | 'bad'; text: string } | null;
 
 export function DocumentWorkspace({
   jobId,
@@ -46,6 +46,13 @@ export function DocumentWorkspace({
         setFeedback({
           tone: 'ok',
           text: 'Auto-conversion produced an editable draft. Check it, format it, then publish the final Word document below.',
+        });
+      } else if (body.outcome === 'manual_required') {
+        setFeedback({
+          tone: 'warn',
+          text: body.message
+            ? `${body.message} Format the document manually and publish the final Word file below.`
+            : 'Auto-conversion is not available for this upload. Format it manually and publish the final Word file below.',
         });
       } else {
         setFeedback({
@@ -112,7 +119,9 @@ export function DocumentWorkspace({
           className={
             feedback.tone === 'ok'
               ? 'rounded-xl border border-ok/25 bg-ok/10 px-4 py-3 text-sm font-medium text-ink'
-              : 'rounded-xl border border-bad/25 bg-bad/10 px-4 py-3 text-sm font-medium text-bad'
+              : feedback.tone === 'warn'
+                ? 'rounded-xl border border-warn/25 bg-warn/10 px-4 py-3 text-sm font-medium text-warn'
+                : 'rounded-xl border border-bad/25 bg-bad/10 px-4 py-3 text-sm font-medium text-bad'
           }
         >
           {feedback.text}
