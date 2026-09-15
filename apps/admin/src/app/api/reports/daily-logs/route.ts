@@ -12,15 +12,12 @@ import {
 const COLUMNS = [
   'Attendance date',
   'BA name',
-  'Campaign',
   'Store name',
   'Attendance status',
   'Check-in time (Africa/Lagos)',
   'Checkout time (Africa/Lagos)',
   'Completion status',
-  'SKU summary',
   'Total units',
-  'Notes',
 ] as const;
 
 function csvEscape(value: string | number | null | undefined): string {
@@ -57,25 +54,6 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const filters = parseLogFilters(params);
   const rows = await fetchLogs(client, filters, Math.min(5000, CSV_EXPORT_MAX_ROWS));
-  const logIds = rows.map((r) => r.id);
-
-  // Enrichments ------------------------------------------------------------
-  const skuByLog = new Map<string, string>();
-
-  if (logIds.length > 0) {
-    const { data: entries } = await client
-      .from('sales_entries')
-      .select('daily_log_id, quantity, skus ( code )')
-      .in('daily_log_id', logIds);
-
-    for (const e of entries ?? []) {
-      const code = (e.skus as unknown as { code: string } | null)?.code ?? 'unknown';
-      skuByLog.set(
-        e.daily_log_id,
-        [skuByLog.get(e.daily_log_id), `${code}×${e.quantity}`].filter(Boolean).join(', '),
-      );
-    }
-  }
 
   // Serialize ---------------------------------------------------------------
   const encoder = new TextEncoder();
@@ -88,15 +66,12 @@ export async function GET(request: NextRequest) {
         [
           r.attendance_date,
           r.ba_name,
-          r.campaign_name,
           r.store_name,
           r.attendance_status,
           r.checkin_at ? lagosDateTime(r.checkin_at) : '',
           r.checkout_at ? lagosDateTime(r.checkout_at) : '',
           r.status,
-          skuByLog.get(r.id) ?? '',
           r.units_sold,
-          r.notes ?? '',
         ]
           .map(csvEscape)
           .join(',') + '\r\n',
