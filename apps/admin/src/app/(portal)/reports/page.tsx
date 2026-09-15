@@ -15,7 +15,30 @@ export default async function ReportsPage({
   const { client } = await requireStaff();
   const params = await searchParams;
   const filters = parseLogFilters(params);
-  const rows = await fetchLogs(client, filters);
+  const [rows, campaignsResult, basResult, storesResult] = await Promise.all([
+    fetchLogs(client, filters),
+    client.from('campaigns').select('id, name').order('name'),
+    client
+      .from('profiles')
+      .select('id, full_name')
+      .eq('role', 'brand_ambassador')
+      .eq('account_status', 'approved')
+      .order('full_name'),
+    client.from('stores').select('id, name').order('name'),
+  ]);
+
+  const campaigns = (campaignsResult.data ?? []).map((item) => ({
+    id: item.id,
+    label: item.name,
+  }));
+  const bas = (basResult.data ?? []).map((item) => ({
+    id: item.id,
+    label: item.full_name,
+  }));
+  const stores = (storesResult.data ?? []).map((item) => ({
+    id: item.id,
+    label: item.name,
+  }));
 
   return (
     <>
@@ -27,9 +50,9 @@ export default async function ReportsPage({
       <Card className="mb-6 p-4">
         <LogFiltersForm
           action="/reports"
-          campaigns={[]}
-          bas={[]}
-          stores={[]}
+          campaigns={campaigns}
+          bas={bas}
+          stores={stores}
           current={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, v as string]))}
         />
         <div className="mt-4 flex flex-wrap gap-2">
@@ -40,7 +63,7 @@ export default async function ReportsPage({
             className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep"
             download
           >
-            Download CSV ({rows.length} rows)
+            Download filtered CSV ({rows.length} rows)
           </a>
           <PrintButton />
         </div>

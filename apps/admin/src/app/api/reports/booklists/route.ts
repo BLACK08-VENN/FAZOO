@@ -22,20 +22,20 @@ import { pipelineBoard } from '@/server/booklists';
 
 const COLUMNS = [
   'School name',
-  'Region',
+  'Region / location',
   'Address',
-  'Stage label',
-  'Per grade',
   'BA name',
   'Agency',
+  'Booklist status',
   'Copies requested',
-  'Copies to print (incl. +1 stamped)',
-  'Conversion status',
+  'Copies to print (including stamped copy)',
+  'Due date',
   'Document received (Africa/Nairobi)',
+  'Shipping status',
   'Dispatched (Africa/Nairobi)',
+  'Completion status',
   'Completed (Africa/Nairobi)',
-  'Has stamped copy',
-  'Logged (Africa/Nairobi)',
+  'Stamped copy status',
 ] as const;
 
 /** Hard ceiling per request, matching the other report exports. */
@@ -113,22 +113,22 @@ export async function GET(request: NextRequest) {
           job.school_name,
           job.school_region,
           job.school_address,
-          booklistStageLabel(job.stage),
-          job.is_per_grade ? 'yes' : 'no',
           job.owner_ba_name,
           job.owner_ba_agency === 'ael'
             ? 'Advert Eyes Limited (AEL)'
             : job.owner_ba_agency === 'veda'
               ? 'Veda'
               : 'Agency not set',
+          booklistStageLabel(job.stage),
           job.copies_requested,
           job.copies_to_print,
-          job.ocr_status,
+          job.due_date,
           nairobiTime(job.document_received_at),
+          job.dispatched_at ? 'Shipped' : 'Pending',
           nairobiTime(job.dispatched_at),
+          job.completed_at ? 'Completed' : 'Pending',
           nairobiTime(job.completed_at),
-          job.has_stamped_copy ? 'yes' : 'no',
-          nairobiTime(job.created_at),
+          job.has_stamped_copy ? 'Received' : 'Pending',
         ]
           .map(csvEscape)
           .join(',') + '\r\n',
