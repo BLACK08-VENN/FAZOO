@@ -15,6 +15,7 @@ const PDFJS_SCRIPT = `${OCR_ASSET_BASE}/pdf.min.js`;
 const PDFJS_WORKER = `${OCR_ASSET_BASE}/pdf.worker.min.js`;
 const MAX_PDF_PAGES = 20;
 const NETWORK_ATTEMPTS = 3;
+const OCR_LIBRARY_WAIT_ATTEMPTS = 300; // Allow up to 60s on slow or cold connections.
 
 type TesseractApi = {
   recognize: (
@@ -82,12 +83,12 @@ async function fetchWithRetry(
 }
 
 async function waitForLibrary<T>(read: () => T | undefined, label: string): Promise<T> {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
+  for (let attempt = 0; attempt < OCR_LIBRARY_WAIT_ATTEMPTS; attempt += 1) {
     const library = read();
     if (library) return library;
     await sleep(200);
   }
-  throw new Error(`${label} did not finish loading. Please retry once.`);
+  throw new Error(`${label} did not finish loading after 60 seconds.`);
 }
 
 function extensionFromResponse(response: Response): string {
@@ -304,7 +305,7 @@ export function GradeOrderActions({
       const message = error instanceof Error ? error.message : 'Conversion failed.';
       setFeedback(
         isNetworkLikeError(error)
-          ? 'The free OCR connection was interrupted. Please press Retry free conversion once.'
+          ? `The OCR engine could not finish loading: ${message} Check your connection, refresh the page, and retry conversion.`
           : `Free conversion failed: ${message}`,
       );
     } finally {
