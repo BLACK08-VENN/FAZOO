@@ -113,11 +113,13 @@ function isNetworkLikeError(error: unknown): boolean {
 export function GradeOrderActions({
   gradeRequestId,
   conversionStatus,
+  conversionProvider,
   hasWord,
   canAct,
 }: {
   gradeRequestId: string;
   conversionStatus: string;
+  conversionProvider: string | null;
   hasWord: boolean;
   canAct: boolean;
 }) {
@@ -324,8 +326,8 @@ export function GradeOrderActions({
       });
       const body = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(body.error ?? 'Could not publish the Word document.');
-      setFeedback('Word document saved. Download it and share it in the school WhatsApp group for approval.');
-      fazooToast('Word document replaced successfully.');
+      setFeedback('Corrected Word document attached. It is ready to share with the school for approval.');
+      fazooToast('Corrected Word document attached successfully.');
       setWordFile(null);
       if (wordInputRef.current) wordInputRef.current.value = '';
       router.refresh();
@@ -354,11 +356,11 @@ export function GradeOrderActions({
               href={`/api/booklists/grades/${gradeRequestId}/download?kind=word`}
               className="inline-flex h-8 items-center rounded-lg bg-primary px-2.5 text-xs font-medium text-white hover:bg-deep"
             >
-              Word document
+              {conversionProvider === 'manual' ? 'Final Word document' : 'Download OCR draft'}
             </a>
           ) : canAct ? (
             <Button type="button" size="sm" onClick={() => void convert()} disabled={busy}>
-              {busy ? 'Making draft…' : 'Optional Word draft'}
+              {busy ? 'Converting image…' : 'Convert image to Word'}
             </Button>
           ) : null}
         </div>
@@ -391,8 +393,8 @@ export function GradeOrderActions({
               {busy
                 ? 'Uploading Word…'
                 : wordFile
-                  ? hasWord ? 'Upload replacement' : 'Upload Word'
-                  : hasWord ? 'Replace Word' : 'Attach Word'}
+                  ? 'Upload corrected Word'
+                  : 'Attach corrected Word'}
             </Button>
             {wordFile ? (
               <span className="max-w-48 truncate text-xs text-muted" title={wordFile.name}>
@@ -402,11 +404,17 @@ export function GradeOrderActions({
           </div>
         ) : null}
         {hasWord ? (
-          <p className="text-[11px] text-muted">Download the Word document and share it in the school WhatsApp group for approval.</p>
-        ) : null}
+          <p className="text-[11px] text-muted">
+            {conversionProvider === 'manual'
+              ? 'The corrected Word document is ready to share with the school for approval.'
+              : 'Download the OCR draft, correct it in Word, then attach the corrected document below.'}
+          </p>
+        ) : (
+          <p className="text-[11px] text-muted">Convert a clear image or scanned PDF into an editable Word draft, then review and correct it.</p>
+        )}
         <p className={`text-[11px] ${conversionStatus === 'succeeded' ? 'text-ok' : conversionStatus === 'failed' || conversionStatus === 'manual_required' ? 'text-warn' : 'text-muted'}`}>
           {hasWord
-            ? 'Word ready'
+            ? conversionProvider === 'manual' ? 'Corrected Word ready for approval' : 'OCR draft awaiting admin corrections'
             : conversionStatus === 'processing'
               ? 'Free conversion in progress'
               : conversionStatus === 'failed' || conversionStatus === 'manual_required'

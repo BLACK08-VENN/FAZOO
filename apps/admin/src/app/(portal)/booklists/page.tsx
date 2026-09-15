@@ -387,7 +387,7 @@ export default async function BooklistPipelinePage({
       <section className="mb-6" aria-labelledby="grade-orders-heading">
         <div className="mb-3">
           <h2 id="grade-orders-heading" className="text-base font-semibold text-ink">Separate grade print orders</h2>
-          <p className="mt-1 text-xs text-muted">Download each BA attachment, prepare the Word document manually, then share it in the school WhatsApp group for approval.</p>
+          <p className="mt-1 text-xs text-muted">Convert clear images or scanned PDFs into an editable OCR draft, correct it in Word, then attach the corrected document for school approval.</p>
         </div>
         <TableWrap>
           <Table>
@@ -423,6 +423,7 @@ export default async function BooklistPipelinePage({
                       <GradeOrderActions
                         gradeRequestId={order.grade_request_id}
                         conversionStatus={order.conversion_status}
+                        conversionProvider={order.conversion_provider}
                         hasWord={Boolean(order.word_storage_path)}
                         canAct={canAct}
                       />
