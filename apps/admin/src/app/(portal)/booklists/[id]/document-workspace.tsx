@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label } from '@/components/ui/input';
 import { OcrBadge } from '@/components/stage-badge';
+import { fazooToast } from '@/components/toast';
 
 type Feedback = { tone: 'ok' | 'warn' | 'bad'; text: string } | null;
 
@@ -99,6 +100,7 @@ export function DocumentWorkspace({
         tone: 'ok',
         text: 'Final Word document published. The print request is now ready for admin production and shipping.',
       });
+      fazooToast('Final Word document published.');
       event.currentTarget.reset();
       setPerGrade('unchanged');
       startTransition(() => router.refresh());

@@ -23,6 +23,11 @@ const ACCEPTED_FORMATTED_TYPES = new Set([
   'application/msword',
 ]);
 
+function mimeTypeFor(file: File): string {
+  if (file.type) return file.type;
+  return /\.doc$/i.test(file.name) ? 'application/msword' : DOCX_MIME;
+}
+
 export function isAcceptableFormattedUpload(mimeType: string | null | undefined): boolean {
   return Boolean(mimeType && ACCEPTED_FORMATTED_TYPES.has(mimeType.toLowerCase()));
 }
@@ -72,7 +77,7 @@ export async function storeJobDocument({
   const { error } = await db.storage
     .from(BOOKLIST_BUCKET)
     .upload(storagePath, Buffer.from(await file.arrayBuffer()), {
-      contentType: file.type || DOCX_MIME,
+      contentType: mimeTypeFor(file),
       upsert: false,
     });
 
@@ -109,7 +114,7 @@ export async function publishFormattedDocument(params: {
   const { data, error } = await db.rpc('admin_publish_formatted_document', {
     p_job_id: params.jobId,
     p_storage_path: storagePath,
-    p_mime_type: params.file.type || DOCX_MIME,
+    p_mime_type: mimeTypeFor(params.file),
     p_file_size_bytes: sizeBytes,
     p_is_per_grade: params.isPerGrade ?? undefined,
     p_note: params.note ?? undefined,

@@ -2,8 +2,9 @@
 
 import Script from 'next/script';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { fazooToast } from '@/components/toast';
 
 const OCR_ASSET_BASE = '/api/ocr/assets';
 const TESSERACT_SCRIPT = `${OCR_ASSET_BASE}/tesseract.min.js`;
@@ -125,6 +126,7 @@ export function GradeOrderActions({
   const [wordFile, setWordFile] = useState<File | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const wordInputRef = useRef<HTMLInputElement>(null);
 
   async function recognizeWithTesseract(
     api: TesseractApi,
@@ -323,7 +325,9 @@ export function GradeOrderActions({
       const body = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(body.error ?? 'Could not publish the Word document.');
       setFeedback('Word document saved. Download it and share it in the school WhatsApp group for approval.');
+      fazooToast('Word document replaced successfully.');
       setWordFile(null);
+      if (wordInputRef.current) wordInputRef.current.value = '';
       router.refresh();
     } catch (error) {
       setFailed(true);
@@ -362,6 +366,7 @@ export function GradeOrderActions({
           <div className="flex flex-wrap items-center gap-2">
             <input
               aria-label="Manually prepared Word document"
+              ref={wordInputRef}
               type="file"
               accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               className="max-w-48 text-xs"

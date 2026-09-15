@@ -2,6 +2,7 @@ import { requireStaff } from '@/lib/auth';
 import { fetchLogs, parseLogFilters } from '@/lib/logs-query';
 import { LogFiltersForm } from '@/components/filters';
 import { PageHeader } from '@/components/page';
+import { PrintButton } from '@/components/print-button';
 import { Card } from '@/components/ui/card';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { lagosDateTime } from '@fazoo/config';
@@ -31,7 +32,7 @@ export default async function ReportsPage({
           stores={[]}
           current={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, v as string]))}
         />
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           <a
             href={`/api/reports/daily-logs?${new URLSearchParams(
               Object.entries(params).filter(([, v]) => v !== undefined) as [string, string][],
@@ -41,6 +42,7 @@ export default async function ReportsPage({
           >
             Download CSV ({rows.length} rows)
           </a>
+          <PrintButton />
         </div>
       </Card>
 

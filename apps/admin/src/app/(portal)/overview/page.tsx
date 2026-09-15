@@ -1,5 +1,5 @@
 import { requireStaff } from '@/lib/auth';
-import { fetchLogs, parseLogFilters, type LogRow } from '@/lib/logs-query';
+import { fetchLogs, parseLogFilters, resolveRange, type LogRow } from '@/lib/logs-query';
 import { resolveOrgKind } from '@/lib/nav';
 import { LogFiltersForm } from '@/components/filters';
 import { PageHeader, StatCard } from '@/components/page';
@@ -7,7 +7,26 @@ import { SectionCards } from '@/components/section-cards';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from './trends-chart';
 import { SchoolsOverview } from './schools-overview';
+import { RecentActivity } from '@/components/recent-activity';
+import { StoreHeatmap } from '@/components/store-heatmap';
 import type { FazooClient } from '@fazoo/database';
+import type { LogFilters } from '@fazoo/validation';
+
+export const DAY_MS = 86_400_000;
+
+/** Shift a resolved range back by its own length to get the prior period. */
+export function previousRange(range: { from: string; to: string }): { from: string; to: string } {
+  const fromMs = Date.parse(`${range.from}T00:00:00Z`);
+  const toMs = Date.parse(`${range.to}T00:00:00Z`);
+  const days = Math.max(1, Math.round((toMs - fromMs) / DAY_MS) + 1);
+  const prevTo = new Date(fromMs - DAY_MS);
+  const prevFrom = new Date(fromMs - days * DAY_MS);
+  return { from: prevFrom.toISOString().slice(0, 10), to: prevTo.toISOString().slice(0, 10) };
+}
+
+export function shiftedFilters(filters: LogFilters, range: { from: string; to: string }): LogFilters {
+  return { ...filters, preset: 'custom', from: range.from, to: range.to };
+}
 
 async function loadFilterOptions(client: FazooClient) {
   const [campaigns, bas, stores] = await Promise.all([
@@ -91,6 +110,14 @@ export default async function OverviewPage({
   const rows = await fetchLogs(client, filters, 5000);
   const stats = aggregate(rows);
 
+  const range = resolveRange(filters);
+  const prevFilters = shiftedFilters(filters, previousRange(range));
+  const prevRows = await fetchLogs(client, prevFilters, 5000);
+  const prevStats = aggregate(prevRows);
+
+  const delta = (current: number, previous: number): number | null =>
+    previous === 0 ? null : ((current - previous) / previous) * 100;
+
   return (
     <>
       <PageHeader
@@ -116,17 +143,21 @@ export default async function OverviewPage({
       </Card>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="BA-days" value={stats.baDays} />
-        <StatCard label="Units sold" value={stats.units} />
-        <StatCard label="Completed days" value={stats.completed} />
-        <StatCard label="Open / incomplete" value={stats.open} />
-        <StatCard label="Active BAs" value={stats.activeBas} />
-        <StatCard label="Active stores" value={stats.activeStores} />
-        <StatCard label="Sick-leave days" value={stats.sick} />
+        <StatCard label="BA-days" value={stats.baDays} delta={delta(stats.baDays, prevStats.baDays)} />
+        <StatCard label="Units sold" value={stats.units} delta={delta(stats.units, prevStats.units)} />
+        <StatCard label="Completed days" value={stats.completed} delta={delta(stats.completed, prevStats.completed)} />
+        <StatCard label="Open / incomplete" value={stats.open} delta={delta(stats.open, prevStats.open)} />
+        <StatCard label="Active BAs" value={stats.activeBas} delta={delta(stats.activeBas, prevStats.activeBas)} />
+        <StatCard label="Active stores" value={stats.activeStores} delta={delta(stats.activeStores, prevStats.activeStores)} />
+        <StatCard label="Sick-leave days" value={stats.sick} delta={delta(stats.sick, prevStats.sick)} />
         <StatCard
           label="Completion rate"
           value={`${stats.baDays ? Math.round((stats.completed / stats.baDays) * 100) : 0}%`}
           hint="Completed ÷ BA-days"
+          delta={delta(
+            stats.baDays ? (stats.completed / stats.baDays) * 100 : 0,
+            prevStats.baDays ? (prevStats.completed / prevStats.baDays) * 100 : 0,
+          )}
         />
       </div>
 
@@ -139,6 +170,10 @@ export default async function OverviewPage({
         </div>
         <TrendsChart data={stats.trend} />
       </Card>
+
+      <StoreHeatmap rows={rows} />
+
+      <RecentActivity client={client} />
     </>
   );
 }

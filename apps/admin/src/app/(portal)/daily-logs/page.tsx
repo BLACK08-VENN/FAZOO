@@ -7,6 +7,7 @@ import { Badge, attendanceTone, completionBadge } from '@/components/ui/badge';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { formatLagosDisplay, weeklyOffDayName } from '@fazoo/config';
 import { InlineDeleteLog } from './delete-log-inline';
+import { DeletedLogBanner } from './deleted-banner';
 
 export default async function DailyLogsPage({
   searchParams,
@@ -35,6 +36,8 @@ export default async function DailyLogsPage({
         title="Daily Logs"
         description="Every check-in, checkout and attendance record in Nigerian time."
       />
+
+      <DeletedLogBanner visible={params.deleted === '1'} />
 
       <div className="mb-6 rounded-xl border border-ink/8 bg-white p-4">
         <LogFiltersForm

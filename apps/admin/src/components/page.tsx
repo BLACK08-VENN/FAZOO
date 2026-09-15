@@ -5,11 +5,20 @@ export function StatCard({
   label,
   value,
   hint,
+  delta,
 }: {
   label: string;
   value: ReactNode;
   hint?: string;
+  delta?: number | null;
 }) {
+  const deltaTone =
+    delta === null || delta === undefined || delta === 0
+      ? null
+      : delta > 0
+        ? 'text-ok'
+        : 'text-bad';
+
   return (
     <Card className="p-4 sm:p-5">
       <p
@@ -24,6 +33,18 @@ export function StatCard({
       >
         {value}
       </p>
+      {delta !== undefined && delta !== null ? (
+        <p className="mt-1 text-xs">
+          {deltaTone ? (
+            <span className={`font-semibold tabular-nums ${deltaTone}`}>
+              {delta > 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}%
+            </span>
+          ) : (
+            <span className="text-muted">0%</span>
+          )}
+          <span className="text-muted"> vs previous period</span>
+        </p>
+      ) : null}
       {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
     </Card>
   );

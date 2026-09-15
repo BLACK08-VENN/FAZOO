@@ -31,7 +31,7 @@ export async function POST(
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: 'Choose the final Word document to upload' }, { status: 400 });
   }
-  if (!isAcceptableFormattedUpload(file.type)) {
+  if (!isAcceptableFormattedUpload(file.type) && !/\.(docx?)$/i.test(file.name)) {
     return NextResponse.json(
       { error: 'Upload a Word document (.docx or .doc)' },
       { status: 415 },

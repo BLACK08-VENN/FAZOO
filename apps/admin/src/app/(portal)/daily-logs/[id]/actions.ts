@@ -25,5 +25,5 @@ export async function deleteDailyLogAction(formData: FormData): Promise<{ error:
   revalidatePath('/daily-logs');
   revalidatePath('/reports');
   revalidatePath('/overview');
-  redirect('/daily-logs');
+  redirect('/daily-logs?deleted=1');
 }

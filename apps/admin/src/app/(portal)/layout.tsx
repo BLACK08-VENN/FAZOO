@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { requireStaff } from '@/lib/auth';
 import { navFor, resolveOrgKind } from '@/lib/nav';
 import { MobileNav } from '@/components/mobile-nav';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { CommandPalette } from '@/components/command-palette';
+import { Toaster } from '@/components/toast';
 import { FazooMark } from '@/components/fazoo-mark';
 import { signOutAction } from './actions';
 
@@ -33,10 +36,16 @@ export default async function PortalLayout({ children }: { children: React.React
           ))}
         </nav>
         <div className="border-t border-white/10 pt-4">
-          <p className="truncate px-3 text-sm font-medium text-white">{profile.full_name}</p>
-          <p className="truncate px-3 text-xs text-white/50">
-            {profile.role.replace('_', ' ')}
-          </p>
+          <CommandPalette orgKind={orgKind} />
+          <div className="mt-3">
+            <ThemeToggle />
+          </div>
+          <div className="mt-3">
+            <p className="truncate px-3 text-sm font-medium text-white">{profile.full_name}</p>
+            <p className="truncate px-3 text-xs text-white/50">
+              {profile.role.replace('_', ' ')}
+            </p>
+          </div>
           <form action={signOutAction} className="mt-3">
             <button
               type="submit"
@@ -74,6 +83,7 @@ export default async function PortalLayout({ children }: { children: React.React
           {children}
         </main>
         <MobileNav orgKind={orgKind} />
+        <Toaster />
       </div>
     </div>
   );

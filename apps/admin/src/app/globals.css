@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import '@fazoo/ui/tokens.css';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #7b2fbe;
   --color-deep: #5a1e82;
@@ -12,6 +14,46 @@
   --color-ok: #22c55e;
   --color-warn: #f97316;
   --color-bad: #dc2626;
+}
+
+/*
+ * Dark theme for the admin portal. Colors are expressed through the tokens
+ * used by every surface (bg-white cards, text-ink, bg-lavender hovers), so
+ * remapping the tokens under `.dark` adapts the whole portal without touching
+ * each component. The sidebar + mobile bar keep a true white for their own
+ * labels by restoring the token locally.
+ */
+.dark {
+  --color-primary: #a678e8;
+  --color-deep: #8b5fd0;
+  --color-bright: #c08df5;
+  --color-ink: #f3f0f8;
+  --color-charcoal: #efeaf6;
+  --color-lavender: #151219;
+  --color-muted: #a9a0ba;
+  --color-ok: #4ade80;
+  --color-warn: #fb923c;
+  --color-bad: #f87171;
+  --color-white: #1d1a24;
+}
+
+.dark .fazoo-glass-dark,
+.dark .fazoo-mobile-nav {
+  --color-white: #ffffff;
+}
+
+.dark .fazoo-mobile-nav {
+  background: rgb(22 19 27 / 0.94);
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.35);
+}
+
+.dark .fazoo-shell {
+  background:
+    radial-gradient(circle at 8% 8%, rgb(139 47 209 / 0.16), transparent 28rem),
+    radial-gradient(circle at 92% 88%, rgb(90 30 130 / 0.12), transparent 32rem),
+    linear-gradient(135deg, #16131c 0%, #100d15 52%, #16131c 100%);
+  background-attachment: fixed;
 }
 
 body {
@@ -115,6 +157,36 @@ body {
   }
 }
 
+@keyframes fazoo-toast-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fazoo-banner-out {
+  0%,
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.fazoo-toast-enter {
+  animation: fazoo-toast-pop 0.28s ease-out both;
+}
+.fazoo-banner-exit {
+  animation: fazoo-banner-out 4.5s ease-in-out both;
+}
+
 .fazoo-aurora {
   animation: fazoo-aurora-drift 12s ease-in-out infinite;
 }
@@ -142,7 +214,9 @@ body {
   .fazoo-radar-sweep,
   .fazoo-pulse,
   .fazoo-node,
-  .fazoo-node-delayed {
+  .fazoo-node-delayed,
+  .fazoo-toast-enter,
+  .fazoo-banner-exit {
     animation: none;
   }
 }
