@@ -369,12 +369,36 @@ export function GradeOrderActions({
               ref={wordInputRef}
               type="file"
               accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              className="max-w-48 text-xs"
-              onChange={(event) => setWordFile(event.target.files?.[0] ?? null)}
+              className="sr-only"
+              onChange={(event) => {
+                setWordFile(event.target.files?.[0] ?? null);
+                setFeedback(null);
+                setFailed(false);
+              }}
             />
-            <Button type="button" size="sm" disabled={!wordFile || busy} onClick={() => void publishWord()}>
-              {hasWord ? 'Replace Word' : 'Attach Word'}
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy}
+              onClick={() => {
+                if (wordFile) {
+                  void publishWord();
+                  return;
+                }
+                wordInputRef.current?.click();
+              }}
+            >
+              {busy
+                ? 'Uploading Word…'
+                : wordFile
+                  ? hasWord ? 'Upload replacement' : 'Upload Word'
+                  : hasWord ? 'Replace Word' : 'Attach Word'}
             </Button>
+            {wordFile ? (
+              <span className="max-w-48 truncate text-xs text-muted" title={wordFile.name}>
+                {wordFile.name}
+              </span>
+            ) : null}
           </div>
         ) : null}
         {hasWord ? (
