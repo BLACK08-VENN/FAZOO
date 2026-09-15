@@ -12,10 +12,10 @@ import { StoreHeatmap } from '@/components/store-heatmap';
 import type { FazooClient } from '@fazoo/database';
 import type { LogFilters } from '@fazoo/validation';
 
-export const DAY_MS = 86_400_000;
+const DAY_MS = 86_400_000;
 
 /** Shift a resolved range back by its own length to get the prior period. */
-export function previousRange(range: { from: string; to: string }): { from: string; to: string } {
+function previousRange(range: { from: string; to: string }): { from: string; to: string } {
   const fromMs = Date.parse(`${range.from}T00:00:00Z`);
   const toMs = Date.parse(`${range.to}T00:00:00Z`);
   const days = Math.max(1, Math.round((toMs - fromMs) / DAY_MS) + 1);
@@ -24,7 +24,7 @@ export function previousRange(range: { from: string; to: string }): { from: stri
   return { from: prevFrom.toISOString().slice(0, 10), to: prevTo.toISOString().slice(0, 10) };
 }
 
-export function shiftedFilters(filters: LogFilters, range: { from: string; to: string }): LogFilters {
+function shiftedFilters(filters: LogFilters, range: { from: string; to: string }): LogFilters {
   return { ...filters, preset: 'custom', from: range.from, to: range.to };
 }
 
