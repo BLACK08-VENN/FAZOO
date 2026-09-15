@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fazoo-v2';
+const CACHE_NAME = 'fazoo-v3';
 const PRECACHE = ['/offline.html'];
 
 self.addEventListener('install', (event) => {
