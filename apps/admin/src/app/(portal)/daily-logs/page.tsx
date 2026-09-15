@@ -1,18 +1,20 @@
 import Link from 'next/link';
-import { requireStaff } from '@/lib/auth';
+import { requireStaff, isElevated } from '@/lib/auth';
 import { fetchLogs, parseLogFilters } from '@/lib/logs-query';
 import { LogFiltersForm } from '@/components/filters';
 import { PageHeader } from '@/components/page';
 import { Badge, attendanceTone, completionBadge } from '@/components/ui/badge';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { formatLagosDisplay, weeklyOffDayName } from '@fazoo/config';
+import { InlineDeleteLog } from './delete-log-inline';
 
 export default async function DailyLogsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const { client } = await requireStaff();
+  const { client, profile } = await requireStaff();
+  const elevated = isElevated(profile.role);
   const params = await searchParams;
   const filters = parseLogFilters(params);
 
@@ -74,11 +76,12 @@ export default async function DailyLogsPage({
               <Th className="text-right">Units</Th>
               <Th className="text-right">Photos</Th>
               <Th>Flags</Th>
+              {elevated ? <Th className="text-right">Actions</Th> : null}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <EmptyRow colSpan={11}>No logs match these filters.</EmptyRow>
+              <EmptyRow colSpan={elevated ? 12 : 11}>No logs match these filters.</EmptyRow>
             ) : (
               rows.map((r) => (
                 <tr key={r.id} className="hover:bg-lavender/60">
@@ -102,6 +105,11 @@ export default async function DailyLogsPage({
                       <Badge tone="purple">{weeklyOffDayName(new Date(`${r.attendance_date}T00:00:00Z`).getUTCDay())} off</Badge>
                     ) : null}
                   </Td>
+                  {elevated ? (
+                    <Td className="text-right">
+                      <InlineDeleteLog id={r.id} label={`${r.ba_name} · ${r.attendance_date} · ${r.store_name}`} />
+                    </Td>
+                  ) : null}
                 </tr>
               ))
             )}
