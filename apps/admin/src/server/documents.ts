@@ -18,13 +18,11 @@ export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 const SIGNED_URL_TTL_SECONDS = Number(process.env.ADMIN_SIGNED_URL_TTL_SECONDS ?? 300);
 
-const ACCEPTED_FORMATTED_TYPES = new Set([
-  DOCX_MIME,
-  'application/msword',
-]);
+const ACCEPTED_FORMATTED_TYPES = new Set([DOCX_MIME, 'application/msword', 'application/pdf']);
 
 function mimeTypeFor(file: File): string {
   if (file.type) return file.type;
+  if (/\.pdf$/i.test(file.name)) return 'application/pdf';
   return /\.doc$/i.test(file.name) ? 'application/msword' : DOCX_MIME;
 }
 
@@ -70,7 +68,9 @@ export async function storeJobDocument({
     );
   }
 
-  const extension = file.name.includes('.') ? file.name.split('.').pop()!.toLowerCase() : 'docx';
+  const extension = file.name.includes('.')
+    ? file.name.split('.').pop()!.toLowerCase()
+    : 'docx';
   const storagePath = `${organizationId}/documents/${jobId}/${slug}-${Date.now()}.${extension}`;
 
   const db = serviceSupabase();
@@ -85,7 +85,7 @@ export async function storeJobDocument({
   return { storagePath, sizeBytes: file.size };
 }
 
-/** Publish the admin's final Word document and advance the job to `formatted`. */
+/** Publish the admin's final corrected document and advance the job to `formatted`. */
 export async function publishFormattedDocument(params: {
   jobId: string;
   actorId: string;
@@ -101,7 +101,8 @@ export async function publishFormattedDocument(params: {
     .eq('id', params.jobId)
     .single();
 
-  if (jobError || !job) throw new Error(`Booklist job not found: ${jobError?.message ?? 'unknown'}`);
+  if (jobError || !job)
+    throw new Error(`Booklist job not found: ${jobError?.message ?? 'unknown'}`);
 
   const { storagePath, sizeBytes } = await storeJobDocument({
     jobId: params.jobId,
