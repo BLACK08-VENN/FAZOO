@@ -106,8 +106,18 @@ interface SchoolStatusColumns {
 }
 
 const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /** `2026-09-12` → `12 Sep 2026`. */
@@ -157,7 +167,6 @@ async function setPrintablesShippingStatus(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath('/booklists');
 }
-
 
 async function setGradePrintablesShippingStatus(formData: FormData) {
   'use server';
@@ -218,7 +227,17 @@ export default async function BooklistPipelinePage({
       .eq('role', 'brand_ambassador')
       .eq('account_status', 'approved')
       .order('full_name'),
-    pipelineBoard(client, { query, stage, region, baId, agency, from, to, limit: PAGE_SIZE, offset }),
+    pipelineBoard(client, {
+      query,
+      stage,
+      region,
+      baId,
+      agency,
+      from,
+      to,
+      limit: PAGE_SIZE,
+      offset,
+    }),
     client.rpc('admin_grade_print_orders' as never, { p_limit: 500 } as never),
   ]);
 
@@ -238,9 +257,18 @@ export default async function BooklistPipelinePage({
 
   const jobs = board.jobs;
   if (gradeOrdersResult.error) throw new Error(gradeOrdersResult.error.message);
-  const gradePayload = gradeOrdersResult.data as unknown as { status?: string; orders?: GradePrintOrder[] };
+  const gradePayload = gradeOrdersResult.data as unknown as {
+    status?: string;
+    orders?: GradePrintOrder[];
+  };
   const gradeOrders = (gradePayload.orders ?? []).filter((order) => {
-    if (query && !`${order.school_name} ${order.school_region ?? ''} ${order.grade_label}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (
+      query &&
+      !`${order.school_name} ${order.school_region ?? ''} ${order.grade_label}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+    )
+      return false;
     if (region && order.school_region !== region) return false;
     if (baId && order.ba_id !== baId) return false;
     if (agency && order.ba_agency !== agency) return false;
@@ -278,7 +306,15 @@ export default async function BooklistPipelinePage({
         </Link>
         <a
           href={`/api/reports/booklists?${new URLSearchParams(
-            Object.entries({ q: query ?? '', stage: stage ?? '', region: region ?? '', ba: baId ?? '', agency: agency ?? '', from: from ?? '', to: to ?? '' }).filter(([, v]) => v !== ''),
+            Object.entries({
+              q: query ?? '',
+              stage: stage ?? '',
+              region: region ?? '',
+              ba: baId ?? '',
+              agency: agency ?? '',
+              from: from ?? '',
+              to: to ?? '',
+            }).filter(([, v]) => v !== ''),
           )}`}
           className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep"
           download
@@ -386,8 +422,13 @@ export default async function BooklistPipelinePage({
 
       <section className="mb-6" aria-labelledby="grade-orders-heading">
         <div className="mb-3">
-          <h2 id="grade-orders-heading" className="text-base font-semibold text-ink">Separate grade print orders</h2>
-          <p className="mt-1 text-xs text-muted">Convert clear images or scanned PDFs into an editable OCR draft, correct it in Word, then attach the corrected document for school approval.</p>
+          <h2 id="grade-orders-heading" className="text-base font-semibold text-ink">
+            Separate grade print orders
+          </h2>
+          <p className="mt-1 text-xs text-muted">
+            Convert clear images or scanned PDFs into an editable OCR draft, correct it in Word,
+            then attach the corrected document for school approval.
+          </p>
         </div>
         <TableWrap>
           <Table>
@@ -405,23 +446,38 @@ export default async function BooklistPipelinePage({
             </thead>
             <tbody>
               {gradeOrders.length === 0 ? (
-                <EmptyRow colSpan={7}>No separate grade print orders match the current filters.</EmptyRow>
+                <EmptyRow colSpan={7}>
+                  No separate grade print orders match the current filters.
+                </EmptyRow>
               ) : (
                 gradeOrders.map((order) => (
-                  <tr key={order.grade_request_id} className="transition-colors hover:bg-lavender/40">
+                  <tr
+                    key={order.grade_request_id}
+                    className="transition-colors hover:bg-lavender/40"
+                  >
                     <Td>
-                      <Link href={`/booklists/${order.job_id}`} className="font-medium text-primary hover:underline">
+                      <Link
+                        href={`/booklists/${order.job_id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
                         {order.school_name}
                       </Link>
-                      <p className="mt-0.5 text-xs text-muted">{order.school_region ?? 'Region not recorded'}</p>
+                      <p className="mt-0.5 text-xs text-muted">
+                        {order.school_region ?? 'Region not recorded'}
+                      </p>
                     </Td>
                     <Td>
                       <span className="font-semibold text-ink">{order.grade_label}</span>
-                      {order.source_format ? <p className="mt-0.5 text-[11px] text-muted">Source: {order.source_format}</p> : null}
+                      {order.source_format ? (
+                        <p className="mt-0.5 text-[11px] text-muted">
+                          Source: {order.source_format}
+                        </p>
+                      ) : null}
                     </Td>
                     <Td>
                       <GradeOrderActions
                         gradeRequestId={order.grade_request_id}
+                        jobId={order.job_id}
                         conversionStatus={order.conversion_status}
                         conversionProvider={order.conversion_provider}
                         hasWord={Boolean(order.word_storage_path)}
@@ -429,37 +485,60 @@ export default async function BooklistPipelinePage({
                       />
                     </Td>
                     <Td className="text-right tabular-nums">
-                      <span className="font-semibold text-ink">{order.copies_to_print.toLocaleString()}</span>
-                      <p className="mt-0.5 text-[11px] text-muted">{order.copies_requested.toLocaleString()} requested + 1 stamped</p>
+                      <span className="font-semibold text-ink">
+                        {order.copies_to_print.toLocaleString()}
+                      </span>
+                      <p className="mt-0.5 text-[11px] text-muted">
+                        {order.copies_requested.toLocaleString()} requested + 1 stamped
+                      </p>
                     </Td>
                     <Td className="whitespace-nowrap text-xs">
-                      {order.due_date ? formatDate(order.due_date) : <span className="text-muted">—</span>}
+                      {order.due_date ? (
+                        formatDate(order.due_date)
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
                     </Td>
                     <Td>
                       {order.ba_name ?? <span className="text-muted">Unassigned</span>}
-                      <div className="mt-1"><AgencyBadge agency={order.ba_agency} /></div>
+                      <div className="mt-1">
+                        <AgencyBadge agency={order.ba_agency} />
+                      </div>
                     </Td>
                     <Td>
                       {canAct ? (
-                        <form action={setGradePrintablesShippingStatus} className="flex flex-wrap gap-1.5">
-                          <input type="hidden" name="grade_request_id" value={order.grade_request_id} />
+                        <form
+                          action={setGradePrintablesShippingStatus}
+                          className="flex flex-wrap gap-1.5"
+                        >
+                          <input
+                            type="hidden"
+                            name="grade_request_id"
+                            value={order.grade_request_id}
+                          />
                           <button
                             type="submit"
                             name="shipped"
                             value="false"
                             aria-pressed={!order.printables_shipped}
                             className={`rounded-full px-2.5 py-1 text-xs font-semibold ${!order.printables_shipped ? 'bg-red-100 text-red-700 ring-1 ring-red-200' : 'border border-red-200 bg-white text-red-700 hover:bg-red-50'}`}
-                          >Pending</button>
+                          >
+                            Pending
+                          </button>
                           <button
                             type="submit"
                             name="shipped"
                             value="true"
                             aria-pressed={order.printables_shipped}
                             className={`rounded-full px-2.5 py-1 text-xs font-semibold ${order.printables_shipped ? 'bg-green-100 text-green-700 ring-1 ring-green-200' : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'}`}
-                          >Shipped</button>
+                          >
+                            Shipped
+                          </button>
                         </form>
                       ) : (
-                        <Badge tone={order.printables_shipped ? 'success' : 'danger'}>{order.printables_shipped ? 'Shipped' : 'Pending'}</Badge>
+                        <Badge tone={order.printables_shipped ? 'success' : 'danger'}>
+                          {order.printables_shipped ? 'Shipped' : 'Pending'}
+                        </Badge>
                       )}
                     </Td>
                   </tr>
@@ -472,7 +551,10 @@ export default async function BooklistPipelinePage({
 
       <div className="mb-3">
         <h2 className="text-base font-semibold text-ink">School workflow</h2>
-        <p className="mt-1 text-xs text-muted">School-level progress only. Multi-grade copy quantities are intentionally kept in the separate orders above.</p>
+        <p className="mt-1 text-xs text-muted">
+          School-level progress only. Multi-grade copy quantities are intentionally kept in the
+          separate orders above.
+        </p>
       </div>
 
       <TableWrap>
@@ -534,11 +616,18 @@ export default async function BooklistPipelinePage({
                       )}
                     </Td>
                     <Td className="whitespace-nowrap text-xs">
-                      {sc.dueDate ? formatDate(sc.dueDate) : <span className="text-muted">—</span>}
+                      {sc.dueDate ? (
+                        formatDate(sc.dueDate)
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
                     </Td>
                     <Td>
                       {canAct ? (
-                        <form action={setPrintablesShippingStatus} className="flex flex-wrap gap-1.5">
+                        <form
+                          action={setPrintablesShippingStatus}
+                          className="flex flex-wrap gap-1.5"
+                        >
                           <input type="hidden" name="job_id" value={job.job_id} />
                           <button
                             type="submit"
@@ -581,9 +670,7 @@ export default async function BooklistPipelinePage({
                       </Badge>
                     </Td>
                     <Td>
-                      {job.owner_ba_name ?? (
-                        <span className="text-muted">Unassigned</span>
-                      )}
+                      {job.owner_ba_name ?? <span className="text-muted">Unassigned</span>}
                       <div className="mt-1">
                         <AgencyBadge agency={job.owner_ba_agency} />
                       </div>
