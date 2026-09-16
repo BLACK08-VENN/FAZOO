@@ -13,8 +13,7 @@ import { pipelineBoard } from '@/server/booklists';
 
 /**
  * CSV export of the booklist pipeline — one row per logged school, carrying
- * the essential journey details: where the school is, who is handling it and
- * the key milestones (document received, dispatched, completed).
+ * only the operational fields supervisors need in the downloaded report.
  *
  * Honours the same filters as the /booklists board, so what a supervisor sees
  * on screen is exactly what lands in the file.
@@ -23,19 +22,12 @@ import { pipelineBoard } from '@/server/booklists';
 const COLUMNS = [
   'School name',
   'Region / location',
-  'Address',
   'BA name',
-  'Agency',
   'Booklist status',
   'Copies requested',
-  'Copies to print (including stamped copy)',
   'Due date',
-  'Document received (Africa/Nairobi)',
   'Shipping status',
-  'Dispatched (Africa/Nairobi)',
-  'Completion status',
   'Completed (Africa/Nairobi)',
-  'Stamped copy status',
 ] as const;
 
 /** Hard ceiling per request, matching the other report exports. */
@@ -112,23 +104,12 @@ export async function GET(request: NextRequest) {
         [
           job.school_name,
           job.school_region,
-          job.school_address,
           job.owner_ba_name,
-          job.owner_ba_agency === 'ael'
-            ? 'Advert Eyes Limited (AEL)'
-            : job.owner_ba_agency === 'veda'
-              ? 'Veda'
-              : 'Agency not set',
           booklistStageLabel(job.stage),
           job.copies_requested,
-          job.copies_to_print,
           job.due_date,
-          nairobiTime(job.document_received_at),
           job.dispatched_at ? 'Shipped' : 'Pending',
-          nairobiTime(job.dispatched_at),
-          job.completed_at ? 'Completed' : 'Pending',
           nairobiTime(job.completed_at),
-          job.has_stamped_copy ? 'Received' : 'Pending',
         ]
           .map(csvEscape)
           .join(',') + '\r\n',
