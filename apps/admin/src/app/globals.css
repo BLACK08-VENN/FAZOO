@@ -207,6 +207,62 @@ body {
   animation: fazoo-signal 2.2s ease-in-out -1.1s infinite;
 }
 
+@keyframes fazoo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fazoo-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fazoo-shine-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+
+.fazoo-rise {
+  animation: fazoo-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.fazoo-pop-in {
+  animation: fazoo-pop-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.fazoo-btn-shine {
+  overflow: hidden;
+  position: relative;
+}
+.fazoo-btn-shine::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+}
+.fazoo-btn-shine:hover::after {
+  animation: fazoo-shine-sweep 0.9s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fazoo-aurora,
   .fazoo-aurora-delayed,
@@ -216,7 +272,10 @@ body {
   .fazoo-node,
   .fazoo-node-delayed,
   .fazoo-toast-enter,
-  .fazoo-banner-exit {
+  .fazoo-banner-exit,
+  .fazoo-rise,
+  .fazoo-pop-in,
+  .fazoo-btn-shine::after {
     animation: none;
   }
 }

@@ -44,7 +44,9 @@ export function SignInForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(signInAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<RoleTab>('admin');
+  const [identifier, setIdentifier] = useState('');
   const active = ROLE_TABS.find((t) => t.key === role)!;
+  const roleIndex = ROLE_TABS.findIndex((t) => t.key === role);
 
   useEffect(() => {
     if (state.redirectTo) {
@@ -60,8 +62,16 @@ export function SignInForm({ next }: { next: string }) {
       <div
         role="tablist"
         aria-label="Choose an account type"
-        className="grid grid-cols-3 gap-1.5 rounded-xl bg-ink/[0.04] p-1.5"
+        className="relative grid grid-cols-3 gap-1.5 rounded-xl bg-ink/[0.04] p-1.5"
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-1.5 left-1.5 top-1.5 z-0 rounded-lg bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{
+            width: 'calc((100% - 1.5rem) / 3)',
+            transform: `translateX(calc(${roleIndex} * ((100% - 1.5rem) / 3 + 0.375rem)))`,
+          }}
+        />
         {ROLE_TABS.map((t) => (
           <button
             key={t.key}
@@ -69,7 +79,7 @@ export function SignInForm({ next }: { next: string }) {
             aria-selected={role === t.key}
             type="button"
             onClick={() => setRole(t.key)}
-            className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-center transition-all focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary aria-selected:bg-white aria-selected:shadow-sm"
+            className="relative z-10 flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-center transition-all focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
           >
             <span className="text-xs font-bold text-ink">{t.label}</span>
             <span
@@ -81,7 +91,7 @@ export function SignInForm({ next }: { next: string }) {
         ))}
       </div>
 
-      <div>
+      <div key={role} className="fazoo-pop-in">
         <Label
           htmlFor="identifier"
           className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted"
@@ -94,6 +104,8 @@ export function SignInForm({ next }: { next: string }) {
           aria-label="Mobile number or email"
           autoComplete="username"
           placeholder={active.placeholder}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           className="h-12 rounded-xl border-ink/10 bg-[#faf9fb] px-4 transition-shadow focus:bg-white focus:shadow-[0_0_0_4px_rgba(123,47,190,.08)]"
           required
         />
@@ -141,7 +153,7 @@ export function SignInForm({ next }: { next: string }) {
         type="submit"
         size="lg"
         disabled={pending}
-        className="h-12 w-full rounded-xl shadow-[0_10px_24px_rgba(123,47,190,.22)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(123,47,190,.28)]"
+        className="fazoo-btn-shine h-12 w-full rounded-xl shadow-[0_10px_24px_rgba(123,47,190,.22)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(123,47,190,.28)]"
       >
         {pending ? 'Signing in…' : 'Sign in'}
       </Button>

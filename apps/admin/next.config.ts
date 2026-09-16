@@ -1,5 +1,7 @@
 import type { NextConfig } from 'next';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -23,7 +25,7 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
+          ...(isProduction ? [{ key: 'X-Frame-Options', value: 'DENY' }] : []),
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(self)' },
@@ -41,7 +43,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com",
               "worker-src 'self' blob: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-              "frame-ancestors 'none'",
+              ...(isProduction ? ["frame-ancestors 'none'"] : []),
               "base-uri 'self'",
               "form-action 'self'",
             ].join('; '),
