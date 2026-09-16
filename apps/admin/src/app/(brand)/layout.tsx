@@ -26,7 +26,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
 
   return (
     <div className="fazoo-shell flex min-h-screen">
-      <aside className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 lg:flex" aria-label="Brand dashboard navigation">
+      <aside className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex" aria-label="Brand dashboard navigation">
         <div className="mb-8 px-3">
           {brand.logo_url ? (
             <div className="relative mb-3 h-14 overflow-hidden rounded-xl border border-white/10 bg-white">
@@ -78,7 +78,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
       </aside>
 
       <div className="flex w-full flex-col">
-        <header className="fazoo-glass-dark sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 lg:hidden">
+        <header className="fazoo-glass-dark sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 xl:hidden">
           <div>
             <span className="text-sm font-bold text-white">{brand.name}</span>
             <span className="ml-2 text-xs text-white/40">via Fazoo</span>
@@ -94,7 +94,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
         </header>
         <nav
           aria-label="Brand mobile"
-          className="fazoo-glass-dark sticky top-[52px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-2 lg:hidden"
+          className="fazoo-glass-dark sticky top-[52px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-2 xl:hidden"
           role="navigation"
         >
           {nav.map(({ href, label }) => (
@@ -107,7 +107,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
             </Link>
           ))}
         </nav>
-        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8" id="main-content">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 xl:p-8" id="main-content">{children}</main>
       </div>
     </div>
   );
