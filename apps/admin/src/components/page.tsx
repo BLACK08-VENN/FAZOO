@@ -20,15 +20,15 @@ export function StatCard({
         : 'text-bad';
 
   return (
-    <Card className="p-4 sm:p-5">
+    <Card className="min-w-0 p-3.5 sm:p-5">
       <p
-        className="text-xs font-medium uppercase tracking-wide text-muted"
+        className="break-words text-[11px] font-medium uppercase tracking-wide text-muted sm:text-xs"
         id={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {label}
       </p>
       <p
-        className="mt-2 text-xl font-bold tabular-nums text-ink sm:text-2xl"
+        className="mt-2 break-words text-lg font-bold tabular-nums text-ink sm:text-2xl"
         aria-labelledby={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {value}
@@ -62,11 +62,13 @@ export function PageHeader({
   return (
     <div className="mb-5 flex flex-col items-stretch justify-between gap-4 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-end">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-xl">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
+        {description ? (
+          <p className="mt-1 text-sm leading-5 text-muted">{description}</p>
+        ) : null}
       </div>
       {children ? (
-        <div className="flex flex-wrap gap-2 [&>*]:min-h-11 [&>*]:flex-1 sm:[&>*]:flex-none">
+        <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:flex-wrap [&>*]:min-h-11">
           {children}
         </div>
       ) : null}
