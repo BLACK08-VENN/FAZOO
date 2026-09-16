@@ -235,7 +235,7 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
     }
   }
 
-  async function updatePrintOrder(formData: FormData, orderId: string) {
+  async function updatePrintOrder(orderId: string, formData: FormData) {
     'use server';
     const { client: c, profile: actor } = await requireStaff();
     if (!isElevated(actor.role)) return;
@@ -268,6 +268,10 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
       revalidatePath('/booklists');
     }
   }
+
+  const updateActivePrintOrder = activeOrder
+    ? updatePrintOrder.bind(null, activeOrder.id)
+    : null;
 
   return (
     <>
@@ -402,11 +406,9 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
               description="Tracked from the moment the run is ordered, through dispatch by whichever means, to receipt at the school."
             />
             <CardBody className="space-y-5">
-              {activeOrder ? (
+              {activeOrder && updateActivePrintOrder ? (
                 <form
-                  action={async (formData: FormData) =>
-                    updatePrintOrder(formData, activeOrder.id)
-                  }
+                  action={updateActivePrintOrder}
                   className="space-y-4 rounded-xl border border-ink/10 p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -596,7 +598,7 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
 
               {canAct ? (
                 <form
-                  action={async (formData: FormData) => createPrintOrder(formData)}
+                  action={createPrintOrder}
                   className="space-y-3 rounded-xl border border-dashed border-ink/20 p-4"
                 >
                   <p className="text-sm font-semibold text-ink">
