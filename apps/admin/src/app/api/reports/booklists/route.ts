@@ -50,6 +50,50 @@ function isAgency(value: string | null): value is BaAgency {
   return value === 'ael' || value === 'veda';
 }
 
+/**
+ * Multi-grade jobs keep requested quantities on their grade rows and
+ * deliberately leave the parent job total empty. Rebuild that total for the
+ * flat CSV so the report never shows a blank quantity for those schools.
+ */
+async function requestedCopiesByJob(
+  client: Awaited<ReturnType<typeof requireStaff>>['client'],
+  jobIds: string[],
+): Promise<Map<string, number>> {
+  type GradeCopyRow = { job_id: string; copies_requested: number };
+  type GradeCopiesClient = {
+    from(table: 'booklist_grade_requests'): {
+      select(columns: 'job_id,copies_requested'): {
+        in(
+          column: 'job_id',
+          values: string[],
+        ): PromiseLike<{ data: GradeCopyRow[] | null; error: { message: string } | null }>;
+      };
+    };
+  };
+
+  // The generated database types predate this live table. Keep the temporary
+  // compatibility cast local to this two-column read.
+  const gradeCopiesClient = client as unknown as GradeCopiesClient;
+  const totals = new Map<string, number>();
+  const batchSize = 100;
+
+  for (let index = 0; index < jobIds.length; index += batchSize) {
+    const batch = jobIds.slice(index, index + batchSize);
+    const { data, error } = await gradeCopiesClient
+      .from('booklist_grade_requests')
+      .select('job_id,copies_requested')
+      .in('job_id', batch);
+
+    if (error) throw new Error(`Could not load requested copies: ${error.message}`);
+
+    for (const row of data ?? []) {
+      totals.set(row.job_id, (totals.get(row.job_id) ?? 0) + row.copies_requested);
+    }
+  }
+
+  return totals;
+}
+
 export async function GET(request: NextRequest) {
   const { client, profile } = await requireStaff();
   if (!isElevated(profile.role)) {
@@ -93,6 +137,17 @@ export async function GET(request: NextRequest) {
     return new Response(message, { status: 502 });
   }
 
+  let gradeCopyTotals: Map<string, number>;
+  try {
+    gradeCopyTotals = await requestedCopiesByJob(
+      client,
+      board.jobs.filter((job) => job.is_per_grade).map((job) => job.job_id),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not load requested copies';
+    return new Response(message, { status: 502 });
+  }
+
   const encoder = new TextEncoder();
   const chunks: Uint8Array[] = [
     encoder.encode(`\uFEFF${COLUMNS.map(csvEscape).join(',')}\r\n`),
@@ -105,8 +160,8 @@ export async function GET(request: NextRequest) {
           job.school_name,
           job.school_region,
           job.owner_ba_name,
-          booklistStageLabel(job.stage),
-          job.copies_requested,
+          job.completed_at ? 'Completed' : booklistStageLabel(job.stage),
+          job.copies_requested ?? gradeCopyTotals.get(job.job_id),
           job.due_date,
           job.dispatched_at ? 'Shipped' : 'Pending',
           nairobiTime(job.completed_at),
