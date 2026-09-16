@@ -60,9 +60,11 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
       </PageHeader>
 
       {daily ? (
-        <Card className="mb-6 p-4">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Daily BA targets (today)</h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className="mb-5 p-3 sm:mb-6 sm:p-4">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+            Daily BA targets (today)
+          </h2>
+          <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 sm:gap-3 md:grid-cols-4">
             <StatCard
               label="Schools logged today"
               value={daily.summary.schools_logged_today}
@@ -73,20 +75,21 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
               value={`${daily.summary.bas_on_target_today} of ${daily.summary.bas_with_daily_target}`}
               hint="Hit minimum"
             />
-            <StatCard
-              label="Missed today"
-              value={daily.summary.bas_missed_today}
-            />
+            <StatCard label="Missed today" value={daily.summary.bas_missed_today} />
             <StatCard
               label="Compliance today"
-              value={daily.summary.compliance_pct !== null ? `${daily.summary.compliance_pct}%` : 'n/a'}
+              value={
+                daily.summary.compliance_pct !== null
+                  ? `${daily.summary.compliance_pct}%`
+                  : 'n/a'
+              }
               hint={`Default target ${daily.default_target_daily_schools ?? 'unset'} school${daily.default_target_daily_schools === 1 ? '' : 's'}/day`}
             />
           </div>
         </Card>
       ) : null}
 
-      <Card className="mb-6 p-5">
+      <Card className="mb-5 p-4 sm:mb-6 sm:p-5">
         <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
         <SectionCards orgKind="schools" />
       </Card>
@@ -101,7 +104,7 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
         </Card>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 sm:gap-4 md:grid-cols-4">
         <StatCard label="Schools logged" value={total} hint="Booklist jobs, all stages" />
         <StatCard
           label="Waiting on us"
@@ -117,53 +120,55 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
       </div>
 
       <Card className="mt-6">
-        <div className="border-b border-ink/8 px-5 py-4">
+        <div className="border-b border-ink/8 px-4 py-4 sm:px-5">
           <h2 className="text-sm font-semibold text-ink">Stage breakdown</h2>
           <p className="mt-0.5 text-xs text-muted">
             Counts are organization-wide. Pick a stage to open those schools on the board.
           </p>
         </div>
         {populated.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-muted">
+          <p className="px-4 py-6 text-sm text-muted sm:px-5">
             No schools have been logged yet. A BA starts one from the app the moment they
             approach a school.
           </p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-ink/8 text-left text-xs uppercase tracking-wide text-muted">
-                <th scope="col" className="px-5 py-2 font-medium">
-                  Stage
-                </th>
-                <th scope="col" className="px-5 py-2 text-right font-medium">
-                  Schools
-                </th>
-                <th scope="col" className="px-5 py-2 font-medium">
-                  <span className="sr-only">Open</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {populated.map((stage) => (
-                <tr key={stage} className="border-b border-ink/5 last:border-0">
-                  <td className="px-5 py-2.5">
-                    <StageBadge stage={stage} />
-                  </td>
-                  <td className="px-5 py-2.5 text-right font-semibold tabular-nums text-ink">
-                    {at(stage)}
-                  </td>
-                  <td className="px-5 py-2.5">
-                    <Link
-                      href={`/booklists?stage=${encodeURIComponent(stage)}`}
-                      className="text-xs font-semibold text-primary hover:underline"
-                    >
-                      View
-                    </Link>
-                  </td>
+          <div className="overflow-x-auto overscroll-x-contain">
+            <table className="min-w-[28rem] w-full text-sm">
+              <thead>
+                <tr className="border-b border-ink/8 text-left text-xs uppercase tracking-wide text-muted">
+                  <th scope="col" className="px-5 py-2 font-medium">
+                    Stage
+                  </th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">
+                    Schools
+                  </th>
+                  <th scope="col" className="px-5 py-2 font-medium">
+                    <span className="sr-only">Open</span>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {populated.map((stage) => (
+                  <tr key={stage} className="border-b border-ink/5 last:border-0">
+                    <td className="px-5 py-2.5">
+                      <StageBadge stage={stage} />
+                    </td>
+                    <td className="px-5 py-2.5 text-right font-semibold tabular-nums text-ink">
+                      {at(stage)}
+                    </td>
+                    <td className="px-5 py-2.5">
+                      <Link
+                        href={`/booklists?stage=${encodeURIComponent(stage)}`}
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </>
