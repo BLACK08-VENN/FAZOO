@@ -16,7 +16,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <div className="fazoo-shell flex min-h-screen">
       <aside
-        className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 lg:flex"
+        className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex"
         aria-label="Sidebar navigation"
       >
         <div className="mb-8 px-3">
@@ -59,7 +59,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
       {/* Mobile top bar */}
       <div className="flex w-full flex-col">
-        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-14 items-center justify-between border-b px-4 lg:hidden">
+        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-14 items-center justify-between border-b px-4 xl:hidden">
           <div className="flex min-w-0 items-center gap-2.5">
             <FazooMark className="size-9" />
             <span className="sr-only">Fazoo</span>
@@ -77,7 +77,7 @@ export default async function PortalLayout({ children }: { children: React.React
           </form>
         </header>
         <main
-          className="min-w-0 flex-1 px-4 pb-28 pt-5 sm:p-6 sm:pb-28 lg:p-8"
+          className="min-w-0 flex-1 px-4 pb-28 pt-5 sm:p-6 sm:pb-28 xl:p-8"
           id="main-content"
         >
           {children}
