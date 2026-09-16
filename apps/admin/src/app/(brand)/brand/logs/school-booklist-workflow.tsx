@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { browserSupabase } from '@fazoo/database/browser';
-import { DECLINE_REASONS, SOURCE_FORMATS } from '@fazoo/config';
+import {
+  BOOKLIST_DOCUMENT_MAX_BYTES,
+  DECLINE_REASONS,
+  PHOTO_MAX_BYTES,
+  SOURCE_FORMATS,
+} from '@fazoo/config';
 import type {
   BaPipelineCounts,
   BaPipelineJob,
@@ -38,7 +43,6 @@ function blankGradeBooklist(key = 'grade-1'): GradeBooklistDraft {
   return { key, gradeLabel: '', copies: '', sourceFormat: '', file: null };
 }
 
-const MAX_FILE_BYTES = 12 * 1024 * 1024;
 const TEXTAREA =
   'w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-primary focus:outline-2 focus:outline-offset-1 focus:outline-primary';
 
@@ -69,6 +73,22 @@ function extension(file: File) {
   return 'jpg';
 }
 
+function contentType(file: File) {
+  const reported = file.type.trim().toLowerCase();
+  if (reported && reported !== 'application/octet-stream') return reported;
+
+  switch (extension(file)) {
+    case 'pdf': return 'application/pdf';
+    case 'doc': return 'application/msword';
+    case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'png': return 'image/png';
+    case 'webp': return 'image/webp';
+    case 'jpg':
+    case 'jpeg': return 'image/jpeg';
+    default: return 'application/octet-stream';
+  }
+}
+
 async function upload(
   client: ReturnType<typeof browserSupabase>,
   bucket: 'daily-log-photos' | 'booklist-documents',
@@ -78,12 +98,17 @@ async function upload(
   slot: string,
   file: File,
 ) {
-  if (file.size > MAX_FILE_BYTES) {
-    throw new Error(`${file.name || 'Selected file'} is larger than 12 MB.`);
+  const maxBytes = bucket === 'booklist-documents'
+    ? BOOKLIST_DOCUMENT_MAX_BYTES
+    : PHOTO_MAX_BYTES;
+  if (file.size > maxBytes) {
+    throw new Error(
+      `${file.name || 'Selected file'} is larger than ${maxBytes / 1024 / 1024} MB.`,
+    );
   }
   const path = `${organizationId}/${userId}/${requestId}-${slot}.${extension(file)}`;
   const { error } = await client.storage.from(bucket).upload(path, file, {
-    contentType: file.type || 'application/octet-stream',
+    contentType: contentType(file),
     upsert: false,
   });
   if (error) throw new Error(`Could not upload ${slot.replaceAll('-', ' ')}: ${error.message}`);
@@ -404,7 +429,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
           let gradePath: string | null = null;
           try {
             gradePath = await upload(client, 'booklist-documents', organizationId, userId, gradeRequestId, isMultipleBooklists ? `booklist-grade-${index + 1}` : 'general-booklist', file);
-            const { error: gradeFailure } = await client.rpc('ba_submit_grade_booklist' as never, { p_job_id: recorded.job_id, p_visit_id: visit.visit_id, p_grade_label: grade.gradeLabel, p_copies_requested: grade.requested, p_due_date: dueDate, p_storage_path: gradePath, p_client_request_id: gradeRequestId, p_mime_type: file.type || undefined, p_file_size_bytes: file.size, p_source_format: grade.sourceFormat, p_sort_order: index } as never);
+            const { error: gradeFailure } = await client.rpc('ba_submit_grade_booklist' as never, { p_job_id: recorded.job_id, p_visit_id: visit.visit_id, p_grade_label: grade.gradeLabel, p_copies_requested: grade.requested, p_due_date: dueDate, p_storage_path: gradePath, p_client_request_id: gradeRequestId, p_mime_type: contentType(file), p_file_size_bytes: file.size, p_source_format: grade.sourceFormat, p_sort_order: index } as never);
             if (gradeFailure) throw new Error(gradeFailure.message);
           } catch (gradeFailure) {
             if (gradePath) await client.storage.from('booklist-documents').remove([gradePath]);
@@ -431,7 +456,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
     const requestId = crypto.randomUUID(); let path: string | null = null;
     try {
       path = await upload(client, 'booklist-documents', organizationId, userId, requestId, 'stamped-copy', file);
-      const { error: stampFailure } = await client.rpc('ba_submit_stamped_copy', { p_job_id: job.job_id, p_storage_path: path, p_client_request_id: requestId, p_mime_type: file.type || undefined, p_file_size_bytes: file.size });
+      const { error: stampFailure } = await client.rpc('ba_submit_stamped_copy', { p_job_id: job.job_id, p_storage_path: path, p_client_request_id: requestId, p_mime_type: contentType(file), p_file_size_bytes: file.size });
       if (stampFailure) throw new Error(stampFailure.message);
       setStampedFiles((value) => ({ ...value, [job.job_id]: null })); setSuccess(`${job.school_name}: stamped +1 copy uploaded. Log complete.`); await loadPipeline();
     } catch (stampFailure) {
@@ -510,8 +535,8 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
                       </div>
                       <div className="sm:col-span-2">
                         <Label htmlFor="general-booklist-file">General booklist document *</Label>
-                        <Input id="general-booklist-file" type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.pdf,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => [{ ...(rows[0] || blankGradeBooklist()), file: event.target.files?.[0] || null }])} />
-                        <p className="mt-1 text-xs text-muted">Upload the one document exactly as received. Maximum 12 MB.</p>
+                        <Input id="general-booklist-file" type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.pdf,application/pdf,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => [{ ...(rows[0] || blankGradeBooklist()), file: event.target.files?.[0] || null }])} />
+                        <p className="mt-1 text-xs text-muted">Upload the one document exactly as received. Maximum 20 MB.</p>
                       </div>
                     </div>
                   </div>
@@ -539,7 +564,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
                               <div><Label htmlFor={`grade-name-${grade.key}`}>Grade / class *</Label><Input id={`grade-name-${grade.key}`} value={grade.gradeLabel} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, gradeLabel: event.target.value } : row))} placeholder="e.g. Grade 1" /></div>
                               <div><Label htmlFor={`copies-${grade.key}`}>Copies requested *</Label><Input id={`copies-${grade.key}`} type="number" min={1} step={1} inputMode="numeric" value={grade.copies} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, copies: event.target.value } : row))} />{Number.isInteger(requested) && requested > 0 ? <p className="mt-1 text-xs font-medium text-primary">{requested.toLocaleString()} + 1 = {(requested + 1).toLocaleString()} copies to print for this grade.</p> : null}</div>
                               <div><Label htmlFor={`source-format-${grade.key}`}>Source format *</Label><Select id={`source-format-${grade.key}`} value={grade.sourceFormat} onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, sourceFormat: event.target.value } : row))}><option value="">Choose format</option>{SOURCE_FORMATS.map((format) => <option key={format.code} value={format.code}>{format.label}</option>)}</Select></div>
-                              <div><Label htmlFor={`booklist-file-${grade.key}`}>Booklist document *</Label><Input id={`booklist-file-${grade.key}`} type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.pdf,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, file: event.target.files?.[0] || null } : row))} /><p className="mt-1 text-xs text-muted">Maximum 12 MB.</p></div>
+                              <div><Label htmlFor={`booklist-file-${grade.key}`}>Booklist document *</Label><Input id={`booklist-file-${grade.key}`} type="file" accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,.pdf,application/pdf,.xls,.xlsx,.txt,.rtf" onChange={(event) => setGradeBooklists((rows) => rows.map((row) => row.key === grade.key ? { ...row, file: event.target.files?.[0] || null } : row))} /><p className="mt-1 text-xs text-muted">Maximum 20 MB.</p></div>
                             </div>
                           </div>
                         );
@@ -571,7 +596,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
         </div>
       </form>
       <Card className="p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-ink">Booklist pipeline</h2><p className="mt-1 text-xs text-muted">Track every school from approach to stamped-copy completion.</p></div><AgencyBadge agency={stats?.agency} selfieRequired={stats?.selfie_required} /></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.active || 0}</p><p className="text-xs text-muted">In progress</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.awaiting_admin || 0}</p><p className="text-xs text-muted">With admin</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.completed || 0}</p><p className="text-xs text-muted">Completed</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.declined || 0}</p><p className="text-xs text-muted">Denied</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-3"><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Schools reached this month</p><p className="mt-1 text-lg font-bold">{reached}{target ? <span className="text-sm font-medium text-muted"> / {target}</span> : null}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Booklists collected</p><p className="mt-1 text-lg font-bold">{stats?.booklists_collected || 0}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Denials recorded</p><p className="mt-1 text-lg font-bold">{stats?.declines_recorded || 0}</p></div></div></Card>
-      <Card className="p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-base font-semibold text-ink">Status by school</h2><p className="mt-1 text-xs text-muted">Every operational step is visible here.</p></div><div className="sm:w-72"><Label htmlFor="pipeline-search">Find a school</Label><Input id="pipeline-search" value={pipelineQuery} onChange={(event) => setPipelineQuery(event.target.value)} placeholder="School name or area" /></div></div>{visibleJobs.length === 0 ? <p className="mt-4 text-sm text-muted">{loading ? 'Loading schools…' : 'No school logs match this search.'}</p> : <ul className="mt-4 space-y-3">{visibleJobs.map((job) => <li key={job.job_id} className="rounded-xl border border-ink/10 bg-white/80 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold text-ink">{job.school_name}</p><p className="text-xs text-muted">{job.school_region || 'Area not recorded'}</p></div><StageBadge stage={job.stage} /></div><div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">{job.stage === 'on_hold' && job.follow_up_date ? <span>Follow-up: <strong className="text-ink">{readableDate(job.follow_up_date)}</strong></span> : <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>}</div><Progress job={job} /><p className="mt-3 rounded-lg bg-lavender px-3 py-2 text-xs font-medium text-ink">Next: {nextAction(job)}</p>{job.stage === 'received' && !job.stamped_uploaded ? <div className="mt-4 rounded-xl border border-ok/25 bg-ok/5 p-3"><p className="text-sm font-semibold text-ink">Final proof: stamped +1 copy</p><p className="mt-1 text-xs text-muted">Upload the extra copy after the school stamps it. This closes the log.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"><div className="flex-1"><Label htmlFor={`stamped-${job.job_id}`}>Stamped copy</Label><Input id={`stamped-${job.job_id}`} type="file" accept="image/*,.pdf" onChange={(event) => setStampedFiles((value) => ({ ...value, [job.job_id]: event.target.files?.[0] || null }))} /></div><Button type="button" onClick={() => void submitStamped(job)} disabled={stampedBusy === job.job_id || !stampedFiles[job.job_id]}>{stampedBusy === job.job_id ? 'Uploading…' : 'Upload and complete'}</Button></div></div> : null}{job.stage === 'completed' || job.stamped_uploaded ? <p className="mt-3 text-xs font-semibold text-ok">✓ Stamped +1 proof is on file. Log complete.</p> : null}</li>)}</ul>}<div className="mt-4"><Button type="button" variant="outline" onClick={() => void loadPipeline()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh status'}</Button></div></Card>
+      <Card className="p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-base font-semibold text-ink">Status by school</h2><p className="mt-1 text-xs text-muted">Every operational step is visible here.</p></div><div className="sm:w-72"><Label htmlFor="pipeline-search">Find a school</Label><Input id="pipeline-search" value={pipelineQuery} onChange={(event) => setPipelineQuery(event.target.value)} placeholder="School name or area" /></div></div>{visibleJobs.length === 0 ? <p className="mt-4 text-sm text-muted">{loading ? 'Loading schools…' : 'No school logs match this search.'}</p> : <ul className="mt-4 space-y-3">{visibleJobs.map((job) => <li key={job.job_id} className="rounded-xl border border-ink/10 bg-white/80 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold text-ink">{job.school_name}</p><p className="text-xs text-muted">{job.school_region || 'Area not recorded'}</p></div><StageBadge stage={job.stage} /></div><div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">{job.stage === 'on_hold' && job.follow_up_date ? <span>Follow-up: <strong className="text-ink">{readableDate(job.follow_up_date)}</strong></span> : <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>}</div><Progress job={job} /><p className="mt-3 rounded-lg bg-lavender px-3 py-2 text-xs font-medium text-ink">Next: {nextAction(job)}</p>{job.stage === 'received' && !job.stamped_uploaded ? <div className="mt-4 rounded-xl border border-ok/25 bg-ok/5 p-3"><p className="text-sm font-semibold text-ink">Final proof: stamped +1 copy</p><p className="mt-1 text-xs text-muted">Upload the extra copy after the school stamps it. This closes the log.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"><div className="flex-1"><Label htmlFor={`stamped-${job.job_id}`}>Stamped copy</Label><Input id={`stamped-${job.job_id}`} type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => setStampedFiles((value) => ({ ...value, [job.job_id]: event.target.files?.[0] || null }))} /></div><Button type="button" onClick={() => void submitStamped(job)} disabled={stampedBusy === job.job_id || !stampedFiles[job.job_id]}>{stampedBusy === job.job_id ? 'Uploading…' : 'Upload and complete'}</Button></div></div> : null}{job.stage === 'completed' || job.stamped_uploaded ? <p className="mt-3 text-xs font-semibold text-ok">✓ Stamped +1 proof is on file. Log complete.</p> : null}</li>)}</ul>}<div className="mt-4"><Button type="button" variant="outline" onClick={() => void loadPipeline()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh status'}</Button></div></Card>
     </div>
   );
 }
