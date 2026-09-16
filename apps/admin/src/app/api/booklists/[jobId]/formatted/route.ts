@@ -3,7 +3,7 @@ import { isElevated, requireStaff } from '@/lib/auth';
 import { isAcceptableFormattedUpload, publishFormattedDocument } from '@/server/documents';
 
 /**
- * Publish the admin's finished Word document. This is the printable source the
+ * Publish the admin's finished Word or PDF document. This is the printable source the
  * admin uses to create the print order before dispatching copies to the school.
  */
 export async function POST(
@@ -29,11 +29,14 @@ export async function POST(
 
   const file = form.get('file');
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ error: 'Choose the final Word document to upload' }, { status: 400 });
-  }
-  if (!isAcceptableFormattedUpload(file.type) && !/\.(docx?)$/i.test(file.name)) {
     return NextResponse.json(
-      { error: 'Upload a Word document (.docx or .doc)' },
+      { error: 'Choose the final Word or PDF document to upload' },
+      { status: 400 },
+    );
+  }
+  if (!isAcceptableFormattedUpload(file.type) && !/\.(docx?|pdf)$/i.test(file.name)) {
+    return NextResponse.json(
+      { error: 'Upload a Word or PDF document (.docx, .doc or .pdf)' },
       { status: 415 },
     );
   }
@@ -46,8 +49,7 @@ export async function POST(
       jobId,
       actorId: profile.id,
       file,
-      isPerGrade:
-        perGradeRaw === null || perGradeRaw === '' ? null : perGradeRaw === 'true',
+      isPerGrade: perGradeRaw === null || perGradeRaw === '' ? null : perGradeRaw === 'true',
       note: typeof note === 'string' ? note : null,
     });
     return NextResponse.json({ outcome: 'published', ...result });
