@@ -1,6 +1,7 @@
 'use client';
 
 import Script from 'next/script';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -116,12 +117,14 @@ function isNetworkLikeError(error: unknown): boolean {
 
 export function GradeOrderActions({
   gradeRequestId,
+  jobId,
   conversionStatus,
   conversionProvider,
   hasWord,
   canAct,
 }: {
   gradeRequestId: string;
+  jobId: string;
   conversionStatus: string;
   conversionProvider: string | null;
   hasWord: boolean;
@@ -415,11 +418,21 @@ export function GradeOrderActions({
           </div>
         ) : null}
         {hasWord ? (
-          <p className="text-[11px] text-muted">
-            {conversionProvider === 'manual'
-              ? 'The corrected document is ready to share with the school for approval.'
-              : 'Download the OCR draft, correct it, then attach the corrected Word or PDF document below.'}
-          </p>
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-muted">
+              {conversionProvider === 'manual'
+                ? 'The corrected document is ready. Open the school workflow to continue.'
+                : 'Download the OCR draft, correct it, then attach the corrected Word or PDF document below.'}
+            </p>
+            {conversionProvider === 'manual' ? (
+              <Link
+                href={`/booklists/${jobId}`}
+                className="inline-flex min-h-9 items-center rounded-lg border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary/10"
+              >
+                Open next step
+              </Link>
+            ) : null}
+          </div>
         ) : (
           <p className="text-[11px] text-muted">
             Convert a clear image or scanned PDF into an editable Word draft, then review and
