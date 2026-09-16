@@ -5,7 +5,7 @@ export function TableWrap({ className, ...props }: HTMLAttributes<HTMLDivElement
   return (
     <div
       className={cn(
-        'overflow-x-auto overscroll-x-contain rounded-xl border border-white/80 bg-white/72 shadow-[0_14px_40px_rgba(45,20,58,0.06)] backdrop-blur-xl supports-[not_(backdrop-filter:blur(1px))]:bg-white max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0',
+        'touch-pan-x overflow-x-auto overscroll-x-contain rounded-xl border border-white/80 bg-white/72 shadow-[0_14px_40px_rgba(45,20,58,0.06)] backdrop-blur-xl supports-[not_(backdrop-filter:blur(1px))]:bg-white max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0',
         className,
       )}
       role="region"
@@ -26,7 +26,7 @@ export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
   return (
     <th
       className={cn(
-        'whitespace-nowrap border-b border-ink/8 bg-charcoal px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/90',
+        'whitespace-nowrap border-b border-ink/8 bg-charcoal px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/90 sm:px-4',
         className,
       )}
       scope="col"
@@ -38,7 +38,7 @@ export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
 export function Td({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn('border-b border-ink/5 px-4 py-3 align-middle text-ink', className)}
+      className={cn('border-b border-ink/5 px-3 py-3 align-middle text-ink sm:px-4', className)}
       {...props}
     />
   );
