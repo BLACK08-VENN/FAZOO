@@ -12,8 +12,8 @@ import {
 import { pipelineBoard } from '@/server/booklists';
 
 /**
- * CSV export of the booklist pipeline — one row per logged school, carrying
- * only the operational fields supervisors need in the downloaded report.
+ * CSV export of the booklist pipeline. Whole-school submissions produce one
+ * row; multi-grade submissions produce one row per collected grade.
  *
  * Honours the same filters as the /booklists board, so what a supervisor sees
  * on screen is exactly what lands in the file.
@@ -23,6 +23,7 @@ const COLUMNS = [
   'School name',
   'Region / location',
   'BA name',
+  'Grade / class',
   'Booklist status',
   'Copies requested',
   'Due date',
@@ -51,47 +52,66 @@ function isAgency(value: string | null): value is BaAgency {
 }
 
 /**
- * Multi-grade jobs keep requested quantities on their grade rows and
- * deliberately leave the parent job total empty. Rebuild that total for the
- * flat CSV so the report never shows a blank quantity for those schools.
+ * Multi-grade jobs keep their operational details on individual grade rows.
+ * Load those rows so the flat CSV can preserve each grade instead of merging
+ * all requested copies into one school-level total.
  */
-async function requestedCopiesByJob(
+type GradeBooklistRow = {
+  job_id: string;
+  grade_label: string;
+  copies_requested: number;
+  due_date: string;
+  printables_shipped: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
+async function gradeBooklistsByJob(
   client: Awaited<ReturnType<typeof requireStaff>>['client'],
   jobIds: string[],
-): Promise<Map<string, number>> {
-  type GradeCopyRow = { job_id: string; copies_requested: number };
+): Promise<Map<string, GradeBooklistRow[]>> {
   type GradeCopiesClient = {
     from(table: 'booklist_grade_requests'): {
-      select(columns: 'job_id,copies_requested'): {
+      select(
+        columns: 'job_id,grade_label,copies_requested,due_date,printables_shipped,sort_order,created_at',
+      ): {
         in(
           column: 'job_id',
           values: string[],
-        ): PromiseLike<{ data: GradeCopyRow[] | null; error: { message: string } | null }>;
+        ): PromiseLike<{ data: GradeBooklistRow[] | null; error: { message: string } | null }>;
       };
     };
   };
 
   // The generated database types predate this live table. Keep the temporary
-  // compatibility cast local to this two-column read.
+  // compatibility cast local to this report-only read.
   const gradeCopiesClient = client as unknown as GradeCopiesClient;
-  const totals = new Map<string, number>();
+  const rowsByJob = new Map<string, GradeBooklistRow[]>();
   const batchSize = 100;
 
   for (let index = 0; index < jobIds.length; index += batchSize) {
     const batch = jobIds.slice(index, index + batchSize);
     const { data, error } = await gradeCopiesClient
       .from('booklist_grade_requests')
-      .select('job_id,copies_requested')
+      .select(
+        'job_id,grade_label,copies_requested,due_date,printables_shipped,sort_order,created_at',
+      )
       .in('job_id', batch);
 
-    if (error) throw new Error(`Could not load requested copies: ${error.message}`);
+    if (error) throw new Error(`Could not load grade booklists: ${error.message}`);
 
     for (const row of data ?? []) {
-      totals.set(row.job_id, (totals.get(row.job_id) ?? 0) + row.copies_requested);
+      const jobRows = rowsByJob.get(row.job_id) ?? [];
+      jobRows.push(row);
+      rowsByJob.set(row.job_id, jobRows);
     }
   }
 
-  return totals;
+  for (const rows of rowsByJob.values()) {
+    rows.sort((a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at));
+  }
+
+  return rowsByJob;
 }
 
 export async function GET(request: NextRequest) {
@@ -137,14 +157,14 @@ export async function GET(request: NextRequest) {
     return new Response(message, { status: 502 });
   }
 
-  let gradeCopyTotals: Map<string, number>;
+  let gradeRowsByJob: Map<string, GradeBooklistRow[]>;
   try {
-    gradeCopyTotals = await requestedCopiesByJob(
+    gradeRowsByJob = await gradeBooklistsByJob(
       client,
       board.jobs.filter((job) => job.is_per_grade).map((job) => job.job_id),
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not load requested copies';
+    const message = error instanceof Error ? error.message : 'Could not load grade booklists';
     return new Response(message, { status: 502 });
   }
 
@@ -153,23 +173,43 @@ export async function GET(request: NextRequest) {
     encoder.encode(`\uFEFF${COLUMNS.map(csvEscape).join(',')}\r\n`),
   ];
 
+  let exportedRows = 0;
   for (const job of board.jobs) {
-    chunks.push(
-      encoder.encode(
-        [
+    const gradeRows = gradeRowsByJob.get(job.job_id);
+    const reportRows = job.is_per_grade && gradeRows?.length
+      ? gradeRows.map((grade) => ({
+          grade: grade.grade_label,
+          copiesRequested: grade.copies_requested,
+          dueDate: grade.due_date,
+          shippingStatus: grade.printables_shipped ? 'Shipped' : 'Pending',
+        }))
+      : [{
+          grade: job.is_per_grade ? 'Per-grade list' : 'Whole school',
+          copiesRequested: job.copies_requested,
+          dueDate: job.due_date,
+          shippingStatus: job.dispatched_at ? 'Shipped' : 'Pending',
+        }];
+
+    for (const reportRow of reportRows) {
+      chunks.push(
+        encoder.encode(
+          [
           job.school_name,
           job.school_region,
           job.owner_ba_name,
+          reportRow.grade,
           job.completed_at ? 'Completed' : booklistStageLabel(job.stage),
-          job.copies_requested ?? gradeCopyTotals.get(job.job_id),
-          job.due_date,
-          job.dispatched_at ? 'Shipped' : 'Pending',
+          reportRow.copiesRequested,
+          reportRow.dueDate,
+          reportRow.shippingStatus,
           nairobiTime(job.completed_at),
-        ]
-          .map(csvEscape)
-          .join(',') + '\r\n',
-      ),
-    );
+          ]
+            .map(csvEscape)
+            .join(',') + '\r\n',
+        ),
+      );
+      exportedRows += 1;
+    }
   }
 
   const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
@@ -182,7 +222,7 @@ export async function GET(request: NextRequest) {
       'Content-Disposition': `attachment; filename="fazoo-booklist-pipeline-${stamp}.csv"`,
       'Cache-Control': 'no-store',
       // Surface the row cap so a truncated file is never mistaken for the whole pipeline.
-      'X-Rows-Exported': String(board.jobs.length),
+      'X-Rows-Exported': String(exportedRows),
       'X-Rows-Matched': String(board.total),
       'X-Export-Truncated': truncated ? 'true' : 'false',
     },
