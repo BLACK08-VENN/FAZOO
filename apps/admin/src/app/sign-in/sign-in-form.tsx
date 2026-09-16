@@ -62,14 +62,13 @@ export function SignInForm({ next }: { next: string }) {
       <div
         role="tablist"
         aria-label="Choose an account type"
-        className="relative grid grid-cols-3 gap-1.5 rounded-xl bg-ink/[0.04] p-1.5"
+        className="relative flex rounded-xl bg-ink/[0.04] p-1.5"
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-1.5 left-1.5 top-1.5 z-0 rounded-lg bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="pointer-events-none absolute bottom-1.5 left-1.5 top-1.5 z-0 w-[calc((100%-0.75rem)/3)] rounded-lg bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
-            width: 'calc((100% - 1.5rem) / 3)',
-            transform: `translateX(calc(${roleIndex} * ((100% - 1.5rem) / 3 + 0.375rem)))`,
+            transform: `translateX(calc(${roleIndex} * 100% + ${roleIndex} * 0.375rem))`,
           }}
         />
         {ROLE_TABS.map((t) => (
@@ -79,7 +78,7 @@ export function SignInForm({ next }: { next: string }) {
             aria-selected={role === t.key}
             type="button"
             onClick={() => setRole(t.key)}
-            className="relative z-10 flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-center transition-all focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
+            className="flex-1 relative z-10 flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-center transition-all focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary"
           >
             <span className="text-xs font-bold text-ink">{t.label}</span>
             <span

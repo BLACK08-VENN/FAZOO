@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
 import { toAuthEmail, normalizeInternationalPhone } from '@fazoo/validation';
 import { PrimaryButton } from '@/components/primary-button';
-import { AppBackdrop, Field, GlassCard, HeroCard } from '@/components/ui';
+import { Field, GlassCard, HeroCard } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 export default function SignIn() {
@@ -61,7 +62,13 @@ export default function SignIn() {
   }
 
   return (
-    <AppBackdrop>
+    <ImageBackground
+      source={require('../assets/sign-in-background.jpg')}
+      resizeMode="cover"
+      className="flex-1"
+      accessibilityIgnoresInvertColors
+    >
+      <View className="absolute inset-0 bg-black/15" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
@@ -157,6 +164,6 @@ export default function SignIn() {
           </Link>
         </ScrollView>
       </KeyboardAvoidingView>
-    </AppBackdrop>
+    </ImageBackground>
   );
 }
