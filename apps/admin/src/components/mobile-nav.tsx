@@ -23,11 +23,11 @@ export function MobileNav({ orgKind }: { orgKind: OrgKind }) {
   return (
     <nav
       aria-label="Primary mobile"
-      className="fazoo-mobile-nav no-print fixed inset-x-0 bottom-0 z-30 border-t lg:hidden"
+      className="fazoo-mobile-nav no-print fixed inset-x-0 bottom-0 z-30 border-t xl:hidden"
     >
       <div
         className={cn(
-          'mx-auto grid max-w-lg px-2 pt-1.5',
+          'mx-auto grid max-w-3xl px-2 pt-1.5',
           GRID_COLS[items.length] ?? 'grid-cols-6',
         )}
       >
