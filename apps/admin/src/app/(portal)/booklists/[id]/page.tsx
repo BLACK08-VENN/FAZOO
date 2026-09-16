@@ -66,7 +66,9 @@ const GEOFENCE_LABELS: Record<SchoolVisit['geofence_status'], string> = {
   not_checked: 'GPS recorded — distance not checked',
 };
 
-const DISPATCH_OPTIONS = Object.entries(DISPATCH_MEANS_LABELS) as Array<[DispatchMeans, string]>;
+const DISPATCH_OPTIONS = Object.entries(DISPATCH_MEANS_LABELS) as Array<
+  [DispatchMeans, string]
+>;
 const PRINT_STATUS_OPTIONS = Object.entries(PRINT_ORDER_STATUS_LABELS) as Array<
   [PrintOrderStatus, string]
 >;
@@ -91,11 +93,7 @@ function fileSizeLabel(bytes: number | null): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export default async function BooklistJobPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function BooklistJobPage({ params }: { params: Promise<{ id: string }> }) {
   const { client, profile } = await requireStaff();
   const { id: jobId } = await params;
 
@@ -161,7 +159,11 @@ export default async function BooklistJobPage({
         job.copies_confirmed_by,
         job.stage_updated_by,
         ...documents.map((doc) => doc.uploaded_by),
-        ...printOrders.flatMap((order) => [order.ordered_by, order.dispatched_by, order.received_by]),
+        ...printOrders.flatMap((order) => [
+          order.ordered_by,
+          order.dispatched_by,
+          order.received_by,
+        ]),
         ...timeline.map((event) => event.changed_by),
         ...visits.map((visit) => visit.brand_ambassador_id),
       ].filter((value): value is string => Boolean(value)),
@@ -173,14 +175,17 @@ export default async function BooklistJobPage({
     : { data: [] };
 
   const people = new Map(
-    ((peopleRows ?? []) as Array<{
-      id: string;
-      full_name: string;
-      agency: BaAgency | null;
-      role: string;
-    }>).map((person) => [person.id, person]),
+    (
+      (peopleRows ?? []) as Array<{
+        id: string;
+        full_name: string;
+        agency: BaAgency | null;
+        role: string;
+      }>
+    ).map((person) => [person.id, person]),
   );
-  const nameOf = (id: string | null) => (id ? (people.get(id)?.full_name ?? 'Unknown') : NOT_YET);
+  const nameOf = (id: string | null) =>
+    id ? (people.get(id)?.full_name ?? 'Unknown') : NOT_YET;
 
   const owner = job.owner_ba_id ? people.get(job.owner_ba_id) : undefined;
   const canAct = isElevated(profile.role);
@@ -292,12 +297,19 @@ export default async function BooklistJobPage({
         <OcrBadge status={job.ocr_status} />
         {job.is_per_grade ? <Badge tone="neutral">Per grade</Badge> : null}
         {stamped ? <Badge tone="success">Stamped +1 copy on file</Badge> : null}
-        {job.on_hold_reason ? <Badge tone="warning">On hold: {job.on_hold_reason}</Badge> : null}
-        {job.cancelled_reason ? <Badge tone="danger">Cancelled: {job.cancelled_reason}</Badge> : null}
+        {job.on_hold_reason ? (
+          <Badge tone="warning">On hold: {job.on_hold_reason}</Badge>
+        ) : null}
+        {job.cancelled_reason ? (
+          <Badge tone="danger">Cancelled: {job.cancelled_reason}</Badge>
+        ) : null}
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <StatCard label="Copies requested" value={job.copies_requested?.toLocaleString() ?? NOT_YET} />
+        <StatCard
+          label="Copies requested"
+          value={job.copies_requested?.toLocaleString() ?? NOT_YET}
+        />
         <StatCard
           label="To print (incl. +1)"
           value={job.copies_to_print?.toLocaleString() ?? NOT_YET}
@@ -321,7 +333,70 @@ export default async function BooklistJobPage({
             canAct={canAct}
           />
 
-          <Card>
+          {canAct && job.stage === 'formatted' ? (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader
+                title="Next step: send for school approval"
+                description="The corrected document is ready. Move the school forward so the approval step is visible to the BA and admin."
+              />
+              <CardBody>
+                <form action={advanceStage}>
+                  <input type="hidden" name="stage" value="pending_school_approval" />
+                  <input
+                    type="hidden"
+                    name="note"
+                    value="Corrected document ready and sent for school approval"
+                  />
+                  <Button type="submit">Send for school approval</Button>
+                </form>
+              </CardBody>
+            </Card>
+          ) : null}
+
+          {canAct && job.stage === 'pending_school_approval' ? (
+            <Card className="border-warn/30 bg-warn/5">
+              <CardHeader
+                title="Waiting for school approval"
+                description="When the school approves the corrected document and confirms its copies, move the record to School approved."
+              />
+              <CardBody>
+                {job.copies_requested !== null ? (
+                  <form action={advanceStage}>
+                    <input type="hidden" name="stage" value="school_approved" />
+                    <input
+                      type="hidden"
+                      name="note"
+                      value="School approved the corrected document"
+                    />
+                    <Button type="submit">Mark school approved</Button>
+                  </form>
+                ) : (
+                  <p className="text-sm font-medium text-warn">
+                    Record the school’s requested copy quantity before marking approval.
+                  </p>
+                )}
+              </CardBody>
+            </Card>
+          ) : null}
+
+          {canAct && job.stage === 'school_approved' ? (
+            <Card className="border-ok/30 bg-ok/5">
+              <CardHeader
+                title="Next step: create the print order"
+                description="School approval is recorded. Continue to printing using the section below."
+              />
+              <CardBody>
+                <a
+                  href="#print-order"
+                  className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-deep"
+                >
+                  Go to print order
+                </a>
+              </CardBody>
+            </Card>
+          ) : null}
+
+          <Card id="print-order" className="scroll-mt-24">
             <CardHeader
               title="Print order &amp; delivery"
               description="Tracked from the moment the run is ordered, through dispatch by whichever means, to receipt at the school."
@@ -329,7 +404,9 @@ export default async function BooklistJobPage({
             <CardBody className="space-y-5">
               {activeOrder ? (
                 <form
-                  action={async (formData: FormData) => updatePrintOrder(formData, activeOrder.id)}
+                  action={async (formData: FormData) =>
+                    updatePrintOrder(formData, activeOrder.id)
+                  }
                   className="space-y-4 rounded-xl border border-ink/10 p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -340,7 +417,8 @@ export default async function BooklistJobPage({
                       <p className="text-xs text-muted">
                         {activeOrder.printer_name ?? 'Printer not recorded'} ·{' '}
                         {activeOrder.quantity.toLocaleString()} copies · raised{' '}
-                        {nairobiTime(activeOrder.ordered_at)} by {nameOf(activeOrder.ordered_by)}
+                        {nairobiTime(activeOrder.ordered_at)} by{' '}
+                        {nameOf(activeOrder.ordered_by)}
                       </p>
                     </div>
                     <PrintOrderBadge status={activeOrder.status} />
@@ -348,7 +426,10 @@ export default async function BooklistJobPage({
 
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3">
                     <Milestone label="Ordered" at={activeOrder.ordered_at} />
-                    <Milestone label="Production started" at={activeOrder.production_started_at} />
+                    <Milestone
+                      label="Production started"
+                      at={activeOrder.production_started_at}
+                    />
                     <Milestone label="Ready" at={activeOrder.ready_at} />
                     <Milestone label="Dispatched" at={activeOrder.dispatched_at} />
                     <Milestone label="Received" at={activeOrder.received_at} />
@@ -365,10 +446,14 @@ export default async function BooklistJobPage({
                     </p>
                   ) : null}
                   {activeOrder.dispatch_notes ? (
-                    <p className="text-xs text-muted">Dispatch note: {activeOrder.dispatch_notes}</p>
+                    <p className="text-xs text-muted">
+                      Dispatch note: {activeOrder.dispatch_notes}
+                    </p>
                   ) : null}
                   {activeOrder.receipt_notes ? (
-                    <p className="text-xs text-muted">Receipt note: {activeOrder.receipt_notes}</p>
+                    <p className="text-xs text-muted">
+                      Receipt note: {activeOrder.receipt_notes}
+                    </p>
                   ) : null}
                   {activeOrder.cancelled_reason ? (
                     <p className="text-xs font-medium text-bad">
@@ -420,7 +505,9 @@ export default async function BooklistJobPage({
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor={`po-carrier-${activeOrder.id}`}>Carrier / driver</Label>
+                          <Label htmlFor={`po-carrier-${activeOrder.id}`}>
+                            Carrier / driver
+                          </Label>
                           <Input
                             id={`po-carrier-${activeOrder.id}`}
                             name="dispatch_carrier"
@@ -429,7 +516,9 @@ export default async function BooklistJobPage({
                           />
                         </div>
                         <div>
-                          <Label htmlFor={`po-tracking-${activeOrder.id}`}>Tracking reference</Label>
+                          <Label htmlFor={`po-tracking-${activeOrder.id}`}>
+                            Tracking reference
+                          </Label>
                           <Input
                             id={`po-tracking-${activeOrder.id}`}
                             name="dispatch_tracking_ref"
@@ -445,7 +534,9 @@ export default async function BooklistJobPage({
                           />
                         </div>
                         <div className="sm:col-span-2">
-                          <Label htmlFor={`po-dispatch-note-${activeOrder.id}`}>Dispatch note</Label>
+                          <Label htmlFor={`po-dispatch-note-${activeOrder.id}`}>
+                            Dispatch note
+                          </Label>
                           <Input
                             id={`po-dispatch-note-${activeOrder.id}`}
                             name="dispatch_notes"
@@ -453,7 +544,9 @@ export default async function BooklistJobPage({
                           />
                         </div>
                         <div>
-                          <Label htmlFor={`po-receipt-note-${activeOrder.id}`}>Receipt note</Label>
+                          <Label htmlFor={`po-receipt-note-${activeOrder.id}`}>
+                            Receipt note
+                          </Label>
                           <Input
                             id={`po-receipt-note-${activeOrder.id}`}
                             name="receipt_notes"
@@ -461,7 +554,9 @@ export default async function BooklistJobPage({
                           />
                         </div>
                         <div>
-                          <Label htmlFor={`po-reference-${activeOrder.id}`}>Order reference</Label>
+                          <Label htmlFor={`po-reference-${activeOrder.id}`}>
+                            Order reference
+                          </Label>
                           <Input
                             id={`po-reference-${activeOrder.id}`}
                             name="reference"
@@ -481,8 +576,8 @@ export default async function BooklistJobPage({
                       </div>
                       <Button type="submit">Save print order</Button>
                       <p className="text-xs text-muted">
-                        Marking this dispatched or received moves the school to that stage on both
-                        dashboards. A dispatch will not save until you record the means.
+                        Marking this dispatched or received moves the school to that stage on
+                        both dashboards. A dispatch will not save until you record the means.
                       </p>
                     </>
                   ) : (
@@ -522,11 +617,19 @@ export default async function BooklistJobPage({
                     </div>
                     <div>
                       <Label htmlFor="po-new-printer">Printer</Label>
-                      <Input id="po-new-printer" name="printer_name" placeholder="e.g. Nairobi Press" />
+                      <Input
+                        id="po-new-printer"
+                        name="printer_name"
+                        placeholder="e.g. Nairobi Press"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="po-new-ref">Reference</Label>
-                      <Input id="po-new-ref" name="reference" placeholder="Invoice or job number" />
+                      <Input
+                        id="po-new-ref"
+                        name="reference"
+                        placeholder="Invoice or job number"
+                      />
                     </div>
                     <div className="sm:col-span-3">
                       <Label htmlFor="po-new-note">Note for the timeline</Label>
@@ -562,12 +665,16 @@ export default async function BooklistJobPage({
                     <Th>Size</Th>
                     <Th>Uploaded</Th>
                     <Th>Conversion</Th>
-                    <Th><span className="sr-only">Open</span></Th>
+                    <Th>
+                      <span className="sr-only">Open</span>
+                    </Th>
                   </tr>
                 </thead>
                 <tbody>
                   {documents.length === 0 ? (
-                    <EmptyRow colSpan={6}>Nothing has been uploaded for this school yet.</EmptyRow>
+                    <EmptyRow colSpan={6}>
+                      Nothing has been uploaded for this school yet.
+                    </EmptyRow>
                   ) : (
                     documents.map((doc) => (
                       <tr key={doc.id}>
@@ -582,7 +689,9 @@ export default async function BooklistJobPage({
                         <Td className="text-xs">{sourceFormatLabel(doc.source_format)}</Td>
                         <Td className="whitespace-nowrap text-xs tabular-nums">
                           {fileSizeLabel(doc.file_size_bytes)}
-                          {doc.page_count ? <p className="text-muted">{doc.page_count} pages</p> : null}
+                          {doc.page_count ? (
+                            <p className="text-muted">{doc.page_count} pages</p>
+                          ) : null}
                         </Td>
                         <Td className="whitespace-nowrap text-xs">
                           {nairobiTime(doc.created_at)}
@@ -625,8 +734,8 @@ export default async function BooklistJobPage({
                   <div>
                     <Label htmlFor="stage-select">Stage</Label>
                     <Select id="stage-select" name="stage" defaultValue={job.stage}>
-                      {STAGE_OPTIONS.filter(([value]) =>
-                        MANUAL_STAGES.includes(value) || value === job.stage,
+                      {STAGE_OPTIONS.filter(
+                        ([value]) => MANUAL_STAGES.includes(value) || value === job.stage,
                       ).map(([value, label]) => (
                         <option key={value} value={value}>
                           {label}
@@ -642,8 +751,9 @@ export default async function BooklistJobPage({
                     Update stage
                   </Button>
                   <p className="text-xs text-muted">
-                    A school cannot be completed until the stamped +1 copy is uploaded, and cannot
-                    go to the school for approval until you have published the formatted document.
+                    A school cannot be completed until the stamped +1 copy is uploaded, and
+                    cannot go to the school for approval until you have published the formatted
+                    document.
                   </p>
                 </form>
               </CardBody>
@@ -654,7 +764,12 @@ export default async function BooklistJobPage({
             <CardHeader title="School acknowledgement" />
             <CardBody className="space-y-2 text-sm">
               <Row label="Acknowledged by" value={job.school_acknowledged_by} />
-              <Row label="Approved at" value={job.approved_by_school_at ? nairobiTime(job.approved_by_school_at) : null} />
+              <Row
+                label="Approved at"
+                value={
+                  job.approved_by_school_at ? nairobiTime(job.approved_by_school_at) : null
+                }
+              />
               <Row
                 label="Copies confirmed"
                 value={
@@ -709,9 +824,12 @@ export default async function BooklistJobPage({
                       </div>
                     </div>
                     <p className="mt-1 text-xs text-muted">
-                      {nameOf(visit.brand_ambassador_id)} · arrived {nairobiTime(visit.arrived_at)}
+                      {nameOf(visit.brand_ambassador_id)} · arrived{' '}
+                      {nairobiTime(visit.arrived_at)}
                     </p>
-                    <p className="mt-1 text-xs text-ink">{GEOFENCE_LABELS[visit.geofence_status]}</p>
+                    <p className="mt-1 text-xs text-ink">
+                      {GEOFENCE_LABELS[visit.geofence_status]}
+                    </p>
                     {visit.distance_metres !== null ? (
                       <p className="text-xs text-muted">
                         {Math.round(visit.distance_metres).toLocaleString()} m from the recorded
@@ -744,7 +862,9 @@ export default async function BooklistJobPage({
                         {visit.declined_reason_notes ? ` — ${visit.declined_reason_notes}` : ''}
                       </p>
                     ) : null}
-                    {visit.notes ? <p className="mt-1 text-xs text-muted">{visit.notes}</p> : null}
+                    {visit.notes ? (
+                      <p className="mt-1 text-xs text-muted">{visit.notes}</p>
+                    ) : null}
                   </article>
                 ))
               )}
@@ -776,7 +896,9 @@ export default async function BooklistJobPage({
               ) : (
                 [...timeline].reverse().map((event) => (
                   <tr key={event.id}>
-                    <Td className="whitespace-nowrap text-xs">{nairobiTime(event.created_at)}</Td>
+                    <Td className="whitespace-nowrap text-xs">
+                      {nairobiTime(event.created_at)}
+                    </Td>
                     <Td className="text-xs text-muted">
                       {event.from_stage ? BOOKLIST_STAGE_LABELS[event.from_stage] : 'Started'}
                     </Td>
@@ -786,7 +908,9 @@ export default async function BooklistJobPage({
                     <Td className="text-xs">
                       {nameOf(event.changed_by)}
                       {event.changed_by_role ? (
-                        <p className="text-muted">{event.changed_by_role.replaceAll('_', ' ')}</p>
+                        <p className="text-muted">
+                          {event.changed_by_role.replaceAll('_', ' ')}
+                        </p>
                       ) : null}
                     </Td>
                     <Td className="text-xs text-muted">{event.note ?? ''}</Td>
@@ -800,8 +924,8 @@ export default async function BooklistJobPage({
 
       {formatted ? (
         <p className="mt-4 text-xs text-muted">
-          The BA downloads the formatted document from the app, prints it and takes it back to the
-          school. Current published version: {nairobiTime(formatted.created_at)}.
+          The BA downloads the formatted document from the app, prints it and takes it back to
+          the school. Current published version: {nairobiTime(formatted.created_at)}.
         </p>
       ) : null}
     </>
