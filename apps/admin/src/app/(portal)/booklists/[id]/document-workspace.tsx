@@ -65,7 +65,10 @@ export function DocumentWorkspace({
       }
       startTransition(() => router.refresh());
     } catch (error) {
-      setFeedback({ tone: 'bad', text: error instanceof Error ? error.message : 'Conversion failed.' });
+      setFeedback({
+        tone: 'bad',
+        text: error instanceof Error ? error.message : 'Conversion failed.',
+      });
     } finally {
       setConverting(false);
     }
@@ -76,7 +79,7 @@ export function DocumentWorkspace({
     const form = new FormData(event.currentTarget);
     const file = form.get('file');
     if (!(file instanceof File) || file.size === 0) {
-      setFeedback({ tone: 'bad', text: 'Choose the final Word document to publish.' });
+      setFeedback({ tone: 'bad', text: 'Choose the final Word or PDF document to publish.' });
       return;
     }
 
@@ -98,14 +101,17 @@ export function DocumentWorkspace({
 
       setFeedback({
         tone: 'ok',
-        text: 'Final Word document published. The print request is now ready for admin production and shipping.',
+        text: 'Final corrected document published. The print request is now ready for admin production and shipping.',
       });
-      fazooToast('Final Word document published.');
+      fazooToast('Final corrected document published.');
       event.currentTarget.reset();
       setPerGrade('unchanged');
       startTransition(() => router.refresh());
     } catch (error) {
-      setFeedback({ tone: 'bad', text: error instanceof Error ? error.message : 'Upload failed.' });
+      setFeedback({
+        tone: 'bad',
+        text: error instanceof Error ? error.message : 'Upload failed.',
+      });
     } finally {
       setUploading(false);
     }
@@ -138,9 +144,13 @@ export function DocumentWorkspace({
         />
         <CardBody>
           {!hasRawDocument ? (
-            <p className="text-sm text-muted">The BA has not uploaded the original booklist yet.</p>
+            <p className="text-sm text-muted">
+              The BA has not uploaded the original booklist yet.
+            </p>
           ) : !canAct ? (
-            <p className="text-sm text-muted">Your role can view this pipeline but not run conversions. Ask an administrator.</p>
+            <p className="text-sm text-muted">
+              Your role can view this pipeline but not run conversions. Ask an administrator.
+            </p>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button type="button" onClick={() => void runConversion()} disabled={busy}>
@@ -158,11 +168,13 @@ export function DocumentWorkspace({
 
       <Card>
         <CardHeader
-          title="2. Publish the final Word document"
-          description="FAZOO stores the final printable version as a Word file. Publishing it makes the job ready for the admin print order and delivery process."
+          title="2. Publish the final corrected document"
+          description="Upload the final printable Word or PDF version. Publishing it makes the job ready for the admin print order and delivery process."
           actions={
             formattedPublishedAt ? (
-              <span className="text-xs font-medium text-ok">Published — you can replace it</span>
+              <span className="text-xs font-medium text-ok">
+                Published — you can replace it
+              </span>
             ) : (
               <span className="text-xs font-medium text-warn">Not published yet</span>
             )
@@ -170,16 +182,18 @@ export function DocumentWorkspace({
         />
         <CardBody>
           {!canAct ? (
-            <p className="text-sm text-muted">Only administrators can publish the final Word document.</p>
+            <p className="text-sm text-muted">
+              Only administrators can publish the final Word document.
+            </p>
           ) : (
             <form onSubmit={publishFormatted} className="space-y-4">
               <div>
-                <Label htmlFor="formatted-file">Word document (.docx or .doc)</Label>
+                <Label htmlFor="formatted-file">Corrected document (.docx, .doc or .pdf)</Label>
                 <Input
                   id="formatted-file"
                   name="file"
                   type="file"
-                  accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+                  accept=".docx,.doc,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/pdf"
                   required
                 />
                 <p className="mt-1 text-xs text-muted">Maximum 4 MB.</p>
@@ -200,10 +214,18 @@ export function DocumentWorkspace({
               </div>
               <div>
                 <Label htmlFor="formatted-note">Note for the timeline</Label>
-                <Input id="formatted-note" name="note" placeholder="e.g. Reformatted the handwriting into a per-grade table" />
+                <Input
+                  id="formatted-note"
+                  name="note"
+                  placeholder="e.g. Reformatted the handwriting into a per-grade table"
+                />
               </div>
               <Button type="submit" disabled={busy}>
-                {uploading ? 'Publishing…' : formattedPublishedAt ? 'Replace Word document' : 'Publish Word document'}
+                {uploading
+                  ? 'Publishing…'
+                  : formattedPublishedAt
+                    ? 'Replace corrected document'
+                    : 'Publish corrected document'}
               </Button>
             </form>
           )}
