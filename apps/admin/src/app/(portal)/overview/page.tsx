@@ -125,12 +125,12 @@ export default async function OverviewPage({
         description="Attendance and sales across the selected range."
       />
 
-      <Card className="mb-6 p-5">
+      <Card className="mb-5 p-4 sm:mb-6 sm:p-5">
         <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
         <SectionCards orgKind="retail" />
       </Card>
 
-      <Card className="mb-6 p-4">
+      <Card className="mb-5 p-3 sm:mb-6 sm:p-4">
         <LogFiltersForm
           action="/overview"
           campaigns={options.campaigns}
@@ -142,14 +142,42 @@ export default async function OverviewPage({
         />
       </Card>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="BA-days" value={stats.baDays} delta={delta(stats.baDays, prevStats.baDays)} />
-        <StatCard label="Units sold" value={stats.units} delta={delta(stats.units, prevStats.units)} />
-        <StatCard label="Completed days" value={stats.completed} delta={delta(stats.completed, prevStats.completed)} />
-        <StatCard label="Open / incomplete" value={stats.open} delta={delta(stats.open, prevStats.open)} />
-        <StatCard label="Active BAs" value={stats.activeBas} delta={delta(stats.activeBas, prevStats.activeBas)} />
-        <StatCard label="Active stores" value={stats.activeStores} delta={delta(stats.activeStores, prevStats.activeStores)} />
-        <StatCard label="Sick-leave days" value={stats.sick} delta={delta(stats.sick, prevStats.sick)} />
+      <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 sm:gap-4 md:grid-cols-4">
+        <StatCard
+          label="BA-days"
+          value={stats.baDays}
+          delta={delta(stats.baDays, prevStats.baDays)}
+        />
+        <StatCard
+          label="Units sold"
+          value={stats.units}
+          delta={delta(stats.units, prevStats.units)}
+        />
+        <StatCard
+          label="Completed days"
+          value={stats.completed}
+          delta={delta(stats.completed, prevStats.completed)}
+        />
+        <StatCard
+          label="Open / incomplete"
+          value={stats.open}
+          delta={delta(stats.open, prevStats.open)}
+        />
+        <StatCard
+          label="Active BAs"
+          value={stats.activeBas}
+          delta={delta(stats.activeBas, prevStats.activeBas)}
+        />
+        <StatCard
+          label="Active stores"
+          value={stats.activeStores}
+          delta={delta(stats.activeStores, prevStats.activeStores)}
+        />
+        <StatCard
+          label="Sick-leave days"
+          value={stats.sick}
+          delta={delta(stats.sick, prevStats.sick)}
+        />
         <StatCard
           label="Completion rate"
           value={`${stats.baDays ? Math.round((stats.completed / stats.baDays) * 100) : 0}%`}
@@ -162,7 +190,7 @@ export default async function OverviewPage({
       </div>
 
       <Card className="mt-6">
-        <div className="border-b border-ink/8 px-5 py-4">
+        <div className="border-b border-ink/8 px-4 py-4 sm:px-5">
           <h2 className="text-sm font-semibold text-ink">Sales &amp; completion trends</h2>
           <p className="mt-0.5 text-xs text-muted">
             Units and completion rate per day in the selected range.
