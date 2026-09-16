@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fazoo-v3';
+const CACHE_NAME = 'fazoo-v4';
 const PRECACHE = ['/offline.html'];
 
 self.addEventListener('install', (event) => {
@@ -8,9 +8,11 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
-    ),
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
+      ),
   );
   self.clients.claim();
 });
@@ -30,24 +32,17 @@ self.addEventListener('fetch', (event) => {
   // deployment cannot be hidden behind an old cached page or JS reference.
   if (request.mode === 'navigate' || request.destination === 'document') {
     event.respondWith(
-      fetch(request).catch(async () => (await caches.match('/offline.html')) || Response.error()),
+      fetch(request).catch(
+        async () => (await caches.match('/offline.html')) || Response.error(),
+      ),
     );
     return;
   }
 
-  // Cache immutable Next.js build assets only. Their filenames are content-hashed.
+  // Next.js build files already have long-lived HTTP caching. Do not copy them
+  // into Cache Storage as well: each deployment has new hashed filenames and
+  // old versions would otherwise accumulate until a phone reaches its quota.
   if (url.pathname.startsWith('/_next/static/')) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        });
-      }),
-    );
+    event.respondWith(fetch(request));
   }
 });
