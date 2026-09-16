@@ -28,7 +28,7 @@ export function LogFiltersForm({
       action={action}
       role="search"
       aria-label="Filter daily logs"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-7"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8"
     >
       <div>
         <Label htmlFor="f-preset">Range</Label>
@@ -80,8 +80,8 @@ export function LogFiltersForm({
           ))}
         </Select>
       </div>
-      <div className="flex items-end gap-2">
-        <div className="flex-1">
+      <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end lg:col-span-2">
+        <div className="min-w-0">
           <Label htmlFor="f-status">Status</Label>
           <Select
             id="f-status"
@@ -97,7 +97,7 @@ export function LogFiltersForm({
         </div>
         <button
           type="submit"
-          className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="h-11 w-full rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:w-auto"
         >
           Apply
         </button>
