@@ -33,10 +33,9 @@ type TesseractApi = {
 type PdfViewport = { width: number; height: number };
 type PdfPage = {
   getViewport: (options: { scale: number }) => PdfViewport;
-  render: (options: {
-    canvasContext: CanvasRenderingContext2D;
-    viewport: PdfViewport;
-  }) => { promise: Promise<void> };
+  render: (options: { canvasContext: CanvasRenderingContext2D; viewport: PdfViewport }) => {
+    promise: Promise<void>;
+  };
 };
 type PdfDocument = {
   numPages: number;
@@ -94,7 +93,9 @@ async function waitForLibrary<T>(read: () => T | undefined, label: string): Prom
 function extensionFromResponse(response: Response): string {
   const disposition = response.headers.get('content-disposition') ?? '';
   const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
-  const filename = filenameMatch?.[1] ? decodeURIComponent(filenameMatch[1].replace(/"/g, '')) : '';
+  const filename = filenameMatch?.[1]
+    ? decodeURIComponent(filenameMatch[1].replace(/"/g, ''))
+    : '';
   if (filename.includes('.')) return filename.split('.').pop()!.toLowerCase();
 
   try {
@@ -108,7 +109,9 @@ function extensionFromResponse(response: Response): string {
 
 function isNetworkLikeError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? '');
-  return /failed to fetch|network|fetch|load|worker|core|traineddata|connection|timeout/i.test(message);
+  return /failed to fetch|network|fetch|load|worker|core|traineddata|connection|timeout/i.test(
+    message,
+  );
 }
 
 export function GradeOrderActions({
@@ -193,7 +196,8 @@ export function GradeOrderActions({
       'The PDF reader',
     );
     pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) })
+      .promise;
 
     if (pdf.numPages > MAX_PDF_PAGES) {
       throw new Error(`Free conversion currently supports PDFs up to ${MAX_PDF_PAGES} pages.`);
@@ -317,24 +321,30 @@ export function GradeOrderActions({
     if (!wordFile) return;
     setBusy(true);
     setFailed(false);
-    setFeedback('Uploading the manually prepared Word document…');
+    setFeedback('Uploading the corrected document…');
     try {
       const form = new FormData();
       form.set('file', wordFile);
       form.set('client_request_id', crypto.randomUUID());
       const response = await fetch(`/api/booklists/grades/${gradeRequestId}/word`, {
-        method: 'POST', body: form,
+        method: 'POST',
+        body: form,
       });
       const body = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(body.error ?? 'Could not publish the Word document.');
-      setFeedback('Corrected Word document attached. It is ready to share with the school for approval.');
-      fazooToast('Corrected Word document attached successfully.');
+      if (!response.ok)
+        throw new Error(body.error ?? 'Could not publish the corrected document.');
+      setFeedback(
+        'Corrected document attached. It is ready to share with the school for approval.',
+      );
+      fazooToast('Corrected document attached successfully.');
       setWordFile(null);
       if (wordInputRef.current) wordInputRef.current.value = '';
       router.refresh();
     } catch (error) {
       setFailed(true);
-      setFeedback(error instanceof Error ? error.message : 'Could not publish the Word document.');
+      setFeedback(
+        error instanceof Error ? error.message : 'Could not publish the corrected document.',
+      );
     } finally {
       setBusy(false);
     }
@@ -368,10 +378,10 @@ export function GradeOrderActions({
         {canAct ? (
           <div className="flex flex-wrap items-center gap-2">
             <input
-              aria-label="Manually prepared Word document"
+              aria-label="Corrected Word or PDF document"
               ref={wordInputRef}
               type="file"
-              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf"
               className="sr-only"
               onChange={(event) => {
                 setWordFile(event.target.files?.[0] ?? null);
@@ -392,10 +402,10 @@ export function GradeOrderActions({
               }}
             >
               {busy
-                ? 'Uploading Word…'
+                ? 'Uploading document…'
                 : wordFile
-                  ? 'Upload corrected Word'
-                  : 'Attach corrected Word'}
+                  ? 'Upload corrected document'
+                  : 'Attach corrected document'}
             </Button>
             {wordFile ? (
               <span className="max-w-48 truncate text-xs text-muted" title={wordFile.name}>
@@ -407,15 +417,22 @@ export function GradeOrderActions({
         {hasWord ? (
           <p className="text-[11px] text-muted">
             {conversionProvider === 'manual'
-              ? 'The corrected Word document is ready to share with the school for approval.'
-              : 'Download the OCR draft, correct it in Word, then attach the corrected document below.'}
+              ? 'The corrected document is ready to share with the school for approval.'
+              : 'Download the OCR draft, correct it, then attach the corrected Word or PDF document below.'}
           </p>
         ) : (
-          <p className="text-[11px] text-muted">Convert a clear image or scanned PDF into an editable Word draft, then review and correct it.</p>
+          <p className="text-[11px] text-muted">
+            Convert a clear image or scanned PDF into an editable Word draft, then review and
+            correct it.
+          </p>
         )}
-        <p className={`text-[11px] ${conversionStatus === 'succeeded' ? 'text-ok' : conversionStatus === 'failed' || conversionStatus === 'manual_required' ? 'text-warn' : 'text-muted'}`}>
+        <p
+          className={`text-[11px] ${conversionStatus === 'succeeded' ? 'text-ok' : conversionStatus === 'failed' || conversionStatus === 'manual_required' ? 'text-warn' : 'text-muted'}`}
+        >
           {hasWord
-            ? conversionProvider === 'manual' ? 'Corrected Word ready for approval' : 'OCR draft awaiting admin corrections'
+            ? conversionProvider === 'manual'
+              ? 'Corrected document ready for approval'
+              : 'OCR draft awaiting admin corrections'
             : conversionStatus === 'processing'
               ? 'Free conversion in progress'
               : conversionStatus === 'failed' || conversionStatus === 'manual_required'
@@ -423,7 +440,9 @@ export function GradeOrderActions({
                 : 'Waiting for admin conversion'}
         </p>
         {feedback ? (
-          <p className={`max-w-72 text-[11px] ${failed ? 'text-warn' : 'text-ok'}`}>{feedback}</p>
+          <p className={`max-w-72 text-[11px] ${failed ? 'text-warn' : 'text-ok'}`}>
+            {feedback}
+          </p>
         ) : null}
       </div>
     </>
