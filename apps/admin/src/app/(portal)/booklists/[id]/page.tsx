@@ -108,7 +108,7 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
   const job = jobRow as unknown as BooklistJob | null;
   if (!job) notFound();
 
-  const [documentsResult, ordersResult, eventsResult, visitsResult, schoolResult] =
+  const [documentsResult, ordersResult, eventsResult, visitsResult, schoolResult, gradesResult] =
     await Promise.all([
       client
         .from('booklist_documents')
@@ -131,6 +131,10 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
         .eq('school_id', job.school_id)
         .order('arrived_at', { ascending: false }),
       client.from('veda_schools').select('*').eq('id', job.school_id).maybeSingle(),
+      client
+        .from('booklist_grade_requests' as never)
+        .select('id, word_storage_path')
+        .eq('job_id', jobId),
     ]);
 
   const documents = (documentsResult.data ?? []) as unknown as BooklistDocument[];
@@ -147,6 +151,15 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
     contact_person_designation: string | null;
     contact_person_phone: string | null;
   } | null;
+  const gradeDocuments = (gradesResult.data ?? []) as unknown as Array<{
+    id: string;
+    word_storage_path: string | null;
+  }>;
+  const correctedGradeDocumentCount = gradeDocuments.filter(
+    (grade) => Boolean(grade.word_storage_path),
+  ).length;
+  const allGradeDocumentsPublished =
+    gradeDocuments.length > 0 && correctedGradeDocumentCount === gradeDocuments.length;
 
   // Actor names are resolved in one pass rather than embedded, because
   // booklist_jobs alone has four separate foreign keys to profiles and
@@ -329,13 +342,28 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <DocumentWorkspace
-            jobId={jobId}
-            ocrStatus={job.ocr_status}
-            hasRawDocument={job.raw_document_id !== null}
-            formattedPublishedAt={job.formatted_at}
-            canAct={canAct}
-          />
+          {allGradeDocumentsPublished ? (
+            <Card className="border-ok/30 bg-ok/5">
+              <CardHeader
+                title="Corrected documents published"
+                description={`${correctedGradeDocumentCount} corrected grade document${correctedGradeDocumentCount === 1 ? '' : 's'} already uploaded. No second upload is required.`}
+              />
+              <CardBody>
+                <p className="text-sm text-ink">
+                  Continue with the school-approval step below. The BA will be able to show the
+                  corrected document to the school and record its decision.
+                </p>
+              </CardBody>
+            </Card>
+          ) : (
+            <DocumentWorkspace
+              jobId={jobId}
+              ocrStatus={job.ocr_status}
+              hasRawDocument={job.raw_document_id !== null}
+              formattedPublishedAt={job.formatted_at}
+              canAct={canAct}
+            />
+          )}
 
           {canAct && job.stage === 'formatted' ? (
             <Card className="border-primary/30 bg-primary/5">
