@@ -10,7 +10,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
 ) {
-  const { profile } = await requireStaff();
+  const { client, profile } = await requireStaff();
   if (!isElevated(profile.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -46,6 +46,7 @@ export async function POST(
 
   try {
     const result = await publishFormattedDocument({
+      client,
       jobId,
       actorId: profile.id,
       file,

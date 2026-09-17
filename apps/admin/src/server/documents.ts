@@ -1,5 +1,5 @@
 import 'server-only';
-import { serviceSupabase } from '@fazoo/database';
+import { serviceSupabase, type FazooClient } from '@fazoo/database';
 import { BOOKLIST_BUCKET, DOCX_MIME } from './ocr/convert';
 
 /**
@@ -87,15 +87,19 @@ export async function storeJobDocument({
 
 /** Publish the admin's final corrected document and advance the job to `formatted`. */
 export async function publishFormattedDocument(params: {
+  client: FazooClient;
   jobId: string;
   actorId: string;
   file: File;
   isPerGrade?: boolean | null;
   note?: string | null;
 }): Promise<{ documentId: string; storagePath: string }> {
-  const db = serviceSupabase();
+  const service = serviceSupabase();
 
-  const { data: job, error: jobError } = await db
+  // Read the job and publish through the request-scoped client. The RPC uses
+  // auth.uid() to authorize the admin, so calling it with the service-role
+  // client would have no user identity and fail with "Not signed in".
+  const { data: job, error: jobError } = await params.client
     .from('booklist_jobs')
     .select('id, organization_id')
     .eq('id', params.jobId)
@@ -112,7 +116,7 @@ export async function publishFormattedDocument(params: {
     slug: 'formatted',
   });
 
-  const { data, error } = await db.rpc('admin_publish_formatted_document', {
+  const { data, error } = await params.client.rpc('admin_publish_formatted_document', {
     p_job_id: params.jobId,
     p_storage_path: storagePath,
     p_mime_type: mimeTypeFor(params.file),
@@ -122,7 +126,7 @@ export async function publishFormattedDocument(params: {
   });
 
   if (error) {
-    await db.storage.from(BOOKLIST_BUCKET).remove([storagePath]);
+    await service.storage.from(BOOKLIST_BUCKET).remove([storagePath]);
     throw new Error(error.message);
   }
 
