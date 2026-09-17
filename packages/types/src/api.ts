@@ -224,6 +224,7 @@ export interface BaPipelineJob {
   completed_at: IsoTimestamp | null;
   stage_updated_at: IsoTimestamp;
   formatted_ready: boolean;
+  formatted_document_id: Uuid | null;
   stamped_uploaded: boolean;
   owner_ba_name: string | null;
   owner_ba_id: Uuid | null;
@@ -443,9 +444,7 @@ export interface AdminSchoolDossierResult {
   status: string;
   school: VedaSchool;
   jobs: BooklistJob[];
-  visits: Array<
-    SchoolVisit & { ba_name: string | null; ba_agency: BaAgency | null }
-  >;
+  visits: Array<SchoolVisit & { ba_name: string | null; ba_agency: BaAgency | null }>;
 }
 
 /** One BA's row on `admin_ba_performance`. */

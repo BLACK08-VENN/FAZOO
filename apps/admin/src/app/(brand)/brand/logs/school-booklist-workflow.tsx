@@ -148,6 +148,7 @@ function stepState(job: PipelineJob): Array<[string, StepState]> {
     'received',
     'completed',
   ].includes(job.stage);
+  const approvalDone = ['school_approved', 'in_production', 'dispatched', 'received', 'completed'].includes(job.stage);
   const printDone = ['dispatched', 'received', 'completed'].includes(job.stage);
   const shippedDone = ['received', 'completed'].includes(job.stage);
   const stampedDone = job.stage === 'completed' || job.stamped_uploaded;
@@ -163,6 +164,7 @@ function stepState(job: PipelineJob): Array<[string, StepState]> {
           ? 'current'
           : 'pending',
     ],
+    ['School approval', approvalDone ? 'done' : ['formatted', 'pending_school_approval'].includes(job.stage) ? 'current' : 'pending'],
     ['Print +1', printDone ? 'done' : job.stage === 'in_production' ? 'current' : 'pending'],
     ['Ship to school', shippedDone ? 'done' : job.stage === 'dispatched' ? 'current' : 'pending'],
     ['Stamped proof', stampedDone ? 'done' : job.stage === 'received' ? 'current' : 'pending'],
@@ -182,9 +184,11 @@ function nextAction(job: PipelineJob) {
     case 'converting':
       return 'Admin is converting the original material into the final Word document.';
     case 'formatted':
+      return 'Open the corrected document and show it to the school.';
     case 'pending_school_approval':
+      return 'Ask the school to approve the corrected document, then record the approval below.';
     case 'school_approved':
-      return 'Word document ready. Admin should create the separate grade print order(s).';
+      return 'Approval sent to admin. Printing can now begin.';
     case 'in_production':
       return 'Printing in progress for the separate grade print order(s).';
     case 'dispatched':
@@ -266,6 +270,9 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
   const [pipelineQuery, setPipelineQuery] = useState('');
   const [stampedFiles, setStampedFiles] = useState<Record<string, File | null>>({});
   const [stampedBusy, setStampedBusy] = useState<string | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState<string | null>(null);
+  const [approvalCopies, setApprovalCopies] = useState<Record<string, string>>({});
+  const [approvalContacts, setApprovalContacts] = useState<Record<string, string>>({});
   const today = useMemo(localIsoDate, []);
 
   async function loadPipeline() {
@@ -465,6 +472,105 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
     } finally { setStampedBusy(null); }
   }
 
+  async function markShownToSchool(job: PipelineJob) {
+    setApprovalBusy(job.job_id); setError(null); setSuccess(null);
+    try {
+      const { error: approvalFailure } = await client.rpc('ba_mark_pending_school_approval', {
+        p_job_id: job.job_id,
+        p_client_request_id: crypto.randomUUID(),
+        p_notes: 'BA opened the corrected document and showed it to the school',
+      });
+      if (approvalFailure) throw new Error(approvalFailure.message);
+      setSuccess(`${job.school_name}: corrected document marked as shown to the school.`);
+      await loadPipeline();
+    } catch (approvalFailure) {
+      setError(approvalFailure instanceof Error ? approvalFailure.message : 'Could not update the school approval step.');
+    } finally { setApprovalBusy(null); }
+  }
+
+  async function confirmSchoolApproval(job: PipelineJob) {
+    const copies = Number(approvalCopies[job.job_id] || job.copies_requested || '');
+    if (!Number.isInteger(copies) || copies < 1) {
+      setError('Enter the number of copies the school approved.');
+      return;
+    }
+    setApprovalBusy(job.job_id); setError(null); setSuccess(null);
+    try {
+      const { error: approvalFailure } = await client.rpc('ba_confirm_copies', {
+        p_job_id: job.job_id,
+        p_copies_requested: copies,
+        p_client_request_id: crypto.randomUUID(),
+        p_school_acknowledged_by: approvalContacts[job.job_id]?.trim() || undefined,
+        p_notes: 'School approved the corrected document; admin may proceed to print',
+      });
+      if (approvalFailure) throw new Error(approvalFailure.message);
+      setSuccess(`${job.school_name}: school approval recorded. Admin can now print ${copies + 1} copies.`);
+      await loadPipeline();
+    } catch (approvalFailure) {
+      setError(approvalFailure instanceof Error ? approvalFailure.message : 'Could not record the school approval.');
+    } finally { setApprovalBusy(null); }
+  }
+
+  function approvalPanel(job: PipelineJob) {
+    if (!['formatted', 'pending_school_approval', 'school_approved'].includes(job.stage)) return null;
+
+    return (
+      <div className="mt-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
+        <p className="text-sm font-semibold text-ink">Corrected document approval</p>
+        {job.formatted_document_id ? (
+          <a
+            href={`/api/booklists/documents/${job.formatted_document_id}/download`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex min-h-10 items-center rounded-lg border border-primary/30 bg-white px-3 text-sm font-semibold text-primary hover:bg-lavender"
+          >
+            View corrected Word/PDF
+          </a>
+        ) : <p className="mt-2 text-xs font-medium text-warn">The corrected document is not available yet.</p>}
+
+        {job.stage === 'formatted' ? (
+          <div className="mt-3">
+            <p className="text-xs text-muted">Open the file and show it to the school before continuing.</p>
+            <Button type="button" className="mt-2" onClick={() => void markShownToSchool(job)} disabled={approvalBusy === job.job_id || !job.formatted_document_id}>
+              {approvalBusy === job.job_id ? 'Saving…' : 'Shown to school'}
+            </Button>
+          </div>
+        ) : null}
+
+        {job.stage === 'pending_school_approval' ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor={`approved-copies-${job.job_id}`}>Copies approved *</Label>
+              <Input
+                id={`approved-copies-${job.job_id}`}
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                value={approvalCopies[job.job_id] ?? job.copies_requested ?? ''}
+                onChange={(event) => setApprovalCopies((value) => ({ ...value, [job.job_id]: event.target.value }))}
+              />
+              <p className="mt-1 text-xs text-muted">FAZOO adds the stamped +1 copy automatically.</p>
+            </div>
+            <div>
+              <Label htmlFor={`approved-by-${job.job_id}`}>School contact (optional)</Label>
+              <Input id={`approved-by-${job.job_id}`} value={approvalContacts[job.job_id] ?? ''} onChange={(event) => setApprovalContacts((value) => ({ ...value, [job.job_id]: event.target.value }))} placeholder="Name or role" />
+            </div>
+            <div className="sm:col-span-2">
+              <Button type="button" onClick={() => void confirmSchoolApproval(job)} disabled={approvalBusy === job.job_id}>
+                {approvalBusy === job.job_id ? 'Saving approval…' : 'Approved — notify admin'}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {job.stage === 'school_approved' ? (
+          <p className="mt-3 text-sm font-semibold text-ok">✓ School approval recorded. Admin has the go-ahead to print{job.copies_to_print ? ` ${job.copies_to_print.toLocaleString()} copies` : ''}.</p>
+        ) : null}
+      </div>
+    );
+  }
+
   const visibleJobs = useMemo(() => {
     const needle = pipelineQuery.trim().toLowerCase();
     if (!needle) return jobs;
@@ -596,7 +702,28 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
         </div>
       </form>
       <Card className="p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-ink">Booklist pipeline</h2><p className="mt-1 text-xs text-muted">Track every school from approach to stamped-copy completion.</p></div><AgencyBadge agency={stats?.agency} selfieRequired={stats?.selfie_required} /></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.active || 0}</p><p className="text-xs text-muted">In progress</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.awaiting_admin || 0}</p><p className="text-xs text-muted">With admin</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.completed || 0}</p><p className="text-xs text-muted">Completed</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.declined || 0}</p><p className="text-xs text-muted">Denied</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-3"><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Schools reached this month</p><p className="mt-1 text-lg font-bold">{reached}{target ? <span className="text-sm font-medium text-muted"> / {target}</span> : null}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Booklists collected</p><p className="mt-1 text-lg font-bold">{stats?.booklists_collected || 0}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Denials recorded</p><p className="mt-1 text-lg font-bold">{stats?.declines_recorded || 0}</p></div></div></Card>
-      <Card className="p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-base font-semibold text-ink">Status by school</h2><p className="mt-1 text-xs text-muted">Every operational step is visible here.</p></div><div className="sm:w-72"><Label htmlFor="pipeline-search">Find a school</Label><Input id="pipeline-search" value={pipelineQuery} onChange={(event) => setPipelineQuery(event.target.value)} placeholder="School name or area" /></div></div>{visibleJobs.length === 0 ? <p className="mt-4 text-sm text-muted">{loading ? 'Loading schools…' : 'No school logs match this search.'}</p> : <ul className="mt-4 space-y-3">{visibleJobs.map((job) => <li key={job.job_id} className="rounded-xl border border-ink/10 bg-white/80 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold text-ink">{job.school_name}</p><p className="text-xs text-muted">{job.school_region || 'Area not recorded'}</p></div><StageBadge stage={job.stage} /></div><div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">{job.stage === 'on_hold' && job.follow_up_date ? <span>Follow-up: <strong className="text-ink">{readableDate(job.follow_up_date)}</strong></span> : <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>}</div><Progress job={job} /><p className="mt-3 rounded-lg bg-lavender px-3 py-2 text-xs font-medium text-ink">Next: {nextAction(job)}</p>{job.stage === 'received' && !job.stamped_uploaded ? <div className="mt-4 rounded-xl border border-ok/25 bg-ok/5 p-3"><p className="text-sm font-semibold text-ink">Final proof: stamped +1 copy</p><p className="mt-1 text-xs text-muted">Upload the extra copy after the school stamps it. This closes the log.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"><div className="flex-1"><Label htmlFor={`stamped-${job.job_id}`}>Stamped copy</Label><Input id={`stamped-${job.job_id}`} type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => setStampedFiles((value) => ({ ...value, [job.job_id]: event.target.files?.[0] || null }))} /></div><Button type="button" onClick={() => void submitStamped(job)} disabled={stampedBusy === job.job_id || !stampedFiles[job.job_id]}>{stampedBusy === job.job_id ? 'Uploading…' : 'Upload and complete'}</Button></div></div> : null}{job.stage === 'completed' || job.stamped_uploaded ? <p className="mt-3 text-xs font-semibold text-ok">✓ Stamped +1 proof is on file. Log complete.</p> : null}</li>)}</ul>}<div className="mt-4"><Button type="button" variant="outline" onClick={() => void loadPipeline()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh status'}</Button></div></Card>
+      <Card className="p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div><h2 className="text-base font-semibold text-ink">Status by school</h2><p className="mt-1 text-xs text-muted">Every operational step is visible here.</p></div>
+          <div className="sm:w-72"><Label htmlFor="pipeline-search">Find a school</Label><Input id="pipeline-search" value={pipelineQuery} onChange={(event) => setPipelineQuery(event.target.value)} placeholder="School name or area" /></div>
+        </div>
+        {visibleJobs.length === 0 ? <p className="mt-4 text-sm text-muted">{loading ? 'Loading schools…' : 'No school logs match this search.'}</p> : (
+          <ul className="mt-4 space-y-3">
+            {visibleJobs.map((job) => (
+              <li key={job.job_id} className="rounded-xl border border-ink/10 bg-white/80 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold text-ink">{job.school_name}</p><p className="text-xs text-muted">{job.school_region || 'Area not recorded'}</p></div><StageBadge stage={job.stage} /></div>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">{job.stage === 'on_hold' && job.follow_up_date ? <span>Follow-up: <strong className="text-ink">{readableDate(job.follow_up_date)}</strong></span> : <span>Due: <strong className="text-ink">{readableDate(job.due_date)}</strong></span>}</div>
+                <Progress job={job} />
+                <p className="mt-3 rounded-lg bg-lavender px-3 py-2 text-xs font-medium text-ink">Next: {nextAction(job)}</p>
+                {approvalPanel(job)}
+                {job.stage === 'received' && !job.stamped_uploaded ? <div className="mt-4 rounded-xl border border-ok/25 bg-ok/5 p-3"><p className="text-sm font-semibold text-ink">Final proof: stamped +1 copy</p><p className="mt-1 text-xs text-muted">Upload the extra copy after the school stamps it. This closes the log.</p><div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"><div className="flex-1"><Label htmlFor={`stamped-${job.job_id}`}>Stamped copy</Label><Input id={`stamped-${job.job_id}`} type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => setStampedFiles((value) => ({ ...value, [job.job_id]: event.target.files?.[0] || null }))} /></div><Button type="button" onClick={() => void submitStamped(job)} disabled={stampedBusy === job.job_id || !stampedFiles[job.job_id]}>{stampedBusy === job.job_id ? 'Uploading…' : 'Upload and complete'}</Button></div></div> : null}
+                {job.stage === 'completed' || job.stamped_uploaded ? <p className="mt-3 text-xs font-semibold text-ok">✓ Stamped +1 proof is on file. Log complete.</p> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-4"><Button type="button" variant="outline" onClick={() => void loadPipeline()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh status'}</Button></div>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import type { BaAgency, BooklistStage } from '@fazoo/types';
 import { BOOKLIST_STAGE_LABELS } from '@fazoo/config';
 import { requireStaff } from '@/lib/auth';
@@ -42,8 +41,6 @@ type SearchParams = {
   from?: string;
   to?: string;
   page?: string;
-  workflow_updated?: string;
-  workflow_error?: string;
 };
 
 type AdminPipelineJobWithPrintables = AdminPipelineJob & {
@@ -197,73 +194,6 @@ async function setGradePrintablesShippingStatus(formData: FormData) {
   revalidatePath('/booklists');
 }
 
-async function advancePipelineJob(formData: FormData) {
-  'use server';
-
-  const jobId = String(formData.get('job_id') ?? '');
-  const action = String(formData.get('workflow_action') ?? '');
-  const returnToRaw = String(formData.get('return_to') ?? '/booklists');
-  const returnTo = returnToRaw.startsWith('/booklists') ? returnToRaw : '/booklists';
-
-  if (!isUuid(jobId)) redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}workflow_error=Invalid+booklist+log`);
-
-  const { client, profile } = await requireStaff();
-  if (profile.role !== 'super_admin' && profile.role !== 'organization_admin') {
-    redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}workflow_error=Admin+access+required`);
-  }
-
-  const { data: job } = await client
-    .from('booklist_jobs')
-    .select('stage, formatted_document_id, copies_requested')
-    .eq('id', jobId)
-    .maybeSingle();
-
-  let nextStage: BooklistStage;
-  let note: string;
-  let successMessage: string;
-
-  if (action === 'send_for_approval' && job?.stage === 'formatted' && job.formatted_document_id) {
-    nextStage = 'pending_school_approval';
-    note = 'Corrected document sent for school approval from the pipeline';
-    successMessage = 'Sent for school approval';
-  } else if (
-    action === 'mark_school_approved' &&
-    job?.stage === 'pending_school_approval' &&
-    job.formatted_document_id &&
-    job.copies_requested !== null
-  ) {
-    nextStage = 'school_approved';
-    note = 'School approval confirmed from the pipeline';
-    successMessage = 'Marked as school approved';
-  } else {
-    redirect(
-      `${returnTo}${returnTo.includes('?') ? '&' : '?'}workflow_error=${encodeURIComponent(
-        action === 'mark_school_approved' && job?.copies_requested === null
-          ? 'Record the requested copies before marking school approval.'
-          : 'This log is no longer ready for that action. Refresh and try again.',
-      )}`,
-    );
-  }
-
-  const { error } = await client.rpc('admin_advance_stage', {
-    p_job_id: jobId,
-    p_stage: nextStage,
-    p_note: note,
-  });
-
-  if (error) {
-    redirect(
-      `${returnTo}${returnTo.includes('?') ? '&' : '?'}workflow_error=${encodeURIComponent(error.message)}`,
-    );
-  }
-
-  revalidatePath('/booklists');
-  revalidatePath(`/booklists/${jobId}`);
-  redirect(
-    `${returnTo}${returnTo.includes('?') ? '&' : '?'}workflow_updated=${encodeURIComponent(successMessage)}`,
-  );
-}
-
 export default async function BooklistPipelinePage({
   searchParams,
 }: {
@@ -349,7 +279,6 @@ export default async function BooklistPipelinePage({
   });
   const totalPages = Math.max(1, Math.ceil(board.total / PAGE_SIZE));
   const canAct = profile.role === 'super_admin' || profile.role === 'organization_admin';
-  const returnTo = hrefWith(params, { workflow_updated: undefined, workflow_error: undefined });
 
   // stage_counts is organization-wide and ignores the filters above, so this
   // stays a truthful "waiting on us" figure even while searching.
@@ -628,17 +557,6 @@ export default async function BooklistPipelinePage({
         </p>
       </div>
 
-      {params.workflow_updated ? (
-        <div role="status" className="mb-4 rounded-xl border border-ok/25 bg-ok/10 px-4 py-3 text-sm font-medium text-ink">
-          {params.workflow_updated}.
-        </div>
-      ) : null}
-      {params.workflow_error ? (
-        <div role="alert" className="mb-4 rounded-xl border border-bad/25 bg-bad/10 px-4 py-3 text-sm font-medium text-bad">
-          {params.workflow_error}
-        </div>
-      ) : null}
-
       <TableWrap>
         <Table>
           <caption className="sr-only">
@@ -780,31 +698,28 @@ export default async function BooklistPipelinePage({
                     </Td>
                     <Td className="min-w-44">
                       <div className="flex flex-col items-start gap-2">
-                        {canAct && job.stage === 'formatted' && job.formatted_document_id ? (
-                          <form action={advancePipelineJob}>
-                            <input type="hidden" name="job_id" value={job.job_id} />
-                            <input type="hidden" name="workflow_action" value="send_for_approval" />
-                            <input type="hidden" name="return_to" value={returnTo} />
-                            <button type="submit" className="min-h-10 rounded-lg bg-primary px-3 text-xs font-semibold text-white hover:bg-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                              Send for school approval
-                            </button>
-                          </form>
+                        {job.stage === 'formatted' ? (
+                          <span className="text-xs font-medium text-warn">
+                            Waiting for BA to show the corrected document to the school
+                          </span>
                         ) : null}
-                        {canAct && job.stage === 'pending_school_approval' ? (
-                          job.copies_requested !== null ? (
-                            <form action={advancePipelineJob}>
-                              <input type="hidden" name="job_id" value={job.job_id} />
-                              <input type="hidden" name="workflow_action" value="mark_school_approved" />
-                              <input type="hidden" name="return_to" value={returnTo} />
-                              <button type="submit" className="min-h-10 rounded-lg bg-ok px-3 text-xs font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ok">
-                                Mark school approved
-                              </button>
-                            </form>
-                          ) : (
-                            <span className="text-xs font-medium text-warn">Add requested copies first</span>
-                          )
+                        {job.stage === 'pending_school_approval' ? (
+                          <span className="text-xs font-medium text-warn">
+                            Waiting for the BA to record the school&apos;s approval
+                          </span>
                         ) : null}
-                        <Link href={`/booklists/${job.job_id}`} className="text-xs font-semibold text-primary hover:underline">
+                        {job.stage === 'school_approved' ? (
+                          <Link
+                            href={`/booklists/${job.job_id}#print-order`}
+                            className="inline-flex min-h-10 items-center rounded-lg bg-ok px-3 text-xs font-semibold text-white hover:opacity-90"
+                          >
+                            Approved — ready to print
+                          </Link>
+                        ) : null}
+                        <Link
+                          href={`/booklists/${job.job_id}`}
+                          className="text-xs font-semibold text-primary hover:underline"
+                        >
                           View details
                         </Link>
                       </div>
