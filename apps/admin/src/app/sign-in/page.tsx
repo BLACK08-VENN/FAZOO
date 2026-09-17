@@ -11,7 +11,7 @@ export default async function SignInPage({
   const { next, bg } = await searchParams;
   const previewBackground = ['1', '2', '3'].includes(bg ?? '')
     ? `/login-bg-${bg}.jpg`
-    : '/sign-in-background.jpg';
+    : '/login-bg-3.jpg';
 
   return (
     <main id="main-content" className="relative grid min-h-screen bg-[#f5f1f8] lg:grid-cols-[1.16fr_0.84fr]">
