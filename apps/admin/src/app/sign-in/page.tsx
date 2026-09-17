@@ -6,13 +6,20 @@ import { FazooMark } from '@/components/fazoo-mark';
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; bg?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, bg } = await searchParams;
+  const previewBackground = ['1', '2', '3'].includes(bg ?? '')
+    ? `/login-bg-${bg}.jpg`
+    : '/sign-in-background.jpg';
 
   return (
     <main id="main-content" className="relative grid min-h-screen bg-[#f5f1f8] lg:grid-cols-[1.16fr_0.84fr]">
-      <div aria-hidden="true" className="absolute inset-0 bg-cover bg-center bg-[url('/sign-in-background.jpg')]" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url('${previewBackground}')` }}
+      />
       <div aria-hidden="true" className="absolute inset-0 bg-[#f5f1f8]/55" />
       <section className="relative hidden min-h-screen overflow-hidden bg-[#09070d] px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12">
         <div aria-hidden="true" className="absolute inset-0">
