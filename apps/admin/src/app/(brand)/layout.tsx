@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { BarChart3, ClipboardList, FilePlus2, LogOut, Store, Users } from 'lucide-react';
+import { BarChart3, CalendarOff, ClipboardList, FilePlus2, LogOut, Store, Users } from 'lucide-react';
 import { requireClient } from '@/lib/client-auth';
 import { FazooMark } from '@/components/fazoo-mark';
 import { signOutAction } from '../(portal)/actions';
@@ -8,6 +8,7 @@ import { signOutAction } from '../(portal)/actions';
 const NAV = [
   { href: '/brand', label: 'Overview', icon: BarChart3, exact: true },
   { href: '/brand/logs', label: 'Create Log', icon: FilePlus2 },
+  { href: '/brand/leave', label: 'Apply for Leave', icon: CalendarOff },
   { href: '/brand/campaigns', label: 'Campaigns', icon: ClipboardList },
   { href: '/brand/stores', label: 'Stores', icon: Store },
   { href: '/brand/bas', label: 'Brand Ambassadors', icon: Users },
@@ -20,8 +21,8 @@ export default async function BrandLayout({ children }: { children: React.ReactN
   const roleLabel = ROLE_LABEL[profile.role as keyof typeof ROLE_LABEL] ?? 'Brand workspace';
   const nav = NAV.filter((item) =>
     profile.role === 'brand_ambassador'
-      ? item.href === '/brand' || item.href === '/brand/logs'
-      : item.href !== '/brand/logs',
+      ? item.href === '/brand' || item.href === '/brand/logs' || item.href === '/brand/leave'
+      : item.href !== '/brand/logs' && item.href !== '/brand/leave',
   );
 
   return (
