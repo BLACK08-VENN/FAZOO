@@ -133,7 +133,7 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
       client.from('veda_schools').select('*').eq('id', job.school_id).maybeSingle(),
       client
         .from('booklist_grade_requests' as never)
-        .select('id, word_storage_path')
+        .select('id, grade_label, copies_requested, copies_to_print, due_date, word_storage_path')
         .eq('job_id', jobId),
     ]);
 
@@ -153,6 +153,10 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
   } | null;
   const gradeDocuments = (gradesResult.data ?? []) as unknown as Array<{
     id: string;
+    grade_label: string;
+    copies_requested: number;
+    copies_to_print: number;
+    due_date: string | null;
     word_storage_path: string | null;
   }>;
   const correctedGradeDocumentCount = gradeDocuments.filter(
@@ -160,6 +164,16 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
   ).length;
   const allGradeDocumentsPublished =
     gradeDocuments.length > 0 && correctedGradeDocumentCount === gradeDocuments.length;
+  const gradeCopiesRequested = gradeDocuments.reduce(
+    (total, grade) => total + grade.copies_requested,
+    0,
+  );
+  const gradeCopiesToPrint = gradeDocuments.reduce(
+    (total, grade) => total + grade.copies_to_print,
+    0,
+  );
+  const copiesRequested = gradeDocuments.length > 0 ? gradeCopiesRequested : job.copies_requested;
+  const copiesToPrint = gradeDocuments.length > 0 ? gradeCopiesToPrint : job.copies_to_print;
 
   // Actor names are resolved in one pass rather than embedded, because
   // booklist_jobs alone has four separate foreign keys to profiles and
@@ -325,12 +339,16 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
       <div className="mb-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <StatCard
           label="Copies requested"
-          value={job.copies_requested?.toLocaleString() ?? NOT_YET}
+          value={copiesRequested?.toLocaleString() ?? NOT_YET}
         />
         <StatCard
           label="To print (incl. +1)"
-          value={job.copies_to_print?.toLocaleString() ?? NOT_YET}
-          hint="The extra copy is stamped by the school and uploaded as proof."
+          value={copiesToPrint?.toLocaleString() ?? NOT_YET}
+          hint={
+            gradeDocuments.length > 0
+              ? `Includes one stamped copy for each of the ${gradeDocuments.length} grade order${gradeDocuments.length === 1 ? '' : 's'}.`
+              : 'The extra copy is stamped by the school and uploaded as proof.'
+          }
         />
         <StatCard label="Visits logged" value={visits.length} />
         <StatCard
@@ -415,7 +433,7 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
             <Card className="border-ok/30 bg-ok/5">
               <CardHeader
                 title="Next step: create the print order"
-                description="School approval is recorded. Continue to printing using the section below."
+                description={`School approval is recorded. ${copiesToPrint?.toLocaleString() ?? 0} copies are ready for the in-house print run.`}
               />
               <CardBody>
                 <a
@@ -430,10 +448,47 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
 
           <Card id="print-order" className="scroll-mt-24">
             <CardHeader
-              title="Print order &amp; delivery"
-              description="Tracked from the moment the run is ordered, through dispatch by whichever means, to receipt at the school."
+              title="In-house printing &amp; delivery"
+              description="The copy quantities below come directly from the BA's grade requests. Start the print run with one click, then update dispatch and receipt when ready."
             />
             <CardBody className="space-y-5">
+              {gradeDocuments.length > 0 ? (
+                <div className="overflow-hidden rounded-xl border border-ink/10">
+                  <div className="grid grid-cols-[1fr_auto_auto] gap-3 bg-lavender/60 px-4 py-2 text-xs font-semibold text-ink">
+                    <span>Grade / class</span>
+                    <span className="text-right">Requested</span>
+                    <span className="text-right">Print incl. +1</span>
+                  </div>
+                  {gradeDocuments.map((grade) => (
+                    <div
+                      key={grade.id}
+                      className="grid grid-cols-[1fr_auto_auto] gap-3 border-t border-ink/10 px-4 py-3 text-sm"
+                    >
+                      <div>
+                        <p className="font-semibold text-ink">{grade.grade_label}</p>
+                        {grade.due_date ? (
+                          <p className="text-xs text-muted">Due {nairobiDate(grade.due_date)}</p>
+                        ) : null}
+                      </div>
+                      <span className="min-w-16 text-right tabular-nums text-ink">
+                        {grade.copies_requested.toLocaleString()}
+                      </span>
+                      <span className="min-w-20 text-right font-semibold tabular-nums text-primary">
+                        {grade.copies_to_print.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-[1fr_auto_auto] gap-3 border-t border-ink/15 bg-ink/[0.03] px-4 py-3 text-sm font-bold text-ink">
+                    <span>Total</span>
+                    <span className="min-w-16 text-right tabular-nums">
+                      {gradeCopiesRequested.toLocaleString()}
+                    </span>
+                    <span className="min-w-20 text-right tabular-nums text-primary">
+                      {gradeCopiesToPrint.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
               {activeOrder && updateActivePrintOrder ? (
                 <form
                   action={updateActivePrintOrder}
@@ -624,55 +679,30 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
                 </p>
               )}
 
-              {canAct ? (
+              {canAct && !activeOrder && job.stage === 'school_approved' ? (
                 <form
                   action={createPrintOrder}
-                  className="space-y-3 rounded-xl border border-dashed border-ink/20 p-4"
+                  className="rounded-xl border border-primary/25 bg-primary/5 p-4"
                 >
-                  <p className="text-sm font-semibold text-ink">
-                    {activeOrder ? 'Raise another print order' : 'Raise the print order'}
+                  <input type="hidden" name="quantity" value={copiesToPrint ?? ''} />
+                  <input type="hidden" name="printer_name" value="In-house print room" />
+                  <input
+                    type="hidden"
+                    name="note"
+                    value={`In-house printing started for ${copiesToPrint ?? 0} copies`}
+                  />
+                  <p className="mb-3 text-sm text-ink">
+                    Ready to print <strong>{copiesToPrint?.toLocaleString() ?? 0} copies</strong>
+                    {gradeDocuments.length > 0
+                      ? ` across ${gradeDocuments.length} grade order${gradeDocuments.length === 1 ? '' : 's'}`
+                      : ''}.
                   </p>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div>
-                      <Label htmlFor="po-new-qty">Copies to print</Label>
-                      <Input
-                        id="po-new-qty"
-                        name="quantity"
-                        type="number"
-                        min="1"
-                        step="1"
-                        defaultValue={job.copies_to_print ?? undefined}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="po-new-printer">Printer</Label>
-                      <Input
-                        id="po-new-printer"
-                        name="printer_name"
-                        placeholder="e.g. Nairobi Press"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="po-new-ref">Reference</Label>
-                      <Input
-                        id="po-new-ref"
-                        name="reference"
-                        placeholder="Invoice or job number"
-                      />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <Label htmlFor="po-new-note">Note for the timeline</Label>
-                      <Input id="po-new-note" name="note" />
-                    </div>
-                  </div>
-                  <Button type="submit" variant="outline">
-                    Raise print order
+                  <Button type="submit" disabled={!copiesToPrint || copiesToPrint < 1}>
+                    Start in-house printing
                   </Button>
-                  {job.copies_to_print === null ? (
+                  {!copiesToPrint ? (
                     <p className="text-xs text-warn">
-                      The school has not confirmed a copy count yet, so enter the quantity
-                      yourself. The BA records it from the app once the school signs off.
+                      A copy quantity must be recorded before printing can start.
                     </p>
                   ) : null}
                 </form>
