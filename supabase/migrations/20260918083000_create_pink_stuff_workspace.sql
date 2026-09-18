@@ -30,6 +30,7 @@ where c.organization_id = o.id
 insert into public.organizations (
   name,
   slug,
+  logo_url,
   primary_color,
   secondary_color,
   timezone,
@@ -41,6 +42,7 @@ insert into public.organizations (
 values (
   'Pink Stuff',
   'pink-stuff',
+  '/brands/pink-stuff.png',
   '#E91E63',
   '#FCE4EC',
   'Africa/Nairobi',
@@ -49,7 +51,14 @@ values (
   upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10)),
   'retail'
 )
-on conflict (slug) do nothing;
+on conflict (slug) do update
+set
+  logo_url = excluded.logo_url,
+  primary_color = excluded.primary_color,
+  secondary_color = excluded.secondary_color,
+  timezone = excluded.timezone,
+  status = 'active',
+  kind = 'retail';
 
 insert into public.campaigns (
   organization_id,
