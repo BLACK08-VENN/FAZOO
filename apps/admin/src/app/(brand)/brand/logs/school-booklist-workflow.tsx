@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 
-type Props = { organizationId: string; userId: string };
+type Props = { organizationId: string; userId: string; overviewOnly?: boolean };
 type Outcome = '' | 'booklist_offered' | 'declined' | 'follow_up';
 type PipelineJob = BaPipelineJob & {
   due_date?: string | null;
@@ -232,7 +232,7 @@ function Progress({ job }: { job: PipelineJob }) {
   );
 }
 
-export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
+export function SchoolBooklistWorkflow({ organizationId, userId, overviewOnly = false }: Props) {
   const client = useMemo(() => browserSupabase(), []);
   const [stats, setStats] = useState<BaVisitStatsResult | null>(null);
   const [counts, setCounts] = useState<BaPipelineCounts | null>(null);
@@ -271,7 +271,6 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
   const [stampedFiles, setStampedFiles] = useState<Record<string, File | null>>({});
   const [stampedBusy, setStampedBusy] = useState<string | null>(null);
   const [approvalBusy, setApprovalBusy] = useState<string | null>(null);
-  const [approvalCopies, setApprovalCopies] = useState<Record<string, string>>({});
   const [approvalContacts, setApprovalContacts] = useState<Record<string, string>>({});
   const today = useMemo(localIsoDate, []);
 
@@ -489,22 +488,20 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
   }
 
   async function confirmSchoolApproval(job: PipelineJob) {
-    const copies = Number(approvalCopies[job.job_id] || job.copies_requested || '');
-    if (!Number.isInteger(copies) || copies < 1) {
-      setError('Enter the number of copies the school approved.');
+    if (!job.copies_requested || job.copies_requested < 1) {
+      setError('The saved copy quantity could not be found. Refresh the status and try again.');
       return;
     }
     setApprovalBusy(job.job_id); setError(null); setSuccess(null);
     try {
-      const { error: approvalFailure } = await client.rpc('ba_confirm_copies', {
+      const { error: approvalFailure } = await client.rpc('ba_approve_existing_booklist_quantities' as never, {
         p_job_id: job.job_id,
-        p_copies_requested: copies,
         p_client_request_id: crypto.randomUUID(),
         p_school_acknowledged_by: approvalContacts[job.job_id]?.trim() || undefined,
         p_notes: 'School approved the corrected document; admin may proceed to print',
-      });
+      } as never);
       if (approvalFailure) throw new Error(approvalFailure.message);
-      setSuccess(`${job.school_name}: school approval recorded. Admin can now print ${copies + 1} copies.`);
+      setSuccess(`${job.school_name}: school approval recorded. Admin can now print ${job.copies_to_print?.toLocaleString() || 'the saved'} copies.`);
       await loadPipeline();
     } catch (approvalFailure) {
       setError(approvalFailure instanceof Error ? approvalFailure.message : 'Could not record the school approval.');
@@ -539,18 +536,12 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
 
         {job.stage === 'pending_school_approval' ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor={`approved-copies-${job.job_id}`}>Copies approved *</Label>
-              <Input
-                id={`approved-copies-${job.job_id}`}
-                type="number"
-                min={1}
-                step={1}
-                inputMode="numeric"
-                value={approvalCopies[job.job_id] ?? job.copies_requested ?? ''}
-                onChange={(event) => setApprovalCopies((value) => ({ ...value, [job.job_id]: event.target.value }))}
-              />
-              <p className="mt-1 text-xs text-muted">FAZOO adds the stamped +1 copy automatically.</p>
+            <div className="rounded-lg border border-ink/10 bg-white px-3 py-2">
+              <p className="text-xs text-muted">Saved print quantity</p>
+              <p className="mt-1 text-sm font-semibold text-ink">
+                {job.copies_requested?.toLocaleString() || '—'} requested · {job.copies_to_print?.toLocaleString() || '—'} to print
+              </p>
+              <p className="mt-1 text-xs text-muted">Taken from the original log, including each grade&apos;s stamped +1 copy.</p>
             </div>
             <div>
               <Label htmlFor={`approved-by-${job.job_id}`}>School contact (optional)</Label>
@@ -583,7 +574,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
     <div className="space-y-5">
       {success ? <div role="status" className="rounded-xl border border-ok/25 bg-ok/10 px-4 py-3 text-sm font-medium text-ink">{success}</div> : null}
       {error ? <div role="alert" className="rounded-xl border border-bad/25 bg-bad/10 px-4 py-3 text-sm font-medium text-bad">{error}</div> : null}
-      <form className="space-y-5" onSubmit={submit}>
+      {!overviewOnly ? <form className="space-y-5" onSubmit={submit}>
         <Card className="p-4 sm:p-5">
           <h2 className="text-base font-semibold text-ink">1. Choose the school</h2><p className="mt-1 text-xs text-muted">Select a school from the master list. If it is missing, add it manually.</p>
           {selected ? <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-primary">Selected school</p><p className="mt-1 font-semibold text-ink">{selected.school_name}</p><p className="text-sm text-muted">{selected.school_region || 'Area not recorded'}</p>{selected.has_active_job ? <p className="mt-2 text-xs font-medium text-warn">Active log exists. This visit will be added to the same school journey.</p> : null}</div><Button type="button" variant="outline" onClick={() => setSelected(null)}>Change</Button></div></div> : (
@@ -700,7 +691,7 @@ export function SchoolBooklistWorkflow({ organizationId, userId }: Props) {
             </p>
           ) : null}
         </div>
-      </form>
+      </form> : null}
       <Card className="p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-ink">Booklist pipeline</h2><p className="mt-1 text-xs text-muted">Track every school from approach to stamped-copy completion.</p></div><AgencyBadge agency={stats?.agency} selfieRequired={stats?.selfie_required} /></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.active || 0}</p><p className="text-xs text-muted">In progress</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.awaiting_admin || 0}</p><p className="text-xs text-muted">With admin</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.completed || 0}</p><p className="text-xs text-muted">Completed</p></div><div className="rounded-lg border border-ink/10 p-3 text-center"><p className="text-lg font-bold">{counts?.declined || 0}</p><p className="text-xs text-muted">Denied</p></div></div><div className="mt-3 grid gap-2 sm:grid-cols-3"><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Schools reached this month</p><p className="mt-1 text-lg font-bold">{reached}{target ? <span className="text-sm font-medium text-muted"> / {target}</span> : null}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Booklists collected</p><p className="mt-1 text-lg font-bold">{stats?.booklists_collected || 0}</p></div><div className="rounded-lg border border-ink/10 p-3"><p className="text-xs text-muted">Denials recorded</p><p className="mt-1 text-lg font-bold">{stats?.declines_recorded || 0}</p></div></div></Card>
       <Card className="p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
