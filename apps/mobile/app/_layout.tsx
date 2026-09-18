@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -7,6 +8,7 @@ import * as Sentry from '@sentry/react-native';
 import { useRouteGuard } from '@/lib/guard';
 import { useRecoveryLinks } from '@/lib/recovery';
 import { AppBackdrop } from '@/components/ui';
+import { configureNotificationSound } from '@/lib/notifications';
 import soraFont from '../assets/fonts/Sora-Variable.ttf';
 import '../global.css';
 
@@ -18,6 +20,10 @@ Sentry.init({
 });
 
 function RootLayout() {
+  useEffect(() => {
+    void configureNotificationSound();
+  }, []);
+
   useRecoveryLinks();
   const { ready } = useRouteGuard();
   const [fontsLoaded] = useFonts({
@@ -28,7 +34,11 @@ function RootLayout() {
     return (
       <AppBackdrop>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#7B2FBE" accessibilityLabel="Loading session" />
+          <ActivityIndicator
+            size="large"
+            color="#7B2FBE"
+            accessibilityLabel="Loading session"
+          />
         </View>
       </AppBackdrop>
     );
