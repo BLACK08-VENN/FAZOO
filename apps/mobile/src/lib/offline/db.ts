@@ -16,7 +16,8 @@ export type OperationName =
   | 'submit_booklist_document'
   | 'mark_pending_school_approval'
   | 'confirm_copies'
-  | 'submit_stamped_copy';
+  | 'submit_stamped_copy'
+  | 'record_stock_snapshot';
 export type OperationStatus = 'pending' | 'syncing' | 'done' | 'terminal';
 export interface QueuedAttachment {
   localUri: string;

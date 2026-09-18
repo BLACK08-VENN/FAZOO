@@ -133,12 +133,28 @@ function RetailToday() {
 
                 <View className="mt-3 rounded-2xl bg-lavender px-3 py-2.5">
                   <Text className="font-sans text-xs uppercase tracking-wide text-muted">
-                    Units sold today
+                    {item.counting ? 'Units sold today · stock counts' : 'Units sold today'}
                   </Text>
                   <Text className="font-sans mt-0.5 text-2xl font-bold tabular-nums text-primaryText">
-                    {item.total_units_today ?? 0}
+                    {item.counting ? (item.diff_total ?? 0) : (item.total_units_today ?? 0)}
                   </Text>
-                  {(item.sales ?? []).length > 0 ? (
+                  {item.counting ? (
+                    (item.stock ?? []).length > 0 ? (
+                      <View className="mt-2 space-y-1">
+                        {(item.stock ?? []).map((row) => (
+                          <View key={row.sku_id} className="flex-row justify-between">
+                            <Text className="font-sans flex-1 text-ink/70">{row.sku_name}</Text>
+                            <Text className="font-sans font-medium tabular-nums text-ink/70">
+                              {row.opening ?? '–'} → {row.closing ?? '–'}
+                              {row.diff != null ? ` · ${row.diff} sold` : ''}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text className="font-sans mt-1 text-muted">No counts recorded yet.</Text>
+                    )
+                  ) : (item.sales ?? []).length > 0 ? (
                     <View className="mt-2 space-y-1">
                       {(item.sales ?? []).map((sale: NonNullable<BaTodayResult['assignments'][number]['sales']>[number]) => (
                         <View key={sale.id} className="flex-row justify-between">
@@ -175,21 +191,39 @@ function RetailToday() {
                       />
                     </>
                   ) : item.log.status === 'open' && item.log.attendance_status === 'present' ? (
-                    <>
-                      <PrimaryButton
-                        label="Record Sale"
-                        onPress={() =>
-                          router.push({ pathname: '/sales', params: { assignment: assignment.id } })
-                        }
-                      />
-                      <PrimaryButton
-                        label="Check Out"
-                        variant="secondary"
-                        onPress={() =>
-                          router.push({ pathname: '/checkout', params: { assignment: assignment.id } })
-                        }
-                      />
-                    </>
+                    item.counting ? (
+                      <>
+                        <PrimaryButton
+                          label="Update opening counts"
+                          onPress={() =>
+                            router.push({ pathname: '/opening-counts', params: { assignment: assignment.id } })
+                          }
+                        />
+                        <PrimaryButton
+                          label="Check Out"
+                          variant="secondary"
+                          onPress={() =>
+                            router.push({ pathname: '/checkout', params: { assignment: assignment.id } })
+                          }
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <PrimaryButton
+                          label="Record Sale"
+                          onPress={() =>
+                            router.push({ pathname: '/sales', params: { assignment: assignment.id } })
+                          }
+                        />
+                        <PrimaryButton
+                          label="Check Out"
+                          variant="secondary"
+                          onPress={() =>
+                            router.push({ pathname: '/checkout', params: { assignment: assignment.id } })
+                          }
+                        />
+                      </>
+                    )
                   ) : item.log.status === 'completed' && item.log.attendance_status === 'sick_leave' ? (
                     <StatusPill tone="warn" label="Sick leave recorded for today — get well soon." />
                   ) : (

@@ -77,9 +77,10 @@ async function runOperation(operation: QueuedOperation): Promise<void> {
       mark_pending_school_approval: 'ba_mark_pending_school_approval',
       confirm_copies: 'ba_confirm_copies',
       submit_stamped_copy: 'ba_submit_stamped_copy',
+      record_stock_snapshot: 'record_stock_snapshot',
     } as const
   )[operation.operation];
-  const { data, error } = await supabase.rpc(rpc, operation.payload as never);
+  const { data, error } = await supabase.rpc(rpc as never, operation.payload as never);
   if (error) throw error;
   const result = data as unknown as { status?: string } | null;
   if (result?.status && result.status !== 'ok')

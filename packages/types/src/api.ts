@@ -50,9 +50,43 @@ export interface BaRecordSaleInput {
   client_request_id: Uuid;
 }
 
+export interface BaRecordStockSnapshotInput {
+  sku_id: Uuid;
+  count_type: 'opening' | 'closing';
+  quantity: number;
+  client_request_id: Uuid;
+}
+
 export interface BaSickLeaveInput {
   note?: string | null;
   client_request_id: Uuid;
+}
+
+/** One SKU's stock counts for the day within a `ba_today` payload. */
+export interface StockSnapshotToday {
+  sku_id: Uuid;
+  sku_name: string;
+  sku_code: string;
+  opening: number | null;
+  closing: number | null;
+  /** closing − opening when both counts exist, else null. */
+  diff: number | null;
+}
+
+/** One stock-count row from the `admin_campaign_stock_counts` RPC. */
+export interface AdminStockCountRow {
+  daily_log_id: Uuid;
+  attendance_date: IsoDate;
+  ba_id: Uuid;
+  ba_name: string;
+  store_name: string | null;
+  sku_id: Uuid;
+  sku_name: string;
+  sku_code: string;
+  opening: number;
+  closing: number;
+  sold: number;
+  log_status: string;
 }
 
 /** One active assignment's state within a `ba_today` payload. */
@@ -87,6 +121,12 @@ export interface BaTodayResult {
     total_units_today: number;
     attendance_status: AttendanceStatus | null;
     log_status: DailyLogStatus | null;
+    /** true when the campaign derives sold units from stock counts. */
+    counting?: boolean;
+    /** Per-SKU stock snapshots (only present for counting campaigns). */
+    stock?: StockSnapshotToday[] | null;
+    /** Sum of per-SKU diff for counting campaigns. */
+    diff_total?: number;
   }>;
 }
 

@@ -92,6 +92,16 @@ export default function Sales() {
 
   const logOpen = selected?.log?.status === 'open';
 
+  if (selected?.counting) {
+    return (
+      <Page bottomInset={false}>
+        <ScreenHeader eyebrow="Record a sale" title={`Today: ${selected.diff_total ?? 0} units`} subtitle={selected.assignment.store_name || selected.assignment.campaign_name} onBack={() => router.back()} />
+        <EmptyState title="Stock counts record sales here" body="This campaign counts opening and closing stock — units sold are the difference. Go back and update your counts for the day." />
+        <PrimaryButton label="Back to today" variant="ghost" onPress={() => router.back()} />
+      </Page>
+    );
+  }
+
   return (
     <Page bottomInset={false}>
       <ScreenHeader eyebrow="Record a sale" title={`Today: ${selected?.total_units_today ?? 0} units`} subtitle={selected ? `${selected.assignment.store_name || selected.assignment.campaign_name}${selected.assignment.campaign_name ? ` · ${selected.assignment.campaign_name}` : ''}` : 'Choose an active assignment to record units sold.'} onBack={() => router.back()} />

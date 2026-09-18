@@ -56,7 +56,15 @@ export default async function CampaignsPage() {
                       <Td className="text-xs">
                         {campaign.start_date} → {campaign.end_date ?? 'open'}
                       </Td>
-                      <Td>{campaign.status}</Td>
+                      <Td className="whitespace-nowrap">
+                        {campaign.status}
+                        {(campaign as unknown as { stock_count_model?: boolean })
+                          .stock_count_model ? (
+                          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            counts
+                          </span>
+                        ) : null}
+                      </Td>
                   <Td>
                     <form
                       action={async (formData: FormData) => {
@@ -128,7 +136,7 @@ export default async function CampaignsPage() {
                   await scoped.from('campaigns').insert({
                     ...parsed.data,
                     organization_id: profile.organization_id,
-                  });
+                  } as never);
                   revalidatePath('/campaigns');
                 }}
                 className="space-y-3"

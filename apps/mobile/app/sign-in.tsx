@@ -16,6 +16,7 @@ import { toAuthEmail, normalizeInternationalPhone } from '@fazoo/validation';
 import { PrimaryButton } from '@/components/primary-button';
 import { Field, GlassCard, HeroCard } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import signInBackground from '../assets/sign-in-background.jpg';
 
 export default function SignIn() {
   const insets = useSafeAreaInsets();
@@ -63,7 +64,7 @@ export default function SignIn() {
 
   return (
     <ImageBackground
-      source={require('../assets/sign-in-background.jpg')}
+      source={signInBackground}
       resizeMode="cover"
       className="flex-1"
       accessibilityIgnoresInvertColors

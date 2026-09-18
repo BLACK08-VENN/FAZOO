@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireStaff, isElevated } from '@/lib/auth';
 import { weeklyOffDayName } from '@fazoo/config';
+import type { AdminStockCountRow } from '@fazoo/types';
 import { PageHeader, StatCard } from '@/components/page';
 import { Badge, attendanceTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
-import { addBaToCampaignAction, removeBaFromCampaignAction } from './actions';
+import { addBaToCampaignAction, removeBaFromCampaignAction, toggleStockCountModelAction } from './actions';
 
 export default async function CampaignDetailPage({
   params,
@@ -27,7 +28,10 @@ export default async function CampaignDetailPage({
 
   if (!campaign) notFound();
 
-  const [{ data: assignments }, { data: skus }, { data: logs }, { data: bas }, { data: stores }] =
+  const counting =
+    (campaign as unknown as { stock_count_model?: boolean }).stock_count_model ?? false;
+
+  const [{ data: assignments }, { data: skus }, { data: logs }, { data: bas }, { data: stores }, stockReport] =
     await Promise.all([
       client
         .from('brand_ambassador_assignments')
@@ -69,7 +73,13 @@ export default async function CampaignDetailPage({
         .select('id, name')
         .eq('status', 'active')
         .order('name'),
+      counting
+        ? client.rpc('admin_campaign_stock_counts' as never, { p_campaign_id: id } as never)
+        : Promise.resolve({ data: [] }),
     ]);
+
+  const stockRows = (stockReport?.data ?? []) as unknown as AdminStockCountRow[];
+  const stockSoldTotal = stockRows.reduce((s, r) => s + (r.sold ?? 0), 0);
 
   const presentLogs = (logs ?? []).filter((l) => l.attendance_status === 'present');
   const sickLogs = (logs ?? []).filter((l) => l.attendance_status === 'sick_leave');
@@ -159,6 +169,12 @@ export default async function CampaignDetailPage({
       skuTotals.set(name, (skuTotals.get(name) ?? 0) + e.quantity);
     }
   }
+  // Counting campaigns derive sold units from stock counts, not sale entries.
+  if (counting) {
+    for (const row of stockRows) {
+      skuTotals.set(row.sku_name, (skuTotals.get(row.sku_name) ?? 0) + (row.sold ?? 0));
+    }
+  }
 
   const statusTone = (status: string) => {
     switch (status) {
@@ -181,8 +197,18 @@ export default async function CampaignDetailPage({
       >
         <div className="flex gap-2">
           <Badge tone={statusTone(campaign.status)}>{campaign.status}</Badge>
+          {counting ? <Badge tone="purple">Stock counts</Badge> : null}
           {campaign.access_code ? (
             <Badge tone="warning">Passcode set</Badge>
+          ) : null}
+          {elevated ? (
+            <form action={toggleStockCountModelAction}>
+              <input type="hidden" name="campaign_id" value={id} />
+              <input type="hidden" name="enabled" value={counting ? 'false' : 'true'} />
+              <Button type="submit" variant="outline" size="sm">
+                {counting ? 'Turn off stock counts' : 'Turn on stock counts'}
+              </Button>
+            </form>
           ) : null}
         </div>
       </PageHeader>
@@ -195,7 +221,7 @@ export default async function CampaignDetailPage({
         />
         <StatCard label="Present" value={presentLogs.length} />
         <StatCard label="Sick leave" value={sickLogs.length} />
-        <StatCard label="Units" value={totalUnits} />
+        <StatCard label="Units" value={counting ? stockSoldTotal : totalUnits} />
         <StatCard label="BAs" value={(assignments ?? []).filter((a) => a.status === 'active').length} />
         <StatCard label="Stores" value={uniqueStores.size} />
       </div>
@@ -453,6 +479,68 @@ export default async function CampaignDetailPage({
           <p className="text-sm text-muted">No logs recorded for this campaign yet.</p>
         ) : null}
       </div>
+
+      {/* Stock counts report (counting campaigns only) */}
+      {counting ? (
+        <div className="mt-6">
+          <Card>
+            <CardHeader
+              title="Stock counts"
+              description={`${stockRows.length} rows · ${stockSoldTotal} units sold (opening − closing)`}
+            />
+            <CardBody className="p-0">
+              <TableWrap className="rounded-none border-0">
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>Date</Th>
+                      <Th>BA</Th>
+                      <Th>Store</Th>
+                      <Th>SKU</Th>
+                      <Th className="text-right">Opening</Th>
+                      <Th className="text-right">Closing</Th>
+                      <Th className="text-right">Sold</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockRows.length === 0 ? (
+                      <EmptyRow colSpan={7}>
+                        No completed opening + closing counts yet.
+                      </EmptyRow>
+                    ) : (
+                      stockRows.map((row) => (
+                        <tr key={`${row.daily_log_id}-${row.sku_id}`}>
+                          <Td className="whitespace-nowrap">{row.attendance_date}</Td>
+                          <Td>
+                            <Link
+                              href={`/brand-ambassadors/${row.ba_id}`}
+                              className="text-deep underline"
+                            >
+                              {row.ba_name}
+                            </Link>
+                          </Td>
+                          <Td>{row.store_name}</Td>
+                          <Td>
+                            {row.sku_name}{' '}
+                            <span className="font-mono text-xs text-muted">
+                              {row.sku_code}
+                            </span>
+                          </Td>
+                          <Td className="text-right tabular-nums">{row.opening}</Td>
+                          <Td className="text-right tabular-nums">{row.closing}</Td>
+                          <Td className="text-right font-medium tabular-nums">
+                            {row.sold}
+                          </Td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </Table>
+              </TableWrap>
+            </CardBody>
+          </Card>
+        </div>
+      ) : null}
     </>
   );
 }

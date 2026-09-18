@@ -11,6 +11,9 @@ export const campaignInputSchema = z
       .nullable()
       .optional(),
     status: z.enum(['draft', 'active', 'completed', 'cancelled']),
+    /** When true the campaign runs on BOD/EOD stock counts (sold = opening − closing)
+     *  instead of manual sale entries. */
+    stock_count_model: z.boolean().optional().default(false),
   })
   .refine(
     (v) => !v.end_date || v.start_date <= v.end_date,

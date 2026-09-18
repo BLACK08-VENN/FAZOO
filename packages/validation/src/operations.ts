@@ -10,6 +10,17 @@ export const saleEntrySchema = z.object({
 });
 export type SaleEntryInput = z.infer<typeof saleEntrySchema>;
 
+export const stockCountEntrySchema = z.object({
+  sku_id: z.string().uuid('Select a SKU.'),
+  count_type: z.enum(['opening', 'closing']),
+  quantity: z
+    .number({ message: 'Quantity is required.' })
+    .int('Quantity must be a whole number.')
+    .nonnegative('Quantity cannot be negative.')
+    .max(1_000_000, 'That quantity looks wrong — please check.'),
+});
+export type StockCountEntryInput = z.infer<typeof stockCountEntrySchema>;
+
 export const salesBatchSchema = z.object({
   entries: z.array(saleEntrySchema).min(1, 'Add at least one SKU.').max(200),
 });

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { saleEntrySchema, checkinSchema, dateRangeSchema } from './operations';
+import {
+  saleEntrySchema,
+  checkinSchema,
+  dateRangeSchema,
+  stockCountEntrySchema,
+} from './operations';
 
 describe('saleEntrySchema', () => {
   it('accepts a positive integer quantity', () => {
@@ -10,6 +15,45 @@ describe('saleEntrySchema', () => {
   it.each([0, -1, 2.5])('rejects quantity %s', (quantity) => {
     expect(() =>
       saleEntrySchema.parse({ sku_id: crypto.randomUUID(), quantity }),
+    ).toThrow();
+  });
+});
+
+describe('stockCountEntrySchema', () => {
+  it.each(['opening', 'closing'] as const)('accepts a valid %s count', (count_type) => {
+    expect(
+      stockCountEntrySchema.parse({
+        sku_id: crypto.randomUUID(),
+        count_type,
+        quantity: 12,
+      }),
+    ).toMatchObject({ count_type, quantity: 12 });
+  });
+  it('accepts zero (an empty shelf is a valid count)', () => {
+    expect(
+      stockCountEntrySchema.parse({
+        sku_id: crypto.randomUUID(),
+        count_type: 'closing',
+        quantity: 0,
+      }),
+    ).toMatchObject({ quantity: 0 });
+  });
+  it.each([-1, 2.5, 1_000_001])('rejects quantity %s', (quantity) => {
+    expect(() =>
+      stockCountEntrySchema.parse({
+        sku_id: crypto.randomUUID(),
+        count_type: 'opening',
+        quantity,
+      }),
+    ).toThrow();
+  });
+  it('rejects an unknown count type', () => {
+    expect(() =>
+      stockCountEntrySchema.parse({
+        sku_id: crypto.randomUUID(),
+        count_type: 'midday',
+        quantity: 4,
+      }),
     ).toThrow();
   });
 });

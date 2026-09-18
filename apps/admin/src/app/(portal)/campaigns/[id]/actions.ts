@@ -48,3 +48,19 @@ export async function removeBaFromCampaignAction(formData: FormData): Promise<vo
 
   revalidatePath(`/campaigns/${campaignId}`);
 }
+
+export async function toggleStockCountModelAction(formData: FormData): Promise<void> {
+  const { client, profile } = await requireStaff();
+  if (!isElevated(profile.role)) return;
+
+  const campaignId = String(formData.get('campaign_id') ?? '');
+  const enabled = formData.get('enabled') === 'true';
+  if (!campaignId) return;
+
+  await client
+    .from('campaigns')
+    .update({ stock_count_model: enabled } as never)
+    .eq('id', campaignId);
+
+  revalidatePath(`/campaigns/${campaignId}`);
+}

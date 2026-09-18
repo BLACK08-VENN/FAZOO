@@ -24,7 +24,7 @@ export default function CheckIn() {
   const [error, setError] = useState<string | null>(null);
 
   const { assignment: assignmentParam } = useLocalSearchParams<{ assignment?: string }>();
-  const [assignment, setAssignment] = useState<{ id: string; assignment: AssignmentToday; geofence: number; } | null>(null);
+  const [assignment, setAssignment] = useState<{ id: string; assignment: AssignmentToday; geofence: number; counting: boolean; } | null>(null);
 
   async function loadAssignment(): Promise<typeof assignment> {
     const { data, error: todayError } = await supabase.rpc('ba_today');
@@ -33,11 +33,11 @@ export default function CheckIn() {
       await writeCachedToday(today);
       const match = today.assignments.find((item) => item.assignment.id === assignmentParam) ?? today.assignments[0];
       if (!match) return null;
-      return { id: match.assignment.id, assignment: match.assignment, geofence: match.assignment.geofence_radius_metres ?? 200 };
+      return { id: match.assignment.id, assignment: match.assignment, geofence: match.assignment.geofence_radius_metres ?? 200, counting: match.counting ?? false };
     }
     const cached = await readCachedToday();
     const match = cached?.assignments.find((item) => item.assignment.id === assignmentParam) ?? cached?.assignments[0];
-    return match ? { id: match.assignment.id, assignment: match.assignment, geofence: match.assignment.geofence_radius_metres ?? 200 } : null;
+    return match ? { id: match.assignment.id, assignment: match.assignment, geofence: match.assignment.geofence_radius_metres ?? 200, counting: match.counting ?? false } : null;
   }
 
   useEffect(() => { void loadAssignment().then(setAssignment); }, [assignmentParam]);
@@ -90,7 +90,11 @@ export default function CheckIn() {
         { localUri: localStock, bucket: 'daily-log-photos', remotePath: stockPath, mimeType: stock.mimeType },
         { localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType },
       ]);
-      router.replace('/today');
+      if (assignment.counting) {
+        router.replace({ pathname: '/opening-counts', params: { assignment: assignment.id } });
+      } else {
+        router.replace('/today');
+      }
       setTimeout(() => void flushQueue(), 0);
     } catch (err) {
       setBusy(false);
