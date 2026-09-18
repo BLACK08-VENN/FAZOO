@@ -1,12 +1,9 @@
-import {
-  requireClient,
-  type ClientBrand,
-  type ClientProfile,
-} from '@/lib/client-auth';
+import { requireClient, type ClientBrand, type ClientProfile } from '@/lib/client-auth';
 import type { FazooClient } from '@fazoo/database';
 import { PageHeader, StatCard } from '@/components/page';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from '../../(portal)/overview/trends-chart';
+import { SchoolBooklistWorkflow } from './logs/school-booklist-workflow';
 
 type BaHistoryRow = {
   attendance_date: string;
@@ -46,11 +43,13 @@ export default async function BrandOverviewPage() {
   if (campaignIds.length > 0) {
     const { data: logs } = await client
       .from('daily_logs')
-      .select(`
+      .select(
+        `
         attendance_date, attendance_status, status,
         brand_ambassador_id, store_id, campaign_id,
         sales_entries ( quantity )
-      `)
+      `,
+      )
       .in('campaign_id', campaignIds)
       .order('attendance_date', { ascending: false })
       .limit(5000);
@@ -70,7 +69,9 @@ export default async function BrandOverviewPage() {
   }
 
   const bas = new Set(allLogs.map((r) => r.ba_id));
-  const stores = new Set(allLogs.filter((r) => r.attendance_status === 'present').map((r) => r.store_id));
+  const stores = new Set(
+    allLogs.filter((r) => r.attendance_status === 'present').map((r) => r.store_id),
+  );
   const units = allLogs.reduce((s, r) => s + r.units_sold, 0);
   const completed = allLogs.filter((r) => r.status === 'completed').length;
   const open = allLogs.filter((r) => r.status === 'open').length;
@@ -105,7 +106,10 @@ export default async function BrandOverviewPage() {
         <StatCard label="Active campaigns" value={activeCampaigns} />
         <StatCard label="BA-days" value={allLogs.length} />
         <StatCard label="Units sold" value={units} />
-        <StatCard label="Completion rate" value={`${allLogs.length ? Math.round((completed / allLogs.length) * 100) : 0}%`} />
+        <StatCard
+          label="Completion rate"
+          value={`${allLogs.length ? Math.round((completed / allLogs.length) * 100) : 0}%`}
+        />
         <StatCard label="Active BAs" value={bas.size} />
         <StatCard label="Active stores" value={stores.size} />
         <StatCard label="Completed days" value={completed} />
@@ -115,7 +119,9 @@ export default async function BrandOverviewPage() {
       <Card className="mt-6">
         <div className="border-b border-ink/8 px-5 py-4">
           <h2 className="text-sm font-semibold text-ink">Sales &amp; completion trends</h2>
-          <p className="mt-0.5 text-xs text-muted">Units and completion rate per day across all campaigns.</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Units and completion rate per day across all campaigns.
+          </p>
         </div>
         <TrendsChart data={trend} />
       </Card>
@@ -127,13 +133,17 @@ export default async function BrandOverviewPage() {
         <div className="divide-y divide-ink/5">
           {(campaigns ?? []).map((c) => {
             const campaignLogs = allLogs.filter((l) => l.campaign_id === c.id);
-            const campaignCompleted = campaignLogs.filter((l) => l.status === 'completed').length;
+            const campaignCompleted = campaignLogs.filter(
+              (l) => l.status === 'completed',
+            ).length;
             const campaignUnits = campaignLogs.reduce((s, l) => s + l.units_sold, 0);
             return (
               <div key={c.id} className="flex items-center justify-between px-5 py-3">
                 <div>
                   <p className="text-sm font-medium text-ink">{c.name}</p>
-                  <p className="text-xs text-muted">{c.start_date} → {c.end_date ?? 'ongoing'}</p>
+                  <p className="text-xs text-muted">
+                    {c.start_date} → {c.end_date ?? 'ongoing'}
+                  </p>
                 </div>
                 <div className="flex gap-6 text-right">
                   <div>
@@ -146,7 +156,10 @@ export default async function BrandOverviewPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-ink">
-                      {campaignLogs.length ? Math.round((campaignCompleted / campaignLogs.length) * 100) : 0}%
+                      {campaignLogs.length
+                        ? Math.round((campaignCompleted / campaignLogs.length) * 100)
+                        : 0}
+                      %
                     </p>
                     <p className="text-xs text-muted">Completion</p>
                   </div>
@@ -169,20 +182,46 @@ async function BrandAmbassadorOverview({
 }) {
   const { client } = await requireClient();
 
+  const { data: kindData } = await client.rpc('current_user_org_kind');
+  const isSchoolWorkspace = kindData === 'schools';
+
   const { data } = await client.rpc('ba_my_history');
-  const rows = (Array.isArray(data) ? (data as BaHistoryRow[]) : []);
+  const rows = Array.isArray(data) ? (data as BaHistoryRow[]) : [];
 
   const { data: campaignRows } = await client.rpc('ba_my_campaigns');
   const campaignRecords = Array.isArray(campaignRows)
     ? (campaignRows as Record<string, unknown>[])
     : [];
   const activeCampaigns: ActiveCampaign[] = campaignRecords.map((r) => ({
-      id: r.campaign_id as string,
-      name: r.campaign_name as string,
-      status: r.status as string,
-      start_date: r.start_date as string,
-      end_date: (r.end_date as string | null) ?? null,
-    }));
+    id: r.campaign_id as string,
+    name: r.campaign_name as string,
+    status: r.status as string,
+    start_date: r.start_date as string,
+    end_date: (r.end_date as string | null) ?? null,
+  }));
+
+  if (isSchoolWorkspace) {
+    return (
+      <>
+        <WorkProfile
+          client={client}
+          profile={profile}
+          brand={brand}
+          activeCampaigns={activeCampaigns}
+          showCampaigns={false}
+        />
+        <PageHeader
+          title="My school overview"
+          description="Your logged schools, live progress, next actions and approvals in one place."
+        />
+        <SchoolBooklistWorkflow
+          organizationId={profile.organization_id}
+          userId={profile.id}
+          overviewOnly
+        />
+      </>
+    );
+  }
 
   const units = rows.reduce((s, r) => s + r.units, 0);
   const completed = rows.filter((r) => r.status === 'completed').length;
@@ -250,7 +289,10 @@ async function BrandAmbassadorOverview({
             </div>
             <div className="divide-y divide-ink/5">
               {rows.slice(0, 20).map((r) => (
-                <div key={`${r.campaign_name}-${r.store_name}-${r.attendance_date}`} className="flex items-center justify-between px-5 py-3">
+                <div
+                  key={`${r.campaign_name}-${r.store_name}-${r.attendance_date}`}
+                  className="flex items-center justify-between px-5 py-3"
+                >
                   <div>
                     <p className="text-sm font-medium text-ink">
                       {r.attendance_date} · {r.store_name}
@@ -264,7 +306,11 @@ async function BrandAmbassadorOverview({
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-ink">
-                        {r.status === 'completed' ? '✓ Done' : r.status === 'open' ? 'Open' : r.attendance_status}
+                        {r.status === 'completed'
+                          ? '✓ Done'
+                          : r.status === 'open'
+                            ? 'Open'
+                            : r.attendance_status}
                       </p>
                       <p className="text-xs text-muted">{r.flagged ? 'Flagged' : 'Status'}</p>
                     </div>
@@ -277,7 +323,8 @@ async function BrandAmbassadorOverview({
       ) : (
         <Card className="mt-6">
           <p className="px-5 py-6 text-sm text-muted">
-            You haven&apos;t logged any days yet. Shifts you complete on the mobile app will appear here.
+            You haven&apos;t logged any days yet. Shifts you complete on the mobile app will
+            appear here.
           </p>
         </Card>
       )}
@@ -308,11 +355,13 @@ async function WorkProfile({
   profile,
   brand,
   activeCampaigns,
+  showCampaigns = true,
 }: {
   client: FazooClient;
   profile: ClientProfile;
   brand: ClientBrand;
   activeCampaigns: ActiveCampaign[];
+  showCampaigns?: boolean;
 }) {
   let photoSrc: string | null = null;
   if (profile.profile_photo_path) {
@@ -346,46 +395,56 @@ async function WorkProfile({
             </span>
           )}
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-ink">{profile.full_name}</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-ink">
+              {profile.full_name}
+            </h1>
             <p className="text-sm text-muted">{brand.name}</p>
-            <p className="text-xs font-medium uppercase tracking-wider text-primary">Brand Ambassador</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-primary">
+              Brand Ambassador
+            </p>
           </div>
         </div>
 
         <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:pl-5 sm:border-l sm:border-ink/8">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">Phone</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
+              Phone
+            </p>
             <p className="mt-0.5 text-sm text-ink">{profile.phone || '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">Brand / workspace</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
+              Brand / workspace
+            </p>
             <p className="mt-0.5 text-sm text-ink">{brand.name}</p>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-ink/8 bg-ink/[0.02] px-5 py-4 sm:px-6">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
-          Active campaigns
-        </p>
-        {activeCampaigns.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {activeCampaigns.map((c) => (
-              <span
-                key={c.id}
-                className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-xs font-medium text-primary"
-              >
-                {c.name}
-                <span className="text-[10px] text-muted">
-                  {c.start_date} → {c.end_date ?? 'ongoing'}
+      {showCampaigns ? (
+        <div className="border-t border-ink/8 bg-ink/[0.02] px-5 py-4 sm:px-6">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
+            Active campaigns
+          </p>
+          {activeCampaigns.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {activeCampaigns.map((c) => (
+                <span
+                  key={c.id}
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.06] px-3 py-1 text-xs font-medium text-primary"
+                >
+                  {c.name}
+                  <span className="text-[10px] text-muted">
+                    {c.start_date} → {c.end_date ?? 'ongoing'}
+                  </span>
                 </span>
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted">No active campaigns assigned right now.</p>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">No active campaigns assigned right now.</p>
+          )}
+        </div>
+      ) : null}
     </Card>
   );
 }
