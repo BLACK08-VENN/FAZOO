@@ -2,7 +2,6 @@ import {
   BookOpen,
   Boxes,
   Building2,
-  CalendarDays,
   CalendarOff,
   History,
   MapPin,
@@ -66,14 +65,6 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
     shortLabel: 'Campaigns',
     cardLabel: 'Campaigns',
     icon: Store,
-    kinds: ['retail'],
-  },
-  {
-    href: '/attendance-calendar',
-    label: 'Attendance calendar',
-    shortLabel: 'Calendar',
-    cardLabel: 'Attendance Calendar',
-    icon: CalendarDays,
     kinds: ['retail'],
   },
   {
