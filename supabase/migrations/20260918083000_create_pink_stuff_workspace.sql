@@ -48,7 +48,7 @@ values (
   'Africa/Nairobi',
   'active',
   true,
-  upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10)),
+  upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10)),
   'retail'
 )
 on conflict (slug) do update
