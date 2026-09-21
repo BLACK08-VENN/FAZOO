@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useActionState, useState } from 'react';
+import { useEffect, useRef, useState, useActionState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { signInAction, type SignInState } from './actions';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,30 @@ export function SignInForm({ next }: { next: string }) {
   const [role, setRole] = useState<RoleTab>('admin');
   const [identifier, setIdentifier] = useState('');
   const active = ROLE_TABS.find((t) => t.key === role)!;
-  const roleIndex = ROLE_TABS.findIndex((t) => t.key === role);
+  const tablistRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+
+  const measure = () => {
+    const roleIndex = ROLE_TABS.findIndex((t) => t.key === role);
+    const tablist = tablistRef.current;
+    const tab = tabRefs.current[roleIndex];
+    if (tablist && tab) {
+      const listRect = tablist.getBoundingClientRect();
+      const tabRect = tab.getBoundingClientRect();
+      setPillStyle({
+        left: tabRect.left - listRect.left,
+        width: tabRect.width,
+      });
+    }
+  };
+
+  useEffect(() => {
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (tablistRef.current) ro.observe(tablistRef.current);
+    return () => ro.disconnect();
+  }, [role]);
 
   useEffect(() => {
     if (state.redirectTo) {
@@ -60,20 +83,25 @@ export function SignInForm({ next }: { next: string }) {
       <input type="hidden" name="role" value={role} />
 
       <div
+        ref={tablistRef}
         role="tablist"
         aria-label="Choose an account type"
         className="relative flex rounded-xl bg-ink/[0.04] p-1.5"
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute bottom-1.5 left-1.5 top-1.5 z-0 w-[calc((100%-0.75rem)/3)] rounded-lg bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="pointer-events-none absolute z-0 rounded-lg bg-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
-            transform: `translateX(calc(${roleIndex} * 100% + ${roleIndex} * 0.375rem))`,
+            top: '0.375rem',
+            bottom: '0.375rem',
+            left: pillStyle.left,
+            width: pillStyle.width,
           }}
         />
-        {ROLE_TABS.map((t) => (
+        {ROLE_TABS.map((t, i) => (
           <button
             key={t.key}
+            ref={(el) => { tabRefs.current[i] = el; }}
             role="tab"
             aria-selected={role === t.key}
             type="button"
