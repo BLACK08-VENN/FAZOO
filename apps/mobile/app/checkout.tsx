@@ -47,7 +47,7 @@ export default function Checkout() {
   }, [assignmentParam, selected]);
 
   const counting = selected?.counting ?? false;
-  const steps = counting ? ['Summary & lock', 'Closing stock counts', 'Uniform selfie'] : ['Summary & lock', 'Stock on shelf', 'Uniform selfie'];
+  const steps = counting ? ['Review & confirm', 'Closing stock counts'] : ['Summary & lock', 'Stock on shelf', 'Uniform selfie'];
   const skus = selected?.stock ?? [];
   const countsComplete = counting && skus.length > 0 && skus.every((s) => closing[s.sku_id] != null && closing[s.sku_id] !== '');
 
