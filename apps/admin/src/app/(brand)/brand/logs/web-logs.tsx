@@ -638,6 +638,8 @@ function RetailLogForm({ organizationId, userId }: Pick<Props, 'organizationId' 
   const [stock, setStock] = useState<File | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [notes, setNotes] = useState('');
+  const [openingCounts, setOpeningCounts] = useState<Record<string, string>>({});
+  const [closingCounts, setClosingCounts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -662,8 +664,146 @@ function RetailLogForm({ organizationId, userId }: Pick<Props, 'organizationId' 
   }, []);
 
   const selected = today?.assignments.find((row) => row.assignment.id === assignmentId) ?? null;
+  const counting = Boolean(selected?.counting);
+  const stockRows = selected?.stock ?? [];
+  const logOpen = selected?.log?.status === 'open';
+  const logCompleted = selected?.log?.status === 'completed';
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (!selected?.counting) {
+      setOpeningCounts({});
+      setClosingCounts({});
+      return;
+    }
+    const nextOpening: Record<string, string> = {};
+    const nextClosing: Record<string, string> = {};
+    for (const sku of selected.stock ?? []) {
+      if (sku.opening != null) nextOpening[sku.sku_id] = String(sku.opening);
+      if (sku.closing != null) nextClosing[sku.sku_id] = String(sku.closing);
+    }
+    setOpeningCounts(nextOpening);
+    setClosingCounts(nextClosing);
+  }, [assignmentId, selected?.log?.id, selected?.log?.status]);
+
+  function updateCount(
+    setter: React.Dispatch<React.SetStateAction<Record<string, string>>>,
+    skuId: string,
+    value: string,
+  ) {
+    setter((current) => ({ ...current, [skuId]: value.replace(/[^0-9]/g, '') }));
+  }
+
+  function validateCounts(values: Record<string, string>, phase: 'opening' | 'closing') {
+    if (stockRows.length === 0) return 'No active SKUs are available for this campaign.';
+    for (const sku of stockRows) {
+      const raw = values[sku.sku_id];
+      if (raw == null || raw === '') return `Enter a ${phase} count for every SKU.`;
+      const qty = Number(raw);
+      if (!Number.isInteger(qty) || qty < 0) return 'Stock quantities must be whole numbers of 0 or more.';
+      if (phase === 'closing' && sku.opening != null && qty > sku.opening) {
+        return `${sku.sku_name}: evening stock cannot be higher than the morning opening stock.`;
+      }
+    }
+    return null;
+  }
+
+  async function submitCountingMorning(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return setError('Choose an assignment first.');
+    if (selected.log) return setError('Morning check-in has already been created for this assignment today.');
+    if (!fix) return setError('Capture your GPS location first.');
+    if (!selfie) return setError('Take your morning check-in selfie.');
+    const countError = validateCounts(openingCounts, 'opening');
+    if (countError) return setError(countError);
+
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    const requestId = crypto.randomUUID();
+    const uploaded: string[] = [];
+    try {
+      const selfiePath = await uploadEvidence(client, organizationId, userId, requestId, 'selfie', selfie);
+      uploaded.push(selfiePath);
+
+      const { data: checkinData, error: checkinError } = await client.rpc('ba_checkin', {
+        p_assignment_id: selected.assignment.id,
+        p_latitude: fix.latitude,
+        p_longitude: fix.longitude,
+        p_accuracy_metres: fix.accuracy ?? undefined,
+        p_notes: notes.trim() || undefined,
+        p_stock_photo_path: undefined,
+        p_uniform_selfie_path: selfiePath,
+        p_client_request_id: requestId,
+      });
+      if (checkinError) throw new Error(checkinError.message);
+
+      const dailyLogId = (checkinData as unknown as { daily_log_id?: string } | null)?.daily_log_id;
+      for (const sku of stockRows) {
+        const { error: countRpcError } = await client.rpc('record_stock_snapshot', {
+          p_daily_log_id: dailyLogId,
+          p_sku_id: sku.sku_id,
+          p_count_type: 'opening',
+          p_quantity: Number(openingCounts[sku.sku_id]),
+          p_client_request_id: crypto.randomUUID(),
+        });
+        if (countRpcError) throw new Error(countRpcError.message);
+      }
+
+      setSuccess('Morning check-in saved. Opening stock is now the baseline for today.');
+      setSelfie(null);
+      setNotes('');
+      await load();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Could not save the morning check-in.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitCountingEvening(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected?.log || !logOpen) return setError('There is no open Pink Stuff log to close.');
+    if (!fix) return setError('Capture your GPS location before evening checkout.');
+    const countError = validateCounts(closingCounts, 'closing');
+    if (countError) return setError(countError);
+
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      for (const sku of stockRows) {
+        const { error: countRpcError } = await client.rpc('record_stock_snapshot', {
+          p_daily_log_id: selected.log.id,
+          p_sku_id: sku.sku_id,
+          p_count_type: 'closing',
+          p_quantity: Number(closingCounts[sku.sku_id]),
+          p_client_request_id: crypto.randomUUID(),
+        });
+        if (countRpcError) throw new Error(countRpcError.message);
+      }
+
+      const { error: checkoutError } = await client.rpc('ba_checkout', {
+        p_latitude: fix.latitude,
+        p_longitude: fix.longitude,
+        p_accuracy_metres: fix.accuracy ?? undefined,
+        p_daily_log_id: selected.log.id,
+        p_stock_photo_path: undefined,
+        p_uniform_selfie_path: undefined,
+        p_checkout_photo_path: undefined,
+        p_client_request_id: crypto.randomUUID(),
+      });
+      if (checkoutError) throw new Error(checkoutError.message);
+
+      setSuccess('Evening stock saved. Today’s units sold have been calculated from opening minus closing stock.');
+      await load();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Could not complete evening stock.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitClassic(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected) return setError('Choose an assignment first.');
     if (selected.log) return setError('A log already exists for this assignment today.');
@@ -706,8 +846,15 @@ function RetailLogForm({ organizationId, userId }: Pick<Props, 'organizationId' 
     }
   }
 
+  const countingSubmit = !selected?.log ? submitCountingMorning : submitCountingEvening;
+  const soldPreview = stockRows.reduce((sum, sku) => {
+    const closeRaw = closingCounts[sku.sku_id];
+    if (sku.opening == null || closeRaw == null || closeRaw === '') return sum;
+    return sum + Math.max(sku.opening - Number(closeRaw), 0);
+  }, 0);
+
   return (
-    <form className="space-y-5" onSubmit={submit}>
+    <form className="space-y-5" onSubmit={counting ? countingSubmit : submitClassic}>
       {success ? <div className="rounded-xl border border-ok/25 bg-ok/10 px-4 py-3 text-sm font-medium text-ink">{success}</div> : null}
       {error ? <div className="rounded-xl border border-bad/25 bg-bad/10 px-4 py-3 text-sm font-medium text-bad">{error}</div> : null}
 
@@ -718,37 +865,156 @@ function RetailLogForm({ organizationId, userId }: Pick<Props, 'organizationId' 
           <Select id="retail-assignment" value={assignmentId} onChange={(e) => setAssignmentId(e.target.value)} disabled={loading}>
             <option value="">{loading ? 'Loading assignments…' : 'Select assignment'}</option>
             {(today?.assignments ?? []).map((row) => (
-              <option key={row.assignment.id} value={row.assignment.id} disabled={Boolean(row.log)}>
-                {row.assignment.store_name ?? 'Store'}{row.assignment.campaign_name ? ` — ${row.assignment.campaign_name}` : ''}{row.log ? ' · already logged' : ''}
+              <option key={row.assignment.id} value={row.assignment.id}>
+                {row.assignment.store_name ?? 'Store'}{row.assignment.campaign_name ? ` — ${row.assignment.campaign_name}` : ''}{row.log?.status === 'completed' ? ' · completed today' : row.log ? ' · checked in' : ''}
               </option>
             ))}
           </Select>
         </div>
       </Card>
 
-      <LocationCard fix={fix} locating={locating} locationError={locationError} onLocate={() => void locate()} />
+      {counting ? (
+        <>
+          {logCompleted ? (
+            <Card className="p-4 sm:p-5">
+              <h2 className="text-base font-semibold text-ink">Today&apos;s Pink Stuff stock is complete</h2>
+              <p className="mt-1 text-sm text-muted">Morning and evening stock have been recorded. Units sold are opening stock minus evening stock.</p>
+              <div className="mt-4 space-y-2">
+                {stockRows.map((sku) => (
+                  <div key={sku.sku_id} className="flex flex-col gap-1 rounded-lg border border-ink/10 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{sku.sku_name}</p>
+                      <p className="text-xs text-muted">{sku.sku_code}</p>
+                    </div>
+                    <p className="text-sm font-medium tabular-nums text-ink">
+                      Morning {sku.opening ?? '—'} · Evening {sku.closing ?? '—'} · Sold {sku.diff ?? '—'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-lg font-bold text-primary">{selected?.diff_total ?? 0} units sold today</p>
+            </Card>
+          ) : (
+            <>
+              <LocationCard fix={fix} locating={locating} locationError={locationError} onLocate={() => void locate()} />
 
-      <Card className="p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-ink">3. Evidence & notes</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div>
-            <Label htmlFor="stock-photo">Stock / product photo</Label>
-            <Input id="stock-photo" type="file" accept="image/*" capture="environment" onChange={(e) => setStock(e.target.files?.[0] ?? null)} />
-          </div>
-          <div>
-            <Label htmlFor="retail-selfie">Selfie</Label>
-            <Input id="retail-selfie" type="file" accept="image/*" capture="user" onChange={(e) => setSelfie(e.target.files?.[0] ?? null)} />
-          </div>
-          <div className="md:col-span-2">
-            <Label htmlFor="retail-notes">Notes</Label>
-            <textarea id="retail-notes" className={FIELD} rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for your supervisor" />
-          </div>
-        </div>
-      </Card>
+              {!selected?.log ? (
+                <>
+                  <Card className="p-4 sm:p-5">
+                    <h2 className="text-sm font-semibold text-ink">3. Morning check-in selfie</h2>
+                    <p className="mt-1 text-xs text-muted">The selfie confirms the BA checked in this morning. No stock photo is required.</p>
+                    <div className="mt-4">
+                      <Label htmlFor="retail-selfie">Morning selfie</Label>
+                      <Input id="retail-selfie" type="file" accept="image/*" capture="user" onChange={(e) => setSelfie(e.target.files?.[0] ?? null)} />
+                    </div>
+                  </Card>
 
-      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={busy || !selected || !fix || !stock || !selfie || Boolean(selected?.log)}>
-        {busy ? 'Submitting log…' : 'Check in'}
-      </Button>
+                  <Card className="p-4 sm:p-5">
+                    <h2 className="text-sm font-semibold text-ink">4. Morning opening stock</h2>
+                    <p className="mt-1 text-xs text-muted">Choose each Pink Stuff SKU and enter how many pieces are available at the beginning of the day.</p>
+                    <div className="mt-4 space-y-3">
+                      {stockRows.map((sku) => (
+                        <div key={sku.sku_id} className="grid gap-2 rounded-xl border border-ink/10 p-3 sm:grid-cols-[1fr_160px] sm:items-end">
+                          <div>
+                            <p className="text-sm font-semibold text-ink">{sku.sku_name}</p>
+                            <p className="text-xs text-muted">SKU {sku.sku_code}</p>
+                          </div>
+                          <div>
+                            <Label htmlFor={`opening-${sku.sku_id}`}>Pieces</Label>
+                            <Input
+                              id={`opening-${sku.sku_id}`}
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={openingCounts[sku.sku_id] ?? ''}
+                              onChange={(e) => updateCount(setOpeningCounts, sku.sku_id, e.target.value)}
+                              placeholder="e.g. 50"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+
+                  <Card className="p-4 sm:p-5">
+                    <Label htmlFor="retail-notes">Notes</Label>
+                    <textarea id="retail-notes" className={FIELD} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for your supervisor" />
+                  </Card>
+
+                  <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={busy || !selected || !fix || !selfie || stockRows.length === 0}>
+                    {busy ? 'Saving morning stock…' : 'Check in & save morning stock'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Card className="p-4 sm:p-5">
+                    <h2 className="text-sm font-semibold text-ink">3. Evening closing stock</h2>
+                    <p className="mt-1 text-xs text-muted">At the end of the day, enter how many pieces are left. Fazoo will calculate units sold as morning stock minus evening stock.</p>
+                    <div className="mt-4 space-y-3">
+                      {stockRows.map((sku) => {
+                        const closeRaw = closingCounts[sku.sku_id] ?? '';
+                        const sold = sku.opening != null && closeRaw !== '' ? Math.max(sku.opening - Number(closeRaw), 0) : null;
+                        return (
+                          <div key={sku.sku_id} className="grid gap-2 rounded-xl border border-ink/10 p-3 sm:grid-cols-[1fr_160px] sm:items-end">
+                            <div>
+                              <p className="text-sm font-semibold text-ink">{sku.sku_name}</p>
+                              <p className="text-xs text-muted">SKU {sku.sku_code} · Morning {sku.opening ?? '—'}{sold != null ? ` · Sold ${sold}` : ''}</p>
+                            </div>
+                            <div>
+                              <Label htmlFor={`closing-${sku.sku_id}`}>Pieces left</Label>
+                              <Input
+                                id={`closing-${sku.sku_id}`}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={closeRaw}
+                                onChange={(e) => updateCount(setClosingCounts, sku.sku_id, e.target.value)}
+                                placeholder="e.g. 35"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-4 rounded-xl bg-primary/5 p-4">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted">Current sales total</p>
+                      <p className="mt-1 text-2xl font-bold text-primary">{soldPreview} units</p>
+                    </div>
+                  </Card>
+
+                  <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={busy || !selected || !fix || !logOpen || stockRows.length === 0}>
+                    {busy ? 'Saving evening stock…' : 'Save evening stock & check out'}
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <LocationCard fix={fix} locating={locating} locationError={locationError} onLocate={() => void locate()} />
+
+          <Card className="p-4 sm:p-5">
+            <h2 className="text-sm font-semibold text-ink">3. Evidence & notes</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="stock-photo">Stock / product photo</Label>
+                <Input id="stock-photo" type="file" accept="image/*" capture="environment" onChange={(e) => setStock(e.target.files?.[0] ?? null)} />
+              </div>
+              <div>
+                <Label htmlFor="retail-selfie-classic">Selfie</Label>
+                <Input id="retail-selfie-classic" type="file" accept="image/*" capture="user" onChange={(e) => setSelfie(e.target.files?.[0] ?? null)} />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="retail-notes-classic">Notes</Label>
+                <textarea id="retail-notes-classic" className={FIELD} rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for your supervisor" />
+              </div>
+            </div>
+          </Card>
+
+          <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={busy || !selected || !fix || !stock || !selfie || Boolean(selected?.log)}>
+            {busy ? 'Submitting log…' : 'Check in'}
+          </Button>
+        </>
+      )}
     </form>
   );
 }
