@@ -2020,7 +2020,7 @@ export type Database = {
           p_latitude: number
           p_longitude: number
           p_notes?: string
-          p_stock_photo_path: string
+          p_stock_photo_path?: string
           p_uniform_selfie_path: string
         }
         Returns: Json
@@ -2067,6 +2067,16 @@ export type Database = {
         Returns: undefined
       }
       ba_list_campaigns: { Args: never; Returns: Json }
+      record_stock_snapshot: {
+        Args: {
+          p_client_request_id: string
+          p_count_type: string
+          p_daily_log_id?: string
+          p_quantity: number
+          p_sku_id: string
+        }
+        Returns: Json
+      }
       ba_list_veda_schools: { Args: never; Returns: Json }
       ba_mark_pending_school_approval: {
         Args: {
