@@ -6,7 +6,7 @@ import type { AssignmentToday, BaTodayResult } from '@fazoo/types';
 import { getFix, type Fix } from '@/lib/location';
 import { capturePhoto, persistPhoto, photoPath, type CapturedPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
-import { enqueue, newRequestId } from '@/lib/offline/db';
+import { enqueue, newRequestId, type QueuedAttachment } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
@@ -42,6 +42,7 @@ export default function CheckIn() {
 
   useEffect(() => { void loadAssignment().then(setAssignment); }, [assignmentParam]);
 
+  const counting = assignment?.counting ?? false;
   const radius = assignment?.geofence ?? 200;
   const distance = fix && assignment ? Math.round(distanceMetres(fix.latitude, fix.longitude, assignment.assignment.store_latitude ?? 0, assignment.assignment.store_longitude ?? 0)) : null;
   const insideGeofence = distance !== null && distance <= radius;
@@ -64,7 +65,8 @@ export default function CheckIn() {
   }
 
   async function submit() {
-    if (!fix || !assignment || !stock || !selfie) return;
+    if (!fix || !assignment || !selfie) return;
+    if (!counting && !stock) return;
     setBusy(true);
     setError(null);
     const requestId = newRequestId();
@@ -73,9 +75,15 @@ export default function CheckIn() {
       const cachedProfile = remoteProfile ? null : await readCachedProfile();
       const me = remoteProfile ?? cachedProfile;
       if (!me) throw new Error('Your profile could not be loaded. Sign in again and retry.');
-      const stockPath = photoPath(me.organization_id, me.id, requestId, 'stock');
       const selfiePath = photoPath(me.organization_id, me.id, requestId, 'selfie');
-      const [localStock, localSelfie] = await Promise.all([persistPhoto(stock, requestId, 'stock'), persistPhoto(selfie, requestId, 'selfie')]);
+      const localSelfie = await persistPhoto(selfie, requestId, 'selfie');
+      const uploads: QueuedAttachment[] = [{ localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType }];
+      let stockPath: string | null = null;
+      if (!counting && stock) {
+        stockPath = photoPath(me.organization_id, me.id, requestId, 'stock');
+        const localStock = await persistPhoto(stock, requestId, 'stock');
+        uploads.unshift({ localUri: localStock, bucket: 'daily-log-photos', remotePath: stockPath, mimeType: stock.mimeType });
+      }
       const payload = {
         p_assignment_id: assignment.id,
         p_latitude: fix.latitude,
@@ -86,10 +94,7 @@ export default function CheckIn() {
         p_uniform_selfie_path: selfiePath,
         p_client_request_id: requestId,
       };
-      await enqueue('checkin', payload, requestId, [
-        { localUri: localStock, bucket: 'daily-log-photos', remotePath: stockPath, mimeType: stock.mimeType },
-        { localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType },
-      ]);
+      await enqueue('checkin', payload, requestId, uploads);
       if (assignment.counting) {
         router.replace({ pathname: '/opening-counts', params: { assignment: assignment.id } });
       } else {
@@ -102,13 +107,14 @@ export default function CheckIn() {
     }
   }
 
-  const stepTitle = ['Store & location', 'Stock on shelf', 'Uniform selfie'][step - 1] ?? 'Check in';
+  const stepTitles = counting ? ['Store & location', 'Uniform selfie'] : ['Store & location', 'Stock on shelf', 'Uniform selfie'];
+  const stepTitle = stepTitles[step - 1] ?? 'Check in';
 
   return (
     <Page>
-      <ScreenHeader eyebrow={`Step ${step} of 3`} title={stepTitle} subtitle="Follow each step to verify location and capture the required evidence." onBack={() => router.back()} />
+      <ScreenHeader eyebrow={`Step ${step} of ${stepTitles.length}`} title={stepTitle} subtitle="Follow each step to verify location and capture the required evidence." onBack={() => router.back()} />
       <View className="mb-5 flex-row items-center" accessibilityRole="progressbar">
-        {[1, 2, 3].map((n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n <= step ? 'bg-primary' : 'bg-ink/10'}`} />)}
+        {stepTitles.map((_, n) => <View key={n} className={`mx-1 h-2 flex-1 rounded-full ${n < step ? 'bg-primary' : 'bg-ink/10'}`} />)}
       </View>
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
@@ -135,7 +141,7 @@ export default function CheckIn() {
         </>
       ) : null}
 
-      {step === 2 ? (
+      {step === 2 && !counting ? (
         <>
           <Card>
             <Text className="font-sans text-base leading-6 text-muted">Take a clear photo of the Lenovo product or stock evidence for this visit.</Text>
@@ -147,15 +153,15 @@ export default function CheckIn() {
         </>
       ) : null}
 
-      {step === 3 ? (
+      {step === 3 || (step === 2 && counting) ? (
         <>
           <Card>
-            <Text className="font-sans text-base leading-6 text-muted">Take a clear selfie of yourself for this Lenovo visit.</Text>
+            <Text className="font-sans text-base leading-6 text-muted">Take a clear selfie of yourself for this {counting ? 'check-in' : 'Lenovo visit'}.</Text>
             <CaptureBox photo={selfie} onSnap={() => void snap('selfie')} hint="Tap to take your selfie" />
           </Card>
           <MultilineField label="Notes" placeholder="Optional notes for your supervisor" value={notes} onChangeText={setNotes} />
           <PrimaryButton label="Check In" onPress={() => void submit()} busy={busy} disabled={!selfie} icon="checkmark-circle" />
-          <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(2)} />
+          <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(counting ? 1 : 2)} />
         </>
       ) : null}
     </Page>

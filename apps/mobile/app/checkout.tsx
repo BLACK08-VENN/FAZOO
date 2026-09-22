@@ -6,7 +6,7 @@ import { stockCountEntrySchema } from '@fazoo/validation';
 import { getFix, type Fix } from '@/lib/location';
 import { capturePhoto, persistPhoto, photoPath, type CapturedPhoto } from '@/lib/photos';
 import { supabase } from '@/lib/supabase';
-import { enqueue, newRequestId } from '@/lib/offline/db';
+import { enqueue, newRequestId, type QueuedAttachment } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
@@ -47,7 +47,7 @@ export default function Checkout() {
   }, [assignmentParam, selected]);
 
   const counting = selected?.counting ?? false;
-  const steps = counting ? ['Summary & lock', 'Closing stock counts', 'Stock on shelf', 'Uniform selfie'] : ['Summary & lock', 'Stock on shelf', 'Uniform selfie'];
+  const steps = counting ? ['Summary & lock', 'Closing stock counts', 'Uniform selfie'] : ['Summary & lock', 'Stock on shelf', 'Uniform selfie'];
   const skus = selected?.stock ?? [];
   const countsComplete = counting && skus.length > 0 && skus.every((s) => closing[s.sku_id] != null && closing[s.sku_id] !== '');
 
@@ -68,7 +68,8 @@ export default function Checkout() {
   }
 
   async function submit() {
-    if (!stock || !selfie || !selected) return;
+    if (!selfie || !selected) return;
+    if (!counting && !stock) return;
     if (counting && !countsComplete) {
       setError('Enter a closing count for every SKU before checking out.');
       return;
@@ -99,15 +100,21 @@ export default function Checkout() {
       const cachedProfile = remoteProfile ? null : await readCachedProfile();
       const me = remoteProfile ?? cachedProfile;
       if (!me) throw new Error('Your profile could not be loaded. Sign in again and retry.');
-      const stockPath = photoPath(me.organization_id, me.id, requestId, 'stock');
       const selfiePath = photoPath(me.organization_id, me.id, requestId, 'selfie');
-      const [localStock, localSelfie] = await Promise.all([persistPhoto(stock, requestId, 'stock'), persistPhoto(selfie, requestId, 'selfie')]);
+      const localSelfie = await persistPhoto(selfie, requestId, 'selfie');
+      const uploads: QueuedAttachment[] = [{ localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType }];
+      let stockPath: string | null = null;
+      if (!counting && stock) {
+        stockPath = photoPath(me.organization_id, me.id, requestId, 'stock');
+        const localStock = await persistPhoto(stock, requestId, 'stock');
+        uploads.unshift({ localUri: localStock, bucket: 'daily-log-photos', remotePath: stockPath, mimeType: stock.mimeType });
+      }
       const payload = {
         p_latitude: fix.latitude,
         p_longitude: fix.longitude,
         p_accuracy_metres: fix.accuracy ?? undefined,
         p_daily_log_id: selected.log?.id,
-        p_stock_photo_path: stockPath,
+        p_stock_photo_path: stockPath ?? undefined,
         p_uniform_selfie_path: selfiePath,
         p_client_request_id: requestId,
       };
@@ -117,10 +124,7 @@ export default function Checkout() {
       } catch (err) {
         const message = err instanceof Error ? err.message : '';
         if (/(geofence|m or less\.?$)/i.test(message)) throw err;
-        await enqueue('checkout', payload, requestId, [
-          { localUri: localStock, bucket: 'daily-log-photos', remotePath: stockPath, mimeType: stock.mimeType },
-          { localUri: localSelfie, bucket: 'daily-log-photos', remotePath: selfiePath, mimeType: selfie.mimeType },
-        ]);
+        await enqueue('checkout', payload, requestId, uploads);
       }
       router.replace('/today');
       setTimeout(() => void flushQueue(), 0);
@@ -213,19 +217,19 @@ export default function Checkout() {
         </>
       ) : null}
 
-      {step === (counting ? 3 : 2) ? (
+      {!counting && step === 2 ? (
         <>
           <Card>
             <Text className="font-sans text-base leading-6 text-muted">Take a clear photo of the product or stock evidence for this completed visit.</Text>
             <CaptureBox photo={stock} onSnap={() => void snap('stock')} hint="Tap to take the product photo" />
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!stock} onPress={() => void snap('stock')} />
-          <PrimaryButton label="Continue" disabled={!stock} onPress={() => setStep(step + 1)} />
-          <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(step - 1)} />
+          <PrimaryButton label="Continue" disabled={!stock} onPress={() => setStep(3)} />
+          <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(1)} />
         </>
       ) : null}
 
-      {step === (counting ? 4 : 3) ? (
+      {step === 3 ? (
         <>
           <Card>
             <Text className="font-sans text-base leading-6 text-muted">Take a clear selfie of yourself for this checkout.</Text>
@@ -233,7 +237,7 @@ export default function Checkout() {
           </Card>
           <PrimaryButton label="Retake" variant="ghost" disabled={!selfie} onPress={() => void snap('selfie')} />
           <PrimaryButton label="Check Out" onPress={() => void submit()} busy={busy} disabled={!selfie} icon="log-out" />
-          <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(step - 1)} />
+          <PrimaryButton label="Back" variant="ghost" onPress={() => setStep(2)} />
         </>
       ) : null}
     </Page>
