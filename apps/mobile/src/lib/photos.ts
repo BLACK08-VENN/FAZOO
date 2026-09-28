@@ -10,6 +10,9 @@ export interface CapturedPhoto {
   fileSize: number | null;
 }
 
+// The native picker compresses the photo before JavaScript reads it.
+const CAMERA_JPEG_QUALITY = 0.45;
+
 export async function capturePhoto(frontFacing = false): Promise<CapturedPhoto | null> {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) {
@@ -18,7 +21,7 @@ export async function capturePhoto(frontFacing = false): Promise<CapturedPhoto |
 
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ['images'],
-    quality: 0.7, // compress while keeping useful detail
+    quality: CAMERA_JPEG_QUALITY,
     exif: false,
     cameraType: frontFacing ? ImagePicker.CameraType.front : ImagePicker.CameraType.back,
   });
