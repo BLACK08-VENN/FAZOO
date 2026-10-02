@@ -21,7 +21,8 @@ const COLUMNS = [
 ] as const;
 
 function csvEscape(value: string | number | null | undefined): string {
-  const s = value === null || value === undefined ? '' : String(value);
+  const raw = value === null || value === undefined ? '' : String(value);
+  const s = /^[\s]*[=+@-]/.test(raw) ? `'${raw}` : raw;
   if (/[",\n\r]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
   return s;
 }
@@ -36,19 +37,18 @@ export async function GET(request: NextRequest) {
   // 2) Rate limit (fixed-window counter in Postgres, keyed per user).
   try {
     const limiter = serviceSupabase();
-    const { data: allowed } = await limiter.rpc('check_rate_limit', {
+    const { data: allowed, error: limitError } = await limiter.rpc('check_rate_limit', {
       p_key: `csv-export:${profile.id}`,
       p_max: RATE_LIMIT_EXPORT_MAX,
       p_window_seconds: RATE_LIMIT_EXPORT_WINDOW_S,
     });
-    if (allowed === false) {
+    if (limitError || allowed !== true) {
       return new Response('Too many exports — please wait a few minutes.', {
         status: 429,
       });
     }
   } catch {
-    // Limiter unavailable (e.g. local dev without service key): continue;
-    // platform-level limits still apply.
+    return new Response('Export is temporarily unavailable.', { status: 503 });
   }
 
   const params = request.nextUrl.searchParams;

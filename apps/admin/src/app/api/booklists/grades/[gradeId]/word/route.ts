@@ -2,28 +2,14 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { isElevated, requireStaff } from '@/lib/auth';
 import { serviceSupabase } from '@fazoo/database';
 
-const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-const DOC_MIME = 'application/msword';
-const PDF_MIME = 'application/pdf';
-const MAX_BYTES = 20 * 1024 * 1024;
-
-function correctedDocumentType(
-  file: File,
-): { extension: 'doc' | 'docx' | 'pdf'; mimeType: string } | null {
-  const match = /\.(docx?|pdf)$/i.exec(file.name.trim());
-  if (!match) return null;
-  const extension = match[1]?.toLowerCase() as 'doc' | 'docx' | 'pdf' | undefined;
-  if (!extension) return null;
-  const mimeType = extension === 'pdf' ? PDF_MIME : extension === 'doc' ? DOC_MIME : DOCX_MIME;
-  const reported = file.type.trim().toLowerCase();
-  if (reported && reported !== 'application/octet-stream' && reported !== mimeType) return null;
-  return { extension, mimeType };
-}
+import { inspectPreparedDocument, MAX_PREPARED_DOCUMENT_BYTES } from '@/lib/document-upload';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ gradeId: string }> },
 ) {
+  if (request.headers.get('origin') !== request.nextUrl.origin)
+    return NextResponse.json({ error: 'Forbidden origin' }, { status: 403 });
   const { client, profile } = await requireStaff();
   if (!isElevated(profile.role))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -58,23 +44,34 @@ export async function POST(
     );
   }
 
-  const form = await request.formData();
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return NextResponse.json({ error: 'Invalid multipart upload' }, { status: 400 });
+  }
   const file = form.get('file');
   const requestId = form.get('client_request_id');
   if (typeof requestId !== 'string' || !/^[0-9a-f-]{36}$/i.test(requestId)) {
     return NextResponse.json({ error: 'Invalid upload request' }, { status: 400 });
   }
-  const documentType = file instanceof File ? correctedDocumentType(file) : null;
-  if (!(file instanceof File) || !documentType || file.size < 1 || file.size > MAX_BYTES) {
+  if (!(file instanceof File) || !file.size || file.size > MAX_PREPARED_DOCUMENT_BYTES) {
     return NextResponse.json(
-      { error: 'Choose a Word or PDF file up to 20 MB' },
+      { error: 'Choose a Word or PDF file up to 4 MB' },
       { status: 400 },
     );
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let documentType;
+  try {
+    documentType = inspectPreparedDocument(file.name, file.type, bytes);
+  } catch {
+    return NextResponse.json({ error: 'Invalid Word or PDF document' }, { status: 415 });
   }
 
   const path = `${grade.organization_id}/grade-requests/${grade.id}/manual-${requestId}.${documentType.extension}`;
   const storage = service.storage.from('booklist-documents');
-  const { error: uploadError } = await storage.upload(path, await file.arrayBuffer(), {
+  const { error: uploadError } = await storage.upload(path, bytes, {
     contentType: documentType.mimeType,
     upsert: false,
   });

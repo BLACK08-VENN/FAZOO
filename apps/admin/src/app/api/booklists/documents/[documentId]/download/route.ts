@@ -3,7 +3,10 @@ import { requireApprovedProfile } from '@/lib/auth';
 import { signedDocumentUrl } from '@/server/documents';
 
 function safeFileName(value: string): string {
-  return value.replace(/[^a-z0-9._-]+/gi, '-').replace(/-{2,}/g, '-').slice(0, 120);
+  return value
+    .replace(/[^a-z0-9._-]+/gi, '-')
+    .replace(/-{2,}/g, '-')
+    .slice(0, 120);
 }
 
 /**
@@ -48,9 +51,12 @@ export async function GET(
 
   try {
     const url = await signedDocumentUrl(doc.storage_path, fileName, doc.storage_bucket);
-    return NextResponse.redirect(url, { status: 302 });
+    const response = NextResponse.redirect(url, { status: 302 });
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+    return response;
   } catch (signError) {
-    const message = signError instanceof Error ? signError.message : 'Could not create a download link';
+    const message =
+      signError instanceof Error ? signError.message : 'Could not create a download link';
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

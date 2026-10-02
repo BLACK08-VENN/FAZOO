@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Sora } from 'next/font/google';
 import './globals.css';
+import { headers } from 'next/headers';
 
 export const metadata: Metadata = {
   title: 'Fazoo Admin',
@@ -31,11 +32,13 @@ const sora = Sora({
   display: 'swap',
 });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="en" className={sora.variable}>
       <body>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `if('serviceWorker' in navigator){var reloading=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!reloading){reloading=true;window.location.reload()}});window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js?v=4',{updateViaCache:'none'}).then(function(reg){reg.update()}).catch(function(){})})}`,
           }}

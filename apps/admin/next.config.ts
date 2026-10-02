@@ -33,21 +33,7 @@ const nextConfig: NextConfig = {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com",
-              "worker-src 'self' blob: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-              ...(isProduction ? ["frame-ancestors 'none'"] : []),
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join('; '),
-          },
+
         ],
       },
     ];

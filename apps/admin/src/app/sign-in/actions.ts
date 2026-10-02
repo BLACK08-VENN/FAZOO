@@ -1,6 +1,9 @@
 'use server';
 
+import { createHash } from 'node:crypto';
+import { headers } from 'next/headers';
 import { serverSupabase, serviceSupabase } from '@fazoo/database';
+import { safeLocalRedirect } from '@/lib/document-upload';
 import { toAuthEmail } from '@fazoo/validation';
 import { RATE_LIMIT_SIGNIN_MAX, RATE_LIMIT_SIGNIN_WINDOW_S } from '@fazoo/config';
 
@@ -16,7 +19,7 @@ export type SignInState = { error: string | null; redirectTo?: string };
  * Phone numbers map to the internal email alias (<digits>@ba.fazoo.app);
  * brand clients may also sign in with a plain email address.
  * Rate-limited via the check_rate_limit RPC when the service role is
- * configured; otherwise falls back to Supabase's built-in per-IP limits.
+ * configured; unavailable limits fail closed.
  *
  * Returns a redirectTo URL on success instead of calling redirect() so the
  * client component can navigate via router.push — avoids a Next.js 16
@@ -68,22 +71,30 @@ export async function signInAction(
   // (e.g. "Error: 1186245521"). Never leak credentials or server internals to
   // the client; log non-secret details server-side for diagnostics instead.
   try {
-    // Rate limit: fixed-window counter keyed per identifier.
+    // Limit both source IP and account; hash identifiers in the limiter table.
     try {
       const limiter = serviceSupabase();
-      const { data: allowed } = await limiter.rpc('check_rate_limit', {
-        p_key: `signin:${email}`,
+      const requestHeaders = await headers();
+      const ip = requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+      const { data: ipAllowed, error: ipError } = await limiter.rpc('check_rate_limit', {
+        p_key: `signin-ip:${createHash('sha256').update(ip).digest('hex')}`,
+        p_max: 100,
+        p_window_seconds: RATE_LIMIT_SIGNIN_WINDOW_S,
+      });
+      if (ipError || ipAllowed !== true)
+        return { error: 'Too many sign-in attempts. Please try again later.' };
+      const { data: allowed, error: limitError } = await limiter.rpc('check_rate_limit', {
+        p_key: `signin:${createHash('sha256').update(email.toLowerCase()).digest('hex')}`,
         p_max: RATE_LIMIT_SIGNIN_MAX,
         p_window_seconds: RATE_LIMIT_SIGNIN_WINDOW_S,
       });
-      if (allowed === false) {
+      if (limitError || allowed !== true) {
         return {
           error: 'Too many sign-in attempts. Please wait a few minutes and try again.',
         };
       }
     } catch {
-      // Limiter unavailable (e.g. local dev without service key): continue;
-      // Supabase built-in per-IP limits still apply.
+      return { error: 'Sign-in is temporarily unavailable. Please try again shortly.' };
     }
 
     const client = await serverSupabase();
@@ -94,7 +105,7 @@ export async function signInAction(
 
     // Determine redirect based on role, and confirm the account belongs to
     // the selected login tab.
-    let redirectTo = next.startsWith('/') ? next : '/overview';
+    let redirectTo = safeLocalRedirect(next);
     try {
       const { data } = await client.auth.getUser();
       const userId = data?.user?.id;

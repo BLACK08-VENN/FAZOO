@@ -426,8 +426,8 @@ export default async function BooklistPipelinePage({
             Separate grade print orders
           </h2>
           <p className="mt-1 text-xs text-muted">
-            Convert clear images or scanned PDFs into an editable OCR draft, correct it in Word,
-            then attach the corrected document for school approval.
+            OCR is temporarily disabled. Download the original and attach a prepared Word or PDF
+            document for school approval.
           </p>
         </div>
         <TableWrap>

@@ -2,7 +2,7 @@
   "name": "fazoo",
   "version": "0.1.0",
   "private": true,
-  "description": "Fazoo — field-force management and sales-reporting platform",
+  "description": "Fazoo \u2014 field-force management and sales-reporting platform",
   "packageManager": "pnpm@11.22.0",
   "engines": {
     "node": ">=22.13.0"
@@ -21,7 +21,8 @@
     "migrate:csv": "tsx scripts/migrate-csv.ts",
     "clean": "pnpm -r exec rm -rf node_modules .next .expo dist",
     "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,css,md,json}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,css,md,json}\"",
+    "security:check": "node --import tsx --test scripts/security.test.ts && node --test scripts/forge-regression.test.cjs && node scripts/security-audit.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

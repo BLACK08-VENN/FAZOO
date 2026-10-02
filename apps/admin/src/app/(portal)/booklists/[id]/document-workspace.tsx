@@ -6,14 +6,12 @@ import type { OcrStatus } from '@fazoo/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label } from '@/components/ui/input';
-import { OcrBadge } from '@/components/stage-badge';
 import { fazooToast } from '@/components/toast';
 
 type Feedback = { tone: 'ok' | 'warn' | 'bad'; text: string } | null;
 
 export function DocumentWorkspace({
   jobId,
-  ocrStatus,
   hasRawDocument,
   formattedPublishedAt,
   canAct,
@@ -26,53 +24,9 @@ export function DocumentWorkspace({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [converting, setConverting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [perGrade, setPerGrade] = useState<'unchanged' | 'true' | 'false'>('unchanged');
-
-  async function runConversion() {
-    setConverting(true);
-    setFeedback(null);
-    try {
-      const response = await fetch(`/api/booklists/${jobId}/convert`, { method: 'POST' });
-      const body = (await response.json()) as {
-        error?: string;
-        message?: string;
-        outcome?: 'draft_created' | 'manual_required' | 'failed';
-      };
-      if (!response.ok) throw new Error(body.error ?? body.message ?? 'Conversion failed.');
-
-      if (body.outcome === 'draft_created') {
-        setFeedback({
-          tone: 'ok',
-          text: 'Auto-conversion produced an editable draft. Check it, format it, then publish the final Word document below.',
-        });
-      } else if (body.outcome === 'manual_required') {
-        setFeedback({
-          tone: 'warn',
-          text: body.message
-            ? `${body.message} Format the document manually and publish the final Word file below.`
-            : 'Auto-conversion is not available for this upload. Format it manually and publish the final Word file below.',
-        });
-      } else {
-        setFeedback({
-          tone: 'bad',
-          text: body.message
-            ? `${body.message} Format the document manually and publish the final Word file below.`
-            : 'Auto-conversion could not produce a usable draft. Format it manually and publish the final Word file below.',
-        });
-      }
-      startTransition(() => router.refresh());
-    } catch (error) {
-      setFeedback({
-        tone: 'bad',
-        text: error instanceof Error ? error.message : 'Conversion failed.',
-      });
-    } finally {
-      setConverting(false);
-    }
-  }
 
   async function publishFormatted(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -117,7 +71,7 @@ export function DocumentWorkspace({
     }
   }
 
-  const busy = converting || uploading || pending;
+  const busy = uploading || pending;
 
   return (
     <div className="space-y-4">
@@ -138,31 +92,15 @@ export function DocumentWorkspace({
 
       <Card>
         <CardHeader
-          title="1. Convert the school booklist"
-          description="The BA may upload handwriting, a photo, scan, PDF or other softcopy. Use auto-conversion as a draft, then prepare the final Word document."
-          actions={<OcrBadge status={ocrStatus} />}
+          title="1. Prepare the school booklist"
+          description="OCR is temporarily disabled. Download the original document and prepare a corrected Word or PDF file."
         />
         <CardBody>
-          {!hasRawDocument ? (
-            <p className="text-sm text-muted">
-              The BA has not uploaded the original booklist yet.
-            </p>
-          ) : !canAct ? (
-            <p className="text-sm text-muted">
-              Your role can view this pipeline but not run conversions. Ask an administrator.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button type="button" onClick={() => void runConversion()} disabled={busy}>
-                {converting ? 'Converting…' : 'Run auto-conversion'}
-              </Button>
-              <p className="text-xs text-muted">
-                {ocrStatus === 'manual_required' || ocrStatus === 'failed'
-                  ? 'Auto-conversion could not make a usable draft. Prepare the Word document manually.'
-                  : 'Review the converted content carefully before publishing the final Word document.'}
-              </p>
-            </div>
-          )}
+          <p className="text-sm text-muted">
+            {hasRawDocument
+              ? 'Upload the prepared document below to continue the workflow.'
+              : 'The BA has not uploaded the original booklist yet.'}
+          </p>
         </CardBody>
       </Card>
 

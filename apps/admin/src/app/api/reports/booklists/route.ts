@@ -35,7 +35,8 @@ const COLUMNS = [
 const EXPORT_LIMIT = Math.min(5000, CSV_EXPORT_MAX_ROWS);
 
 function csvEscape(value: string | number | boolean | null | undefined): string {
-  const s = value === null || value === undefined ? '' : String(value);
+  const raw = value === null || value === undefined ? '' : String(value);
+  const s = /^[\s]*[=+@-]/.test(raw) ? `'${raw}` : raw;
   // A leading =, +, - or @ turns a cell into a formula in Excel. Prefix with a
   // tab so a school name like "=SUM(A1)" exports as literal text.
   if (/^[=+\-@\t\r]/.test(s)) return `"'\u0009${s.replaceAll('"', '""')}"`;
@@ -108,7 +109,9 @@ async function gradeBooklistsByJob(
   }
 
   for (const rows of rowsByJob.values()) {
-    rows.sort((a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at));
+    rows.sort(
+      (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at),
+    );
   }
 
   return rowsByJob;
@@ -127,16 +130,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const limiter = serviceSupabase();
-    const { data: allowed } = await limiter.rpc('check_rate_limit', {
+    const { data: allowed, error: limitError } = await limiter.rpc('check_rate_limit', {
       p_key: `csv-export:booklists:${profile.id}`,
       p_max: RATE_LIMIT_EXPORT_MAX,
       p_window_seconds: RATE_LIMIT_EXPORT_WINDOW_S,
     });
-    if (allowed === false) {
+    if (limitError || allowed !== true) {
       return new Response('Too many exports — please wait a few minutes.', { status: 429 });
     }
   } catch {
-    // Limiter unavailable (e.g. local dev without a service key): continue.
+    return new Response('Export is temporarily unavailable.', { status: 503 });
   }
 
   let board;
@@ -176,33 +179,36 @@ export async function GET(request: NextRequest) {
   let exportedRows = 0;
   for (const job of board.jobs) {
     const gradeRows = gradeRowsByJob.get(job.job_id);
-    const reportRows = job.is_per_grade && gradeRows?.length
-      ? gradeRows.map((grade) => ({
-          grade: grade.grade_label,
-          copiesRequested: grade.copies_requested,
-          dueDate: grade.due_date,
-          shippingStatus: grade.printables_shipped ? 'Shipped' : 'Pending',
-        }))
-      : [{
-          grade: job.is_per_grade ? 'Per-grade list' : 'Whole school',
-          copiesRequested: job.copies_requested,
-          dueDate: job.due_date,
-          shippingStatus: job.dispatched_at ? 'Shipped' : 'Pending',
-        }];
+    const reportRows =
+      job.is_per_grade && gradeRows?.length
+        ? gradeRows.map((grade) => ({
+            grade: grade.grade_label,
+            copiesRequested: grade.copies_requested,
+            dueDate: grade.due_date,
+            shippingStatus: grade.printables_shipped ? 'Shipped' : 'Pending',
+          }))
+        : [
+            {
+              grade: job.is_per_grade ? 'Per-grade list' : 'Whole school',
+              copiesRequested: job.copies_requested,
+              dueDate: job.due_date,
+              shippingStatus: job.dispatched_at ? 'Shipped' : 'Pending',
+            },
+          ];
 
     for (const reportRow of reportRows) {
       chunks.push(
         encoder.encode(
           [
-          job.school_name,
-          job.school_region,
-          job.owner_ba_name,
-          reportRow.grade,
-          job.completed_at ? 'Completed' : booklistStageLabel(job.stage),
-          reportRow.copiesRequested,
-          reportRow.dueDate,
-          reportRow.shippingStatus,
-          nairobiTime(job.completed_at),
+            job.school_name,
+            job.school_region,
+            job.owner_ba_name,
+            reportRow.grade,
+            job.completed_at ? 'Completed' : booklistStageLabel(job.stage),
+            reportRow.copiesRequested,
+            reportRow.dueDate,
+            reportRow.shippingStatus,
+            nairobiTime(job.completed_at),
           ]
             .map(csvEscape)
             .join(',') + '\r\n',

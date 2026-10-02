@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { serviceSupabase } from '@fazoo/database';
 import { isElevated, requireStaff } from '@/lib/auth';
 import { isAcceptableFormattedUpload, publishFormattedDocument } from '@/server/documents';
 
@@ -10,10 +11,23 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
 ) {
+  if (request.headers.get('origin') !== request.nextUrl.origin)
+    return NextResponse.json({ error: 'Forbidden origin' }, { status: 403 });
   const { client, profile } = await requireStaff();
   if (!isElevated(profile.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
+
+  const { data: allowed, error: limitError } = await serviceSupabase().rpc('check_rate_limit', {
+    p_key: `formatted-upload:${profile.id}`,
+    p_max: 20,
+    p_window_seconds: 600,
+  });
+  if (limitError || allowed !== true)
+    return NextResponse.json(
+      { error: 'Upload temporarily unavailable. Try again later.' },
+      { status: 429 },
+    );
 
   const { jobId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(jobId)) {
