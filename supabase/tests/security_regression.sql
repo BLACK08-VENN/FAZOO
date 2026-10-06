@@ -1,5 +1,5 @@
 BEGIN;
-SELECT set_config('request.jwt.claims',jsonb_build_object('sub',id,'role','authenticated','aal','aal2')::text,true) FROM public.profiles WHERE role='organization_admin' AND account_status='approved' LIMIT 1;
+SELECT set_config('request.jwt.claims',jsonb_build_object('sub',id,'role','authenticated','aal','aal1')::text,true) FROM public.profiles WHERE role='organization_admin' AND account_status='approved' LIMIT 1;
 SET LOCAL ROLE authenticated;
 DO $$ DECLARE blocked boolean; target uuid; BEGIN
  blocked:=false;

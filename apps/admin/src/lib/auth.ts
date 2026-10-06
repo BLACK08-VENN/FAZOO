@@ -38,10 +38,6 @@ export async function requireStaff(): Promise<{ client: FazooClient; profile: Ad
     redirect('/brand');
   }
 
-  const { data: assurance, error: mfaError } =
-    await client.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (mfaError || assurance?.currentLevel !== 'aal2') redirect('/mfa');
-
   return { client, profile: profile as AdminProfile };
 }
 
@@ -81,9 +77,5 @@ export async function requireApprovedProfile(): Promise<{
     redirect('/not-authorized');
   }
 
-  if (['super_admin', 'organization_admin', 'supervisor'].includes(profile.role)) {
-    const { data: assurance, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (error || assurance?.currentLevel !== 'aal2') redirect('/mfa');
-  }
   return { client, profile: profile as AdminProfile };
 }
