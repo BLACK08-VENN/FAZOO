@@ -7,17 +7,20 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { weeklyOffDayName } from '@fazoo/config';
 import { deleteBaAction } from '../actions';
+import { editBaAssignmentAction } from './actions';
 
 export default async function BADetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
   const { client, profile: actor } = await requireStaff();
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, saved } = await searchParams;
+  const { data: stores } = await client.from('stores').select('id, name, organization_id')
+    .eq('organization_id', actor.organization_id).eq('status', 'active').order('name');
   const elevated = isElevated(actor.role);
 
   const [{ data: profile }, { data: assignments }] = await Promise.all([
@@ -67,6 +70,8 @@ export default async function BADetailPage({
   return (
     <>
       <PageHeader title={profile.full_name} description={profile.phone} />
+
+      {saved ? <p role="status" className="mb-4 rounded-xl bg-success/10 p-3 text-sm">Store and off days updated.</p> : null}
 
       {error ? (
         <p
@@ -122,7 +127,7 @@ export default async function BADetailPage({
         <Card>
           <CardHeader
             title="Assignment history"
-            description="Weekly off-day lives on each assignment."
+            description="Edit the assigned store and weekly off days for each campaign."
           />
           <CardBody className="p-0">
             <TableWrap className="rounded-none border-0">
@@ -134,11 +139,12 @@ export default async function BADetailPage({
                     <Th>Weekly off</Th>
                     <Th>Period</Th>
                     <Th>Status</Th>
+                    {elevated ? <Th>Edit</Th> : null}
                   </tr>
                 </thead>
                 <tbody>
                   {(assignments ?? []).length === 0 ? (
-                    <EmptyRow colSpan={5}>No assignments yet.</EmptyRow>
+                    <EmptyRow colSpan={elevated ? 6 : 5}>No assignments yet.</EmptyRow>
                   ) : (
                     (assignments ?? []).map((a) => (
                       <tr key={a.id}>
@@ -153,6 +159,41 @@ export default async function BADetailPage({
                             {a.status}
                           </Badge>
                         </Td>
+                        {elevated ? (
+                          <Td>
+                            <details className="min-w-56">
+                              <summary className="cursor-pointer font-medium text-brand">Edit store &amp; off days</summary>
+                              <form action={editBaAssignmentAction} className="mt-3 space-y-3">
+                                <input type="hidden" name="assignment_id" value={a.id} />
+                                <label className="block text-sm">
+                                  Store
+                                  <select name="store_id" defaultValue={a.store_id ?? ''} className="mt-1 w-full rounded-lg border border-line bg-surface p-2">
+                                    <option value="">No store assigned</option>
+                                    {(stores ?? []).filter((store) => store.organization_id === a.organization_id).map((store) => (
+                                      <option key={store.id} value={store.id}>{store.name}</option>
+                                    ))}
+                                    {a.store_id && !(stores ?? []).some((store) => store.id === a.store_id) ? (
+                                      <option value={a.store_id}>{a.stores?.name ?? 'Current store'} (inactive)</option>
+                                    ) : null}
+                                  </select>
+                                </label>
+                                <fieldset>
+                                  <legend className="text-sm font-medium">Weekly off days</legend>
+                                  <div className="mt-2 grid grid-cols-2 gap-2">
+                                    {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+                                      <label key={day} className="flex items-center gap-2 text-sm">
+                                        <input type="checkbox" name="weekly_off_day" value={index} defaultChecked={a.weekly_off_day.includes(index)} />
+                                        {day}
+                                      </label>
+                                    ))}
+                                  </div>
+                                  <p className="mt-2 text-xs text-muted">Choose up to four days. Leave all unchecked for no weekly off day.</p>
+                                </fieldset>
+                                <Button type="submit">Save changes</Button>
+                              </form>
+                            </details>
+                          </Td>
+                        ) : null}
                       </tr>
                     ))
                   )}
