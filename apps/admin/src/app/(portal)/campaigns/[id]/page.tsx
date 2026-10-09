@@ -13,11 +13,14 @@ import { addBaToCampaignAction, removeBaFromCampaignAction, toggleStockCountMode
 
 export default async function CampaignDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; assigned?: string }>;
 }) {
   const { client, profile: actor } = await requireStaff();
   const { id } = await params;
+  const { error, assigned } = await searchParams;
   const elevated = isElevated(actor.role);
 
   const { data: campaign } = await client
@@ -213,6 +216,9 @@ export default async function CampaignDetailPage({
         </div>
       </PageHeader>
 
+      {error ? <p role="alert" className="mb-4 rounded-xl bg-bad/10 p-3 text-sm text-bad">{error}</p> : null}
+      {assigned ? <p role="status" className="mb-4 rounded-xl border p-3 text-sm">BA assigned with the selected weekly off days.</p> : null}
+
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-6">
         <StatCard
           label="Logs"
@@ -383,6 +389,18 @@ export default async function CampaignDetailPage({
                 <Label htmlFor="add-start">Effective from</Label>
                 <Input id="add-start" name="start_date" type="date" required />
               </div>
+              <fieldset className="w-full rounded-xl border border-line p-3">
+                <legend className="px-1 text-sm font-medium">Weekly off days</legend>
+                <div className="flex flex-wrap gap-x-5 gap-y-3">
+                  {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+                    <label key={day} className="flex cursor-pointer items-center gap-2 text-sm">
+                      <input type="checkbox" name="weekly_off_day" value={index} className="h-4 w-4" />
+                      {day}
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-muted">Choose up to four days. Leave all unchecked for no weekly off day.</p>
+              </fieldset>
               <Button type="submit" size="md">
                 Assign
               </Button>
