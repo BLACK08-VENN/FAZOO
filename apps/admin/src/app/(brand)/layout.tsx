@@ -90,7 +90,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
       </aside>
 
       <div className="flex min-w-0 w-full flex-col">
-        <header className="fazoo-glass-dark sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 xl:hidden">
+        <header className="fazoo-glass-dark sticky top-0 z-20 flex items-center justify-between border-b px-3 py-2 xl:hidden">
           <div>
             <span className="text-sm font-bold text-white">{brand.name}</span>
             <span className="ml-2 text-xs text-white/40">via Fazoo</span>
@@ -106,14 +106,14 @@ export default async function BrandLayout({ children }: { children: React.ReactN
         </header>
         <nav
           aria-label="Brand mobile"
-          className="fazoo-glass-dark sticky top-[52px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-2 xl:hidden"
+          className="fazoo-glass-dark sticky top-[44px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-1 xl:hidden"
           role="navigation"
         >
           {nav.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium text-white/75 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
+              className="whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium text-white/75 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
             >
               {label}
             </Link>
