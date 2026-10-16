@@ -22,7 +22,7 @@ export default async function DailyLogsPage({
   const [rows, options] = await Promise.all([
     fetchLogs(client, filters),
     Promise.all([
-      client.from('campaigns').select('id, name').order('name'),
+      client.from('campaigns').select('id, name, status').order('name'),
       client.from('profiles').select('id, full_name').eq('role', 'brand_ambassador').order('full_name'),
       client.from('stores').select('id, name').order('name'),
     ]),
@@ -42,7 +42,10 @@ export default async function DailyLogsPage({
       <div className="mb-6 rounded-xl border border-ink/8 bg-white p-4">
         <LogFiltersForm
           action="/daily-logs"
-          campaigns={(campaigns.data ?? []).map((c) => ({ id: c.id, label: c.name }))}
+          campaigns={(campaigns.data ?? []).map((c) => ({
+            id: c.id,
+            label: c.status === 'active' ? c.name : `${c.name} (${c.status.replace('_', ' ')})`,
+          }))}
           bas={(bas.data ?? []).map((b) => ({ id: b.id, label: b.full_name }))}
           stores={(stores.data ?? []).map((s) => ({ id: s.id, label: s.name }))}
           current={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, v as string]))}

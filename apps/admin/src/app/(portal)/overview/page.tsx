@@ -1,9 +1,11 @@
+import Link from 'next/link';
 import { requireStaff } from '@/lib/auth';
 import { fetchLogs, parseLogFilters, resolveRange, type LogRow } from '@/lib/logs-query';
 import { resolveOrgKind } from '@/lib/nav';
 import { LogFiltersForm } from '@/components/filters';
 import { PageHeader, StatCard } from '@/components/page';
 import { SectionCards } from '@/components/section-cards';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from './trends-chart';
 import { SchoolsOverview } from './schools-overview';
@@ -30,7 +32,7 @@ function shiftedFilters(filters: LogFilters, range: { from: string; to: string }
 
 async function loadFilterOptions(client: FazooClient) {
   const [campaigns, bas, stores] = await Promise.all([
-    client.from('campaigns').select('id, name').order('name'),
+    client.from('campaigns').select('id, name, status').order('name'),
     client
       .from('profiles')
       .select('id, full_name')
@@ -38,8 +40,19 @@ async function loadFilterOptions(client: FazooClient) {
       .order('full_name'),
     client.from('stores').select('id, name').order('name'),
   ]);
+  const campaignRows = (campaigns.data ?? []) as Array<{
+    id: string;
+    name: string;
+    status: string;
+  }>;
   return {
-    campaigns: (campaigns.data ?? []).map((c) => ({ id: c.id, label: c.name })),
+    campaignRows,
+    campaigns: campaignRows.map((c) => ({
+      id: c.id,
+      // Completed / cancelled campaigns are indistinguishable from live ones
+      // in a bare name list — surface the status inline.
+      label: c.status === 'active' ? c.name : `${c.name} (${c.status.replace('_', ' ')})`,
+    })),
     bas: (bas.data ?? []).map((b) => ({ id: b.id, label: b.full_name })),
     stores: (stores.data ?? []).map((s) => ({ id: s.id, label: s.name })),
   };
@@ -90,6 +103,127 @@ function aggregate(rows: LogRow[]) {
   };
 }
 
+function campaignStatusTone(status: string) {
+  switch (status) {
+    case 'active':
+      return 'success' as const;
+    case 'completed':
+      return 'purple' as const;
+    case 'cancelled':
+      return 'danger' as const;
+    default:
+      return 'neutral' as const;
+  }
+}
+
+/**
+ * One-click campaign scoping: every campaign is a card with its headline
+ * numbers for the current range. Clicking a card drills the whole dashboard
+ * into that campaign (URL-encoded, shareable); the selected card offers the
+ * way back to "All campaigns". This replaces "pick from a dropdown and
+ * remember to press Apply" with the flow admins actually want.
+ */
+function CampaignStrip({
+  campaigns,
+  rows,
+  current,
+  filters,
+}: {
+  campaigns: Array<{ id: string; name: string; status: string }>;
+  rows: LogRow[];
+  current: string | undefined;
+  filters: Record<string, string | undefined>;
+}) {
+  const byCampaign = new Map<string, { units: number; baDays: number; completed: number }>();
+  for (const r of rows) {
+    if (!r.campaign_id) continue;
+    const agg = byCampaign.get(r.campaign_id) ?? { units: 0, baDays: 0, completed: 0 };
+    agg.units += r.units_sold;
+    agg.baDays += 1;
+    if (r.status === 'completed') agg.completed += 1;
+    byCampaign.set(r.campaign_id, agg);
+  }
+
+  const linkFor = (campaignId: string | undefined) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(filters)) {
+      if (k === 'campaign_id' || !v) continue;
+      params.set(k, v);
+    }
+    if (campaignId) params.set('campaign_id', campaignId);
+    const qs = params.toString();
+    return qs ? `/overview?${qs}` : '/overview';
+  };
+
+  const cards = [
+    {
+      id: undefined,
+      name: 'All campaigns',
+      status: null,
+      agg: {
+        units: rows.reduce((s, r) => s + r.units_sold, 0),
+        baDays: rows.length,
+        completed: rows.filter((r) => r.status === 'completed').length,
+      },
+    },
+    ...campaigns.map((c) => ({
+      id: c.id,
+      name: c.name,
+      status: c.status,
+      agg: byCampaign.get(c.id) ?? { units: 0, baDays: 0, completed: 0 },
+    })),
+  ];
+
+  return (
+    <div className="mb-5 sm:mb-6">
+      <h2 className="mb-2 text-sm font-semibold text-ink">Campaigns</h2>
+      <div className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
+        {cards.map((card) => {
+          const selected = current === card.id;
+          const completionPct = card.agg.baDays
+            ? Math.round((card.agg.completed / card.agg.baDays) * 100)
+            : 0;
+          return (
+            <Link
+              key={card.id ?? 'all'}
+              href={linkFor(card.id)}
+              aria-current={selected ? 'page' : undefined}
+              className={`rounded-xl border p-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                selected
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  : 'border-ink/10 bg-white hover:border-primary/40 hover:bg-lavender/40'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 text-sm font-semibold text-ink">{card.name}</p>
+                {card.status ? (
+                  <Badge tone={campaignStatusTone(card.status)}>
+                    {card.status.replace('_', ' ')}
+                  </Badge>
+                ) : null}
+              </div>
+              <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <dt className="text-[10px] uppercase tracking-wide text-muted">BA-days</dt>
+                  <dd className="text-sm font-bold tabular-nums text-ink">{card.agg.baDays}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] uppercase tracking-wide text-muted">Units</dt>
+                  <dd className="text-sm font-bold tabular-nums text-ink">{card.agg.units}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] uppercase tracking-wide text-muted">Done</dt>
+                  <dd className="text-sm font-bold tabular-nums text-ink">{completionPct}%</dd>
+                </div>
+              </dl>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default async function OverviewPage({
   searchParams,
 }: {
@@ -110,6 +244,15 @@ export default async function OverviewPage({
   const rows = await fetchLogs(client, filters, 5000);
   const stats = aggregate(rows);
 
+  // Same range, every campaign — feeds the clickable campaign strip so each
+  // card shows its own numbers before you drill in.
+  const stripRows = filters.campaign_id
+    ? await fetchLogs(client, { ...filters, campaign_id: '' }, 5000)
+    : rows;
+  const selectedCampaign = filters.campaign_id
+    ? options.campaignRows.find((c) => c.id === filters.campaign_id)
+    : undefined;
+
   const range = resolveRange(filters);
   const prevFilters = shiftedFilters(filters, previousRange(range));
   const prevRows = await fetchLogs(client, prevFilters, 5000);
@@ -122,7 +265,18 @@ export default async function OverviewPage({
     <>
       <PageHeader
         title="Overview"
-        description="Attendance and sales across the selected range."
+        description={
+          selectedCampaign
+            ? `Showing only ${selectedCampaign.name}. Pick another campaign below to switch.`
+            : 'Attendance and sales across the selected range. Pick a campaign to drill in.'
+        }
+      />
+
+      <CampaignStrip
+        campaigns={options.campaignRows}
+        rows={stripRows}
+        current={filters.campaign_id}
+        filters={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, v as string]))}
       />
 
       <Card className="mb-5 p-4 sm:mb-6 sm:p-5">

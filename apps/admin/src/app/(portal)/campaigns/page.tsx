@@ -3,11 +3,25 @@ import { revalidatePath } from 'next/cache';
 import { WEEKDAY_NAMES } from '@fazoo/config';
 import { assignmentInputSchema, campaignInputSchema } from '@fazoo/validation';
 import { PageHeader } from '@/components/page';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
-import { Table, TableWrap, Td, Th } from '@/components/ui/table';
+import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { requireStaff } from '@/lib/auth';
+
+function campaignStatusTone(status: string) {
+  switch (status) {
+    case 'active':
+      return 'success' as const;
+    case 'completed':
+      return 'purple' as const;
+    case 'cancelled':
+      return 'danger' as const;
+    default:
+      return 'neutral' as const;
+  }
+}
 
 export default async function CampaignsPage() {
   const { client, profile } = await requireStaff();
@@ -43,7 +57,12 @@ export default async function CampaignsPage() {
               </tr>
             </thead>
             <tbody>
-                {(campaigns ?? []).map((campaign) => (
+                {(campaigns ?? []).length === 0 ? (
+                  <EmptyRow colSpan={5}>
+                    No campaigns yet — create one with the form on the right.
+                  </EmptyRow>
+                ) : (
+                  (campaigns ?? []).map((campaign) => (
                     <tr key={campaign.id}>
                       <Td className="font-medium">
                         <Link
@@ -57,7 +76,9 @@ export default async function CampaignsPage() {
                         {campaign.start_date} → {campaign.end_date ?? 'open'}
                       </Td>
                       <Td className="whitespace-nowrap">
-                        {campaign.status}
+                        <Badge tone={campaignStatusTone(campaign.status)}>
+                          {campaign.status}
+                        </Badge>
                         {(campaign as unknown as { stock_count_model?: boolean })
                           .stock_count_model ? (
                           <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
@@ -111,7 +132,8 @@ export default async function CampaignsPage() {
                     ) : null}
                   </Td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </Table>
         </TableWrap>

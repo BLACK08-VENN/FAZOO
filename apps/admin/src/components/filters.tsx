@@ -1,4 +1,5 @@
-import { Input, Label, Select } from '@/components/ui/input';
+import { Input, Label } from '@/components/ui/input';
+import { AutoSubmitSelect, PresetSelect } from '@/components/filter-controls';
 
 export interface FilterOption {
   id: string;
@@ -8,6 +9,10 @@ export interface FilterOption {
 /**
  * URL-encoded filters — the form submits via GET so every filter state is
  * shareable, bookmarkable and reflected in CSV exports automatically.
+ *
+ * Dropdowns apply themselves on change (no "Apply" click needed); the date
+ * inputs still use the Apply button since typing dates should not navigate
+ * on every keystroke.
  */
 export function LogFiltersForm({
   action,
@@ -27,17 +32,17 @@ export function LogFiltersForm({
       method="get"
       action={action}
       role="search"
-      aria-label="Filter daily logs"
+      aria-label="Filter results"
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8"
     >
       <div>
         <Label htmlFor="f-preset">Range</Label>
-        <Select id="f-preset" name="preset" defaultValue={current.preset ?? '30d'}>
+        <PresetSelect id="f-preset" name="preset" defaultValue={current.preset ?? '30d'}>
           <option value="7d">Last 7 days</option>
           <option value="30d">Last 30 days</option>
           <option value="90d">Last 90 days</option>
           <option value="custom">Custom</option>
-        </Select>
+        </PresetSelect>
       </div>
       <div>
         <Label htmlFor="f-from">From</Label>
@@ -49,41 +54,45 @@ export function LogFiltersForm({
       </div>
       <div>
         <Label htmlFor="f-campaign">Campaign</Label>
-        <Select id="f-campaign" name="campaign_id" defaultValue={current.campaign_id ?? ''}>
-          <option value="">All</option>
+        <AutoSubmitSelect
+          id="f-campaign"
+          name="campaign_id"
+          defaultValue={current.campaign_id ?? ''}
+        >
+          <option value="">All campaigns</option>
           {campaigns.map((c) => (
             <option key={c.id} value={c.id}>
               {c.label}
             </option>
           ))}
-        </Select>
+        </AutoSubmitSelect>
       </div>
       <div>
         <Label htmlFor="f-ba">Brand Ambassador</Label>
-        <Select id="f-ba" name="ba_id" defaultValue={current.ba_id ?? ''}>
+        <AutoSubmitSelect id="f-ba" name="ba_id" defaultValue={current.ba_id ?? ''}>
           <option value="">All</option>
           {bas.map((b) => (
             <option key={b.id} value={b.id}>
               {b.label}
             </option>
           ))}
-        </Select>
+        </AutoSubmitSelect>
       </div>
       <div>
         <Label htmlFor="f-store">Store</Label>
-        <Select id="f-store" name="store_id" defaultValue={current.store_id ?? ''}>
+        <AutoSubmitSelect id="f-store" name="store_id" defaultValue={current.store_id ?? ''}>
           <option value="">All</option>
           {stores.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}
             </option>
           ))}
-        </Select>
+        </AutoSubmitSelect>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end lg:col-span-2">
         <div className="min-w-0">
-          <Label htmlFor="f-status">Status</Label>
-          <Select
+          <Label htmlFor="f-status">Attendance</Label>
+          <AutoSubmitSelect
             id="f-status"
             name="attendance_status"
             defaultValue={current.attendance_status ?? ''}
@@ -93,7 +102,7 @@ export function LogFiltersForm({
             <option value="sick_leave">Sick leave</option>
             <option value="weekly_off">Weekly off</option>
             <option value="absent">Absent</option>
-          </Select>
+          </AutoSubmitSelect>
         </div>
         <button
           type="submit"

@@ -195,7 +195,13 @@ export default async function CampaignDetailPage({
         title={campaign.name}
         description={`${campaign.start_date} → ${campaign.end_date ?? 'open'} · ${campaign.description ?? ''}`}
       >
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/overview?campaign_id=${id}`}
+            className="inline-flex h-10 items-center rounded-lg border border-ink/15 bg-white px-3 text-sm font-medium text-ink hover:bg-lavender sm:h-8"
+          >
+            View on dashboard
+          </Link>
           <Badge tone={statusTone(campaign.status)}>{campaign.status}</Badge>
           {counting ? <Badge tone="purple">Stock counts</Badge> : null}
           {campaign.access_code ? (
@@ -425,6 +431,7 @@ export default async function CampaignDetailPage({
                         <Th>Status</Th>
                         <Th className="text-right">Units</Th>
                         <Th>SKU breakdown</Th>
+                        <Th />
                       </tr>
                     </thead>
                     <tbody>
@@ -465,6 +472,14 @@ export default async function CampaignDetailPage({
                                   .map(([name, qty]) => `${name}: ${qty}`)
                                   .join(', ')
                               : '—'}
+                          </Td>
+                          <Td className="text-right">
+                            <Link
+                              href={`/daily-logs/${log.id}`}
+                              className="whitespace-nowrap text-xs text-deep underline underline-offset-2"
+                            >
+                              Details
+                            </Link>
                           </Td>
                         </tr>
                       ))}

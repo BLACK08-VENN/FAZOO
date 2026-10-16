@@ -17,7 +17,7 @@ export default async function ReportsPage({
   const filters = parseLogFilters(params);
   const [rows, campaignsResult, basResult, storesResult] = await Promise.all([
     fetchLogs(client, filters),
-    client.from('campaigns').select('id, name').order('name'),
+    client.from('campaigns').select('id, name, status').order('name'),
     client
       .from('profiles')
       .select('id, full_name')
@@ -29,7 +29,7 @@ export default async function ReportsPage({
 
   const campaigns = (campaignsResult.data ?? []).map((item) => ({
     id: item.id,
-    label: item.name,
+    label: item.status === 'active' ? item.name : `${item.name} (${item.status.replace('_', ' ')})`,
   }));
   const bas = (basResult.data ?? []).map((item) => ({
     id: item.id,
