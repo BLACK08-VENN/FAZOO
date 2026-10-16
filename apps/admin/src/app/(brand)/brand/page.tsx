@@ -276,7 +276,7 @@ async function BrandAmbassadorOverview({
         description="Your own shifts, sales and check-ins. Data you can see from the mobile app."
       />
 
-      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
           { label: 'Days logged', value: rows.length },
           { label: 'Units sold', value: units },
@@ -289,12 +289,12 @@ async function BrandAmbassadorOverview({
         ].map((stat) => (
           <div
             key={stat.label}
-            className="flex min-h-[96px] flex-col justify-between rounded-2xl border border-ink/10 bg-white px-4 py-3 shadow-sm"
+            className="flex min-h-[66px] flex-col justify-center rounded-xl border border-ink/10 bg-white px-3 py-2 shadow-sm"
           >
-            <p className="text-[11px] font-semibold uppercase leading-4 tracking-[0.08em] text-muted">
+            <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.04em] text-muted">
               {stat.label}
             </p>
-            <p className="mt-2 text-2xl font-bold leading-none tabular-nums text-ink">
+            <p className="mt-1 text-xl font-bold leading-none tabular-nums text-ink">
               {stat.value}
             </p>
           </div>
