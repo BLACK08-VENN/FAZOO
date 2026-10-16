@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, Text, View } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { router, useFocusEffect } from 'expo-router';
 import type { BaTodayResult } from '@fazoo/types';
@@ -11,7 +11,7 @@ import { operationCounts, retryTerminal } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { Card, HeroCard, MetricTile, Page } from '@/components/ui';
+import { Card, MetricTile, Page } from '@/components/ui';
 import SchoolsToday from '@/components/schools-today';
 
 /**
@@ -81,16 +81,18 @@ function RetailToday() {
 
   return (
     <Page bottomInset={false}>
-      <HeroCard
-        eyebrow={`Today · ${lagosDate()} (Nigeria)`}
-        title={
-          profile?.full_name
-            ? `Hello, ${profile.full_name.split(' ')[0]}`
-            : 'Your day in the field'
-        }
-        subtitle={`${assignments.length} assignment${assignments.length === 1 ? '' : 's'} · ${online === false ? 'Offline' : 'Ready to work'}`}
-        icon="navigate"
-      />
+      <View className="mb-5 items-center pt-2">
+        <Text className="font-sans text-3xl font-black tracking-[2px] text-ink">FAZOO</Text>
+        <Text className="font-sans text-[10px] font-bold tracking-[2.5px] text-primary">FIELD ACTIVATIONS</Text>
+      </View>
+      <Text className="font-sans text-[27px] font-extrabold leading-9 text-ink">
+        {(() => {
+          const hour = new Date().getHours();
+          const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+          return `${greeting}${profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}`;
+        })()}
+      </Text>
+      <Text className="font-sans mb-5 mt-1 text-base text-muted">Let's make today count.</Text>
 
       <View className="mb-4 flex-row gap-3">
         <MetricTile label="Assignments" value={assignments.length} />
@@ -136,19 +138,24 @@ function RetailToday() {
             const assignment = item.assignment;
 
             return (
-              <Card key={assignment.id}>
-                <Text className="font-sans mb-3 text-sm font-semibold text-primary">
-                  Your shift today
-                </Text>
-                <Text className="font-sans text-[11px] uppercase tracking-[1.5px] text-primary">
+              <Card key={assignment.id} className="overflow-hidden border-primary/15 bg-white/90">
+                <View className="-mx-4 -mt-4 mb-4 rounded-t-2xl bg-primary px-4 py-3">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-sans text-base font-bold text-white">Your shift today</Text>
+                    <Text className="font-sans text-xs text-white/85">{lagosDate()}</Text>
+                  </View>
+                </View>
+                <Text className="font-sans text-lg font-extrabold text-ink">
                   {assignment.campaign_name}
                 </Text>
-                <Text className="font-sans mt-1.5 text-xl font-bold leading-7 text-ink">
-                  {assignment.store_name}
-                </Text>
-                <Text className="font-sans mt-1 text-sm leading-5 text-muted">
-                  {assignment.store_address}
-                </Text>
+                <Text className="font-sans mt-1 text-xs text-muted">Your assigned campaign</Text>
+                <View className="mt-4 rounded-xl border border-primary/10 bg-lavender/60 px-3 py-3">
+                  <Text className="font-sans text-xs text-muted">⌖  Assigned location</Text>
+                  <Text className="font-sans mt-1 text-lg font-bold text-ink">{assignment.store_name || 'Location to be confirmed'}</Text>
+                  {assignment.store_address ? (
+                    <Text className="font-sans mt-1 text-sm text-muted">{assignment.store_address}</Text>
+                  ) : null}
+                </View>
                 {item.log ? (
                   <View className="self-start">
                     <StatusPill
@@ -161,6 +168,65 @@ function RetailToday() {
                       }
                       label={`${item.log.attendance_status.replace('_', ' ')} · ${item.log.status.replace('_', ' ')}`}
                     />
+                  </View>
+                ) : null}
+
+                {!item.is_weekly_off_today && item.log?.attendance_status !== 'sick_leave' ? (
+                  <View className="mt-5">
+                    <View className="mb-3 flex-row items-center justify-between">
+                      <Text className="font-sans text-lg font-extrabold text-ink">Today's tasks</Text>
+                      <Text className="font-sans text-xs text-muted">
+                        {[
+                          !!item.log,
+                          item.counting ? (item.stock ?? []).some((row) => row.opening != null) : (item.sales ?? []).length > 0,
+                          item.log?.status === 'completed',
+                        ].filter(Boolean).length} of 3 done
+                      </Text>
+                    </View>
+                    {([
+                      {
+                        title: item.counting ? 'Morning stock' : 'Check in',
+                        detail: item.counting ? 'Count and record opening stock' : 'Verify your location and start the shift',
+                        done: item.counting
+                          ? (item.stock ?? []).some((row) => row.opening != null)
+                          : !!item.log,
+                        route: item.log ? '/opening-counts' : '/checkin',
+                      },
+                      {
+                        title: item.counting ? 'Daily sales' : 'Daily sales',
+                        detail: item.counting ? 'Review sales from stock movements' : 'Log units sold during your shift',
+                        done: item.counting
+                          ? item.log?.status === 'completed'
+                          : (item.sales ?? []).length > 0,
+                        route: item.counting ? '/opening-counts' : '/sales',
+                      },
+                      {
+                        title: item.counting ? 'Evening stock' : 'Check out',
+                        detail: item.counting ? 'Count and record closing stock' : 'Finish your shift and submit',
+                        done: item.log?.status === 'completed',
+                        route: '/checkout',
+                      },
+                    ] as const).map((task, index) => (
+                      <Pressable
+                        key={task.title}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${task.title}, ${task.done ? 'completed' : 'pending'}`}
+                        onPress={() => router.push({
+                          pathname: task.route,
+                          params: { assignment: assignment.id },
+                        })}
+                        className={`flex-row items-center rounded-xl border border-primary/10 bg-white px-3 py-3 ${index > 0 ? 'mt-2' : ''}`}
+                      >
+                        <View className={`mr-3 h-7 w-7 items-center justify-center rounded-full border-2 ${task.done ? 'border-primary bg-primary' : 'border-primary/45'}`}>
+                          {task.done ? <Text className="font-sans text-sm font-bold text-white">✓</Text> : null}
+                        </View>
+                        <View className="flex-1">
+                          <Text className="font-sans text-base font-bold text-ink">{task.title}</Text>
+                          <Text className="font-sans mt-0.5 text-xs text-muted">{task.detail}</Text>
+                        </View>
+                        <Text className="font-sans text-xl text-primary/70">›</Text>
+                      </Pressable>
+                    ))}
                   </View>
                 ) : null}
 
