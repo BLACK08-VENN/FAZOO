@@ -35,6 +35,15 @@ export default function Today() {
   return <RetailToday />;
 }
 
+function localShiftTime(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit', hour12: true,
+  }).format(date);
+}
+
 function RetailToday() {
   const { data, loading, error, refresh } = useToday();
   const { profile } = useSessionProfile();
@@ -80,7 +89,7 @@ function RetailToday() {
   const assignments = data?.assignments ?? [];
 
   return (
-    <Page bottomInset={false}>
+    <Page bottomInset={true}>
       <View className="mb-5 items-center pt-2">
         <Text className="font-sans text-3xl font-black tracking-[2px] text-ink">FAZOO</Text>
         <Text className="font-sans text-[10px] font-bold tracking-[2.5px] text-primary">FIELD ACTIVATIONS</Text>
@@ -154,6 +163,20 @@ function RetailToday() {
                   <Text className="font-sans mt-1 text-lg font-bold text-ink">{assignment.store_name || 'Location to be confirmed'}</Text>
                   {assignment.store_address ? (
                     <Text className="font-sans mt-1 text-sm text-muted">{assignment.store_address}</Text>
+                  ) : null}
+                </View>
+                <View className="mt-3 rounded-xl border border-primary/10 bg-white/90 px-3 py-3">
+                  <Text className="font-sans text-xs font-semibold text-primary">◷  Today's shift hours</Text>
+                  <Text className="font-sans mt-1 text-base font-bold text-ink">
+                    {assignment.shift_start_time && assignment.shift_end_time
+                      ? `${assignment.shift_start_time} – ${assignment.shift_end_time}`
+                      : 'Scheduled hours not configured'}
+                  </Text>
+                  {item.log?.checkin_at ? (
+                    <Text className="font-sans mt-1 text-sm text-muted">
+                      Checked in: {localShiftTime(item.log.checkin_at)}
+                      {item.log.checkout_at ? `  ·  Checked out: ${localShiftTime(item.log.checkout_at)}` : ''}
+                    </Text>
                   ) : null}
                 </View>
                 {item.log ? (
@@ -367,7 +390,7 @@ function RetailToday() {
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
-      <Card className="mt-5">
+      <Card className="mt-5 mb-5">
         <Text className="font-sans text-base font-bold text-ink">Need time off?</Text>
         <Text className="font-sans mt-1 text-sm leading-5 text-muted">
           Submit a leave request for admin review.
@@ -376,7 +399,7 @@ function RetailToday() {
           label="Apply for leave"
           variant="secondary"
           icon="calendar-clear"
-          onPress={() => router.push('/leave')}
+          onPress={() => router.navigate('/(app)/leave')}
         />
       </Card>
 
