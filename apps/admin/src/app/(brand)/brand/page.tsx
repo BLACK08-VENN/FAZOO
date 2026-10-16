@@ -276,15 +276,29 @@ async function BrandAmbassadorOverview({
         description="Your own shifts, sales and check-ins. Data you can see from the mobile app."
       />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Days logged" value={rows.length} />
-        <StatCard label="Units sold" value={units} />
-        <StatCard label="Days completed" value={completed} />
-        <StatCard label="Open days" value={open} />
-        <StatCard label="Days present" value={present} />
-        <StatCard label="Stores visited" value={stores} />
-        <StatCard label="Campaigns" value={campaigns} />
-        <StatCard label="Flagged" value={flagged} />
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { label: 'Days logged', value: rows.length },
+          { label: 'Units sold', value: units },
+          { label: 'Days completed', value: completed },
+          { label: 'Open days', value: open },
+          { label: 'Days present', value: present },
+          { label: 'Stores visited', value: stores },
+          { label: 'Campaigns', value: campaigns },
+          { label: 'Flagged', value: flagged },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="flex min-h-[96px] flex-col justify-between rounded-2xl border border-ink/10 bg-white px-4 py-3 shadow-sm"
+          >
+            <p className="text-[11px] font-semibold uppercase leading-4 tracking-[0.08em] text-muted">
+              {stat.label}
+            </p>
+            <p className="mt-2 text-2xl font-bold leading-none tabular-nums text-ink">
+              {stat.value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {rows.length > 0 ? (
