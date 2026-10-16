@@ -29,6 +29,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { mapsLink, nairobiDate, nairobiTime, NOT_YET } from '@/lib/format';
+import { PhotoFrame } from '@/components/photo-frame';
 import { DocumentWorkspace } from './document-workspace';
 
 const DOCUMENT_KIND_LABELS: Record<BooklistDocument['kind'], string> = {
@@ -899,9 +900,17 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
                           : ''}
                       </p>
                     ) : null}
-                    <p className="mt-1 text-xs">
+                    <p className="mt-1 flex items-center gap-2 text-xs">
                       {visit.selfie_photo_path ? (
-                        <span className="font-medium text-ok">Gate selfie captured</span>
+                        <>
+                          <PhotoFrame
+                            path={visit.selfie_photo_path}
+                            alt="Gate selfie"
+                            className="h-12 w-12 shrink-0 rounded-md object-cover"
+                            expandable
+                          />
+                          <span className="font-medium text-ok">Gate selfie captured</span>
+                        </>
                       ) : visit.selfie_required ? (
                         <span className="font-medium text-bad">
                           Gate selfie required but missing

@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { requireStaff, isElevated } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
+import { PhotoFrame, photoTypeLabel } from '@/components/photo-frame';
 import { Badge, attendanceTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
+import { formatLagosDisplay } from '@/lib/format';
 import { weeklyOffDayName } from '@fazoo/config';
 import { deleteBaAction } from '../actions';
 
@@ -35,27 +38,45 @@ export default async function BADetailPage({
 
   if (!profile) notFound();
 
-  const [{ count: presentDays }, { count: sickDays }, { data: salesAgg }] = await Promise.all([
-    client
-      .from('daily_logs')
-      .select('id', { count: 'exact', head: true })
-      .eq('brand_ambassador_id', id)
-      .eq('attendance_status', 'present'),
-    client
-      .from('daily_logs')
-      .select('id', { count: 'exact', head: true })
-      .eq('brand_ambassador_id', id)
-      .eq('attendance_status', 'sick_leave'),
-    client
-      .from('sales_entries')
-      .select('quantity, skus ( name )')
-      .in(
-        'daily_log_id',
-        (
-          await client.from('daily_logs').select('id').eq('brand_ambassador_id', id).limit(2000)
-        ).data?.map((d) => d.id) ?? ['00000000-0000-0000-0000-000000000000'],
-      ),
-  ]);
+  const [{ count: presentDays }, { count: sickDays }, { data: salesAgg }, { data: recentPhotos }] =
+    await Promise.all([
+      client
+        .from('daily_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_ambassador_id', id)
+        .eq('attendance_status', 'present'),
+      client
+        .from('daily_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_ambassador_id', id)
+        .eq('attendance_status', 'sick_leave'),
+      client
+        .from('sales_entries')
+        .select('quantity, skus ( name )')
+        .in(
+          'daily_log_id',
+          (
+            await client.from('daily_logs').select('id').eq('brand_ambassador_id', id).limit(2000)
+          ).data?.map((d) => d.id) ?? ['00000000-0000-0000-0000-000000000000'],
+        ),
+      client
+        .from('daily_log_photos')
+        .select(
+          `id, photo_type, storage_path, captured_at,
+           daily_logs!inner ( id, attendance_date )`,
+        )
+        .eq('daily_logs.brand_ambassador_id', id)
+        .order('captured_at', { ascending: false })
+        .limit(12),
+    ]);
+
+  type RecentPhoto = {
+    id: string;
+    photo_type: string;
+    storage_path: string;
+    captured_at: string;
+    daily_logs: { id: string; attendance_date: string } | null;
+  };
 
   const totalUnits = (salesAgg ?? []).reduce((s, e) => s + e.quantity, 0);
   const skuBreakdown = new Map<string, number>();
@@ -66,7 +87,18 @@ export default async function BADetailPage({
 
   return (
     <>
-      <PageHeader title={profile.full_name} description={profile.phone} />
+      <PageHeader title={profile.full_name} description={profile.phone}>
+        {profile.profile_photo_path ? (
+          <div className="flex items-center gap-3 sm:justify-self-end">
+            <PhotoFrame
+              path={profile.profile_photo_path}
+              alt={`${profile.full_name}'s profile`}
+              className="size-16 rounded-full border border-ink/10 object-cover sm:size-20"
+              expandable
+            />
+          </div>
+        ) : null}
+      </PageHeader>
 
       {error ? (
         <p
@@ -117,6 +149,46 @@ export default async function BADetailPage({
           hint="Present ÷ all recorded days"
         />
       </div>
+
+      {(recentPhotos ?? []).length > 0 && (
+        <Card className="mt-6">
+          <CardHeader
+            title="Recent photos"
+            description="Latest check-in, checkout and stock evidence. Click a photo to open it full size."
+          />
+          <CardBody>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {((recentPhotos ?? []) as RecentPhoto[]).map((p) => {
+                const logId = p.daily_logs?.id;
+                const frame = (
+                  <PhotoFrame
+                    path={p.storage_path}
+                    alt={photoTypeLabel(p.photo_type)}
+                    className="h-36 w-full rounded-lg object-cover"
+                  />
+                );
+                return (
+                  <figure key={p.id}>
+                    {logId ? (
+                      <Link href={`/daily-logs/${logId}`} title="Open the daily log">
+                        {frame}
+                      </Link>
+                    ) : (
+                      frame
+                    )}
+                    <figcaption className="mt-1 text-xs text-muted">
+                      {photoTypeLabel(p.photo_type)}
+                      <span className="block text-[11px]">
+                        {p.daily_logs?.attendance_date ?? formatLagosDisplay(p.captured_at)}
+                      </span>
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>

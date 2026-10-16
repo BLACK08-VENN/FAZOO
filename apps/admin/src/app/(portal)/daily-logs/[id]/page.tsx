@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireStaff, isElevated } from '@/lib/auth';
 import { DeleteLogForm } from './delete-log-form';
 import { mapsLink, formatLagosDisplay } from '@/lib/format';
+import { PhotoFrame, photoTypeLabel } from '@/components/photo-frame';
 import { Badge, attendanceTone, completionBadge } from '@/components/ui/badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Table, TableWrap, Td, Th } from '@/components/ui/table';
@@ -58,13 +59,12 @@ export default async function DailyLogDetailPage({
   };
 
   const totalUnits = (log.sales_entries ?? []).reduce((s, e) => s + e.quantity, 0);
-  const photos: Array<[string, { id: string; storage_path: string } | undefined]> = [
-    ['Stock on shelf · check-in', log.daily_log_photos?.find((p) => p.photo_type === 'stock_shelf')],
-    ['Uniform selfie · check-in', log.daily_log_photos?.find((p) => p.photo_type === 'uniform_selfie')],
-    ['Stock on shelf · check-out', log.daily_log_photos?.find((p) => p.photo_type === 'checkout_stock_shelf')],
-    ['Uniform selfie · check-out', log.daily_log_photos?.find((p) => p.photo_type === 'checkout_uniform_selfie')],
-  ];
-  const anyPhoto = photos.some(([, p]) => Boolean(p));
+  // Every photo type is rendered — the enum grew (checkout, other) after the
+  // original hard-coded slot list, and nothing should be silently dropped.
+  const photos = [...(log.daily_log_photos ?? [])].sort((a, b) =>
+    a.captured_at.localeCompare(b.captured_at),
+  );
+  const anyPhoto = photos.length > 0;
   const checkinMap = mapsLink(log.checkin_latitude, log.checkin_longitude);
   const checkoutMap = mapsLink(log.checkout_latitude, log.checkout_longitude);
 
@@ -142,22 +142,37 @@ export default async function DailyLogDetailPage({
                 {log.stores?.address ? <span className="block text-xs text-muted">{log.stores.address}</span> : null}
               </dd>
             </dl>
-            {(anyPhoto) && (
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {photos.map(
-                  ([label, p]) =>
-                    p ? (
-                      <figure key={p.id}>
-                        <PhotoFrame path={p.storage_path} />
-                        <figcaption className="mt-1 text-center text-xs text-muted">{label}</figcaption>
-                      </figure>
-                    ) : null,
-                )}
-              </div>
-            )}
           </CardBody>
         </Card>
       </div>
+
+      {anyPhoto && (
+        <Card className="mt-6">
+          <CardHeader
+            title="Photos"
+            description={`${photos.length} photo${photos.length === 1 ? '' : 's'} captured by the BA on site.`}
+          />
+          <CardBody>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {photos.map((p) => (
+                <figure key={p.id}>
+                  <PhotoFrame
+                    path={p.storage_path}
+                    alt={photoTypeLabel(p.photo_type)}
+                    expandable
+                  />
+                  <figcaption className="mt-1 text-center text-xs text-muted">
+                    {photoTypeLabel(p.photo_type)}
+                    <span className="block text-[11px]">
+                      {formatLagosDisplay(p.captured_at)}
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       <TableWrap className="mt-6">
         <caption className="sr-only">Sales by SKU for this day</caption>
@@ -196,27 +211,5 @@ export default async function DailyLogDetailPage({
         />
       ) : null}
     </>
-  );
-}
-
-/**
- * Renders a private photo through a short-lived signed URL minted by the
- * user's own session (RLS policy storage_read_org_admin). The URL is never
- * persisted and expires in minutes.
- */
-async function PhotoFrame({ path }: { path: string }) {
-  const { client } = await requireStaff();
-  const bucket = path.includes('/') && !path.startsWith('profile') ? 'daily-log-photos' : 'profile-photos';
-  const { data } = await client.storage.from(bucket).createSignedUrl(path, 300);
-  if (!data) {
-    return <div role="img" className="h-40 w-full rounded-lg bg-ink/5" aria-label="photo unavailable" />;
-  }
-  return (
-    <img
-      src={data.signedUrl}
-      alt=""
-      className="h-40 w-full rounded-lg object-cover"
-      loading="lazy"
-    />
   );
 }

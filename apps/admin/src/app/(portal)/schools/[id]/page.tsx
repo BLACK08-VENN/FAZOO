@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
+import { PhotoFrame } from '@/components/photo-frame';
 import { mapsLink, nairobiDate, nairobiTime, NOT_YET } from '@/lib/format';
 import { schoolDossier } from '@/server/booklists';
 
@@ -356,7 +357,15 @@ export default async function SchoolDossierPage({
                     </Td>
                     <Td className="text-xs">
                       {visit.selfie_photo_path ? (
-                        <span className="font-medium text-ok">Captured</span>
+                        <span className="flex items-center gap-2">
+                          <PhotoFrame
+                            path={visit.selfie_photo_path}
+                            alt="Gate selfie"
+                            className="h-12 w-12 shrink-0 rounded-md object-cover"
+                            expandable
+                          />
+                          <span className="font-medium text-ok">Captured</span>
+                        </span>
                       ) : visit.selfie_required ? (
                         <span className="font-medium text-bad">Required — missing</span>
                       ) : (
