@@ -1,3 +1,5 @@
+import { ActivityChart } from './activity-chart';
+import Link from 'next/link';
 import { requireStaff } from '@/lib/auth';
 import { fetchLogs, parseLogFilters, resolveRange, type LogRow } from '@/lib/logs-query';
 import { resolveOrgKind } from '@/lib/nav';
@@ -30,7 +32,7 @@ function shiftedFilters(filters: LogFilters, range: { from: string; to: string }
 
 async function loadFilterOptions(client: FazooClient) {
   const [campaigns, bas, stores] = await Promise.all([
-    client.from('campaigns').select('id, name').order('name'),
+    client.from('campaigns').select('id, name, status, start_date, end_date').order('name'),
     client
       .from('profiles')
       .select('id, full_name')
@@ -38,7 +40,9 @@ async function loadFilterOptions(client: FazooClient) {
       .order('full_name'),
     client.from('stores').select('id, name').order('name'),
   ]);
+  if (campaigns.error) throw campaigns.error;
   return {
+    activeCampaigns: (campaigns.data ?? []).filter((c) => c.status === 'active'),
     campaigns: (campaigns.data ?? []).map((c) => ({ id: c.id, label: c.name })),
     bas: (bas.data ?? []).map((b) => ({ id: b.id, label: b.full_name })),
     stores: (stores.data ?? []).map((s) => ({ id: s.id, label: s.name })),
@@ -85,6 +89,7 @@ function aggregate(rows: LogRow[]) {
     open,
     sick,
     activeBas: bas.size,
+    checkins: rows.filter((r) => r.checkin_at !== null).length,
     activeStores: stores.size,
     trend,
   };
@@ -120,15 +125,26 @@ export default async function OverviewPage({
 
   return (
     <>
-      <PageHeader
-        title="Overview"
-        description="Attendance and sales across the selected range."
-      />
-
-      <Card className="mb-5 p-4 sm:mb-6 sm:p-5">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
-        <SectionCards orgKind="retail" />
-      </Card>
+      <div className="fazoo-overview-hero">
+        <PageHeader
+          title="Field overview"
+          description="Track attendance, campaigns and field activity across the selected range."
+        />
+      </div>
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Active BAs"
+          value={stats.activeBas}
+          hint="BAs with logs in this range"
+        />
+        <StatCard label="Check-ins" value={stats.checkins} hint="Recorded in this range" />
+        <StatCard
+          label="Active campaigns"
+          value={options.activeCampaigns.length}
+          hint="Current workspace"
+        />
+        <StatCard label="Pending reports" value={stats.open} hint="Open logs in this range" />
+      </div>
 
       <Card className="mb-5 p-3 sm:mb-6 sm:p-4">
         <LogFiltersForm
@@ -142,54 +158,102 @@ export default async function OverviewPage({
         />
       </Card>
 
-      <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 sm:gap-4 md:grid-cols-4">
-        <StatCard
-          label="BA-days"
-          value={stats.baDays}
-          delta={delta(stats.baDays, prevStats.baDays)}
-        />
-        <StatCard
-          label="Units sold"
-          value={stats.units}
-          delta={delta(stats.units, prevStats.units)}
-        />
-        <StatCard
-          label="Completed days"
-          value={stats.completed}
-          delta={delta(stats.completed, prevStats.completed)}
-        />
-        <StatCard
-          label="Open / incomplete"
-          value={stats.open}
-          delta={delta(stats.open, prevStats.open)}
-        />
-        <StatCard
-          label="Active BAs"
-          value={stats.activeBas}
-          delta={delta(stats.activeBas, prevStats.activeBas)}
-        />
-        <StatCard
-          label="Active stores"
-          value={stats.activeStores}
-          delta={delta(stats.activeStores, prevStats.activeStores)}
-        />
-        <StatCard
-          label="Sick-leave days"
-          value={stats.sick}
-          delta={delta(stats.sick, prevStats.sick)}
-        />
-        <StatCard
-          label="Completion rate"
-          value={`${stats.baDays ? Math.round((stats.completed / stats.baDays) * 100) : 0}%`}
-          hint="Completed ÷ BA-days"
-          delta={delta(
-            stats.baDays ? (stats.completed / stats.baDays) * 100 : 0,
-            prevStats.baDays ? (prevStats.completed / prevStats.baDays) * 100 : 0,
-          )}
-        />
-      </div>
+      <details className="mb-6">
+        <summary className="mb-4 cursor-pointer text-sm font-semibold text-deep">
+          More performance metrics
+        </summary>
+        <div className="grid grid-cols-1 gap-2.5 min-[380px]:grid-cols-2 sm:gap-4 md:grid-cols-4">
+          <StatCard
+            label="BA-days"
+            value={stats.baDays}
+            delta={delta(stats.baDays, prevStats.baDays)}
+          />
+          <StatCard
+            label="Units sold"
+            value={stats.units}
+            delta={delta(stats.units, prevStats.units)}
+          />
+          <StatCard
+            label="Completed days"
+            value={stats.completed}
+            delta={delta(stats.completed, prevStats.completed)}
+          />
+          <StatCard
+            label="Open / incomplete"
+            value={stats.open}
+            delta={delta(stats.open, prevStats.open)}
+          />
+          <StatCard
+            label="Active BAs"
+            value={stats.activeBas}
+            delta={delta(stats.activeBas, prevStats.activeBas)}
+          />
+          <StatCard
+            label="Active stores"
+            value={stats.activeStores}
+            delta={delta(stats.activeStores, prevStats.activeStores)}
+          />
+          <StatCard
+            label="Sick-leave days"
+            value={stats.sick}
+            delta={delta(stats.sick, prevStats.sick)}
+          />
+          <StatCard
+            label="Completion rate"
+            value={`${stats.baDays ? Math.round((stats.completed / stats.baDays) * 100) : 0}%`}
+            hint="Completed ÷ BA-days"
+            delta={delta(
+              stats.baDays ? (stats.completed / stats.baDays) * 100 : 0,
+              prevStats.baDays ? (prevStats.completed / prevStats.baDays) * 100 : 0,
+            )}
+          />
+        </div>
+      </details>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <Card>
+          <ActivityChart rows={rows} from={range.from} to={range.to} />
+        </Card>
 
-      <Card className="mt-6">
+        <Card className="p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold">Active campaigns</h2>
+            <Link href="/campaigns" className="text-sm font-medium text-primary underline">
+              View all
+            </Link>
+          </div>
+          {options.activeCampaigns.length === 0 ? (
+            <p className="text-sm text-muted">No active campaigns in this workspace.</p>
+          ) : (
+            <ul className="divide-y divide-ink/10">
+              {options.activeCampaigns.slice(0, 5).map((campaign) => (
+                <li key={campaign.id} className="py-4 first:pt-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <Link
+                      href={`/campaigns/${campaign.id}`}
+                      className="font-semibold text-deep underline"
+                    >
+                      {campaign.name}
+                    </Link>
+                    <span className="rounded-full bg-ok/10 px-2 py-1 text-xs font-medium text-ok">
+                      Active
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted">
+                    {campaign.start_date} – {campaign.end_date ?? 'Ongoing'}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+      <div className="mt-6">
+        <Card className="mb-5 p-4 sm:mb-6 sm:p-5">
+          <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
+          <SectionCards orgKind="retail" />
+        </Card>
+      </div>
+      <Card>
         <div className="border-b border-ink/8 px-4 py-4 sm:px-5">
           <h2 className="text-sm font-semibold text-ink">Sales &amp; completion trends</h2>
           <p className="mt-0.5 text-xs text-muted">
@@ -198,7 +262,6 @@ export default async function OverviewPage({
         </div>
         <TrendsChart data={stats.trend} />
       </Card>
-
       <StoreHeatmap rows={rows} />
 
       <RecentActivity client={client} />

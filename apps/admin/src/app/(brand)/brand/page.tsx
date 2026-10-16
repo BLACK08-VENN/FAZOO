@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireClient, type ClientBrand, type ClientProfile } from '@/lib/client-auth';
 import type { FazooClient } from '@fazoo/database';
 import { PageHeader, StatCard } from '@/components/page';
@@ -250,6 +251,19 @@ async function BrandAmbassadorOverview({
 
   return (
     <>
+      <div className="fazoo-overview-hero">
+        <PageHeader
+          title={`Hello, ${profile.full_name.split(' ')[0]}`}
+          description="Your assignments, activity and daily reporting."
+        >
+          <Link
+            href="/brand/logs"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white"
+          >
+            Create daily log
+          </Link>
+        </PageHeader>
+      </div>
       <WorkProfile
         client={client}
         profile={profile}

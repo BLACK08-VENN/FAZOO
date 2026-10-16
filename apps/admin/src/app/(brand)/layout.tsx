@@ -1,6 +1,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { BarChart3, CalendarOff, ClipboardList, FilePlus2, LogOut, Store, Users } from 'lucide-react';
+import {
+  BarChart3,
+  CalendarOff,
+  ClipboardList,
+  FilePlus2,
+  LogOut,
+  Store,
+  Users,
+} from 'lucide-react';
 import { requireClient } from '@/lib/client-auth';
 import { FazooMark } from '@/components/fazoo-mark';
 import { signOutAction } from '../(portal)/actions';
@@ -27,7 +35,10 @@ export default async function BrandLayout({ children }: { children: React.ReactN
 
   return (
     <div className="fazoo-shell flex min-h-screen">
-      <aside className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex" aria-label="Brand dashboard navigation">
+      <aside
+        className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex"
+        aria-label="Brand dashboard navigation"
+      >
         <div className="mb-8 px-3">
           {brand.logo_url ? (
             <div className="relative mb-3 h-14 overflow-hidden rounded-xl border border-white/10 bg-white">
@@ -78,7 +89,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
         </div>
       </aside>
 
-      <div className="flex w-full flex-col">
+      <div className="flex min-w-0 w-full flex-col">
         <header className="fazoo-glass-dark sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 xl:hidden">
           <div>
             <span className="text-sm font-bold text-white">{brand.name}</span>
@@ -108,7 +119,9 @@ export default async function BrandLayout({ children }: { children: React.ReactN
             </Link>
           ))}
         </nav>
-        <main className="min-w-0 flex-1 p-4 sm:p-6 xl:p-8" id="main-content">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 xl:p-8" id="main-content">
+          {children}
+        </main>
       </div>
     </div>
   );
