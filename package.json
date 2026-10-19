@@ -22,7 +22,7 @@
     "clean": "pnpm -r exec rm -rf node_modules .next .expo dist",
     "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,css,md,json}\"",
-    "security:check": "node --import tsx --test scripts/security.test.ts && node --test scripts/forge-regression.test.cjs && node scripts/security-audit.mjs"
+    "security:check": "node --import tsx --test scripts/security.test.ts && node --test scripts/forge-regression.test.mjs && node scripts/security-audit.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
