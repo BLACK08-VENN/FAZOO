@@ -53,9 +53,29 @@ export default async function DailyLogsPage({
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted">
           <span>
             Completion:{' '}
-            <a className="underline" href={`/daily-logs?completion_status=open`}>open only</a>
+            <a
+              className="underline"
+              href={`/daily-logs?${new URLSearchParams({
+                ...Object.fromEntries(
+                  Object.entries(params).filter(([k, v]) => v !== undefined && k !== 'completion_status' && k !== 'deleted') as [string, string][],
+                ),
+                completion_status: 'open',
+              })}`}
+            >
+              open only
+            </a>
             {' · '}
-            <a className="underline" href={`/daily-logs?completion_status=completed`}>completed only</a>
+            <a
+              className="underline"
+              href={`/daily-logs?${new URLSearchParams({
+                ...Object.fromEntries(
+                  Object.entries(params).filter(([k, v]) => v !== undefined && k !== 'completion_status' && k !== 'deleted') as [string, string][],
+                ),
+                completion_status: 'completed',
+              })}`}
+            >
+              completed only
+            </a>
           </span>
           <span>
             <Link className="underline" href={`/reports?${new URLSearchParams(
@@ -93,7 +113,7 @@ export default async function DailyLogsPage({
                 <tr key={r.id} className="hover:bg-lavender/60">
                   <Td><Link className="text-deep underline-offset-2 hover:underline" href={`/daily-logs/${r.id}`}>{r.attendance_date}</Link></Td>
                   <Td className="font-medium">
-                    <Link className="text-deep underline-offset-2 hover:underline" href={`/brand-ambassadors/${r.ba_id}`}>
+                    <Link className="text-deep underline-offset-2 hover:underline" href={`/brand-ambassadors/${r.ba_id}${filters.campaign_id ? `?campaign=${filters.campaign_id}` : ''}`}>
                       {r.ba_name}
                     </Link>
                   </Td>

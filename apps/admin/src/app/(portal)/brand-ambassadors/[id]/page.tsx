@@ -17,60 +17,85 @@ export default async function BADetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; campaign?: string }>;
 }) {
   const { client, profile: actor } = await requireStaff();
   const { id } = await params;
-  const { error, saved } = await searchParams;
+  const { error, saved, campaign: campaignParam } = await searchParams;
+  // Optional campaign scope — arriving from a campaign context must never
+  // surface another campaign's attendance, sales or photos for this BA.
+  const campaignId =
+    campaignParam && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaignParam)
+      ? campaignParam
+      : null;
   const { data: stores } = await client.from('stores').select('id, name, organization_id')
     .eq('organization_id', actor.organization_id).eq('status', 'active').order('name');
   const elevated = isElevated(actor.role);
 
-  const [{ data: profile }, { data: assignments }] = await Promise.all([
+  let assignmentQuery = client
+    .from('brand_ambassador_assignments')
+    .select(
+      `
+      *, campaigns ( name ), stores ( name )
+    `,
+    )
+    .eq('brand_ambassador_id', id)
+    .order('start_date', { ascending: false });
+  if (campaignId) assignmentQuery = assignmentQuery.eq('campaign_id', campaignId);
+
+  const [{ data: profile }, { data: assignments }, { data: campaign }] = await Promise.all([
     client.from('profiles').select('*').eq('id', id).single(),
-    client
-      .from('brand_ambassador_assignments')
-      .select(
-        `
-        *, campaigns ( name ), stores ( name )
-      `,
-      )
-      .eq('brand_ambassador_id', id)
-      .order('start_date', { ascending: false }),
+    assignmentQuery,
+    campaignId
+      ? client.from('campaigns').select('name').eq('id', campaignId).single()
+      : Promise.resolve({ data: null }),
   ]);
 
   if (!profile) notFound();
 
+  let presentQuery = client
+    .from('daily_logs')
+    .select('id', { count: 'exact', head: true })
+    .eq('brand_ambassador_id', id)
+    .eq('attendance_status', 'present');
+  let sickQuery = client
+    .from('daily_logs')
+    .select('id', { count: 'exact', head: true })
+    .eq('brand_ambassador_id', id)
+    .eq('attendance_status', 'sick_leave');
+  let baLogIdsQuery = client
+    .from('daily_logs')
+    .select('id')
+    .eq('brand_ambassador_id', id)
+    .limit(2000);
+  let photoQuery = client
+    .from('daily_log_photos')
+    .select(
+      `id, photo_type, storage_path, captured_at,
+       daily_logs!inner ( id, attendance_date )`,
+    )
+    .eq('daily_logs.brand_ambassador_id', id)
+    .order('captured_at', { ascending: false })
+    .limit(12);
+  if (campaignId) {
+    presentQuery = presentQuery.eq('campaign_id', campaignId);
+    sickQuery = sickQuery.eq('campaign_id', campaignId);
+    baLogIdsQuery = baLogIdsQuery.eq('campaign_id', campaignId);
+    photoQuery = photoQuery.eq('daily_logs.campaign_id', campaignId);
+  }
+
   const [{ count: presentDays }, { count: sickDays }, { data: salesAgg }, { data: recentPhotos }] =
     await Promise.all([
-      client
-        .from('daily_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('brand_ambassador_id', id)
-        .eq('attendance_status', 'present'),
-      client
-        .from('daily_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('brand_ambassador_id', id)
-        .eq('attendance_status', 'sick_leave'),
+      presentQuery,
+      sickQuery,
       client
         .from('sales_entries')
         .select('quantity, skus ( name )')
         .in(
           'daily_log_id',
-          (
-            await client.from('daily_logs').select('id').eq('brand_ambassador_id', id).limit(2000)
-          ).data?.map((d) => d.id) ?? ['00000000-0000-0000-0000-000000000000'],
+          (await baLogIdsQuery).data?.map((d) => d.id) ?? ['00000000-0000-0000-0000-000000000000'],
         ),
-      client
-        .from('daily_log_photos')
-        .select(
-          `id, photo_type, storage_path, captured_at,
-           daily_logs!inner ( id, attendance_date )`,
-        )
-        .eq('daily_logs.brand_ambassador_id', id)
-        .order('captured_at', { ascending: false })
-        .limit(12),
+      photoQuery,
     ]);
 
   type RecentPhoto = {
@@ -90,7 +115,14 @@ export default async function BADetailPage({
 
   return (
     <>
-      <PageHeader title={profile.full_name} description={profile.phone}>
+      <PageHeader
+        title={profile.full_name}
+        description={
+          campaignId && campaign?.name
+            ? `${profile.phone} · ${campaign.name}`
+            : profile.phone
+        }
+      >
         {profile.profile_photo_path ? (
           <div className="flex items-center gap-3 sm:justify-self-end">
             <PhotoFrame

@@ -8,36 +8,51 @@ import { weeklyOffDayName } from '@fazoo/config';
 
 export default async function StoreDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ campaign?: string }>;
 }) {
   const { client } = await requireStaff();
   const { id } = await params;
+  const { campaign: campaignParam } = await searchParams;
+  // Optional campaign scope: when the visitor arrives from a campaign
+  // context, every number on this page must only cover that campaign.
+  const campaignId =
+    campaignParam && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaignParam)
+      ? campaignParam
+      : null;
 
-  const [{ data: store }, { data: assignments }] = await Promise.all([
+  let assignmentQuery = client
+    .from('brand_ambassador_assignments')
+    .select(`
+      *, profiles ( id, full_name ), campaigns ( name )
+    `)
+    .eq('store_id', id)
+    .order('start_date', { ascending: false });
+  if (campaignId) assignmentQuery = assignmentQuery.eq('campaign_id', campaignId);
+
+  const [{ data: store }, { data: assignments }, { data: campaign }] = await Promise.all([
     client.from('stores').select('*').eq('id', id).single(),
-    client
-      .from('brand_ambassador_assignments')
-      .select(`
-        *, profiles ( id, full_name ), campaigns ( name )
-      `)
-      .eq('store_id', id)
-      .order('start_date', { ascending: false }),
+    assignmentQuery,
+    campaignId
+      ? client.from('campaigns').select('name').eq('id', campaignId).single()
+      : Promise.resolve({ data: null }),
   ]);
 
   if (!store) notFound();
 
-  const [{ data: logs }] = await Promise.all([
-    client
-      .from('daily_logs')
-      .select(`
-        id, attendance_date, attendance_status, status,
-        sales_entries ( quantity )
-      `)
-      .eq('store_id', id)
-      .order('attendance_date', { ascending: false })
-      .limit(500),
-  ]);
+  let logQuery = client
+    .from('daily_logs')
+    .select(`
+      id, attendance_date, attendance_status, status,
+      sales_entries ( quantity )
+    `)
+    .eq('store_id', id)
+    .order('attendance_date', { ascending: false })
+    .limit(500);
+  if (campaignId) logQuery = logQuery.eq('campaign_id', campaignId);
+  const { data: logs } = await logQuery;
 
   const presentLogs = (logs ?? []).filter((l) => l.attendance_status === 'present');
   const completed = (logs ?? []).filter((l) => l.status === 'completed').length;
@@ -48,12 +63,15 @@ export default async function StoreDetailPage({
   );
   const skuTotals = new Map<string, number>();
 
-  // SKU totals for this store
-  const { data: skuRows } = await client
+  // SKU totals for this store — SKUs are campaign-scoped, so when a campaign
+  // is selected only that campaign's products and units appear.
+  let skuQuery = client
     .from('sales_entries')
     .select('quantity, skus ( name ), daily_logs!inner ( store_id )')
     .eq('daily_logs.store_id', id)
     .limit(20000);
+  if (campaignId) skuQuery = skuQuery.eq('daily_logs.campaign_id', campaignId);
+  const { data: skuRows } = await skuQuery;
   for (const r of skuRows ?? []) {
     const name = (r.skus as unknown as { name: string }).name;
     skuTotals.set(name, (skuTotals.get(name) ?? 0) + r.quantity);
@@ -61,7 +79,14 @@ export default async function StoreDetailPage({
 
   return (
     <>
-      <PageHeader title={store.name} description={store.address ?? undefined} />
+      <PageHeader
+        title={store.name}
+        description={
+          campaignId && campaign?.name
+            ? [store.address, campaign.name].filter(Boolean).join(' · ')
+            : (store.address ?? undefined)
+        }
+      />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
         <StatCard label="Total units" value={units} />

@@ -33,6 +33,7 @@ export default async function DailyLogDetailPage({
 
   const log = raw as unknown as {
     id: string;
+    campaign_id: string;
     attendance_date: string;
     attendance_status: string;
     status: string;
@@ -131,7 +132,7 @@ export default async function DailyLogDetailPage({
             <dl className="grid grid-cols-[140px_1fr] gap-y-2">
               <dt className="text-muted">Brand Ambassador</dt>
               <dd>
-                <Link className="text-deep underline" href={`/brand-ambassadors/${log.profiles?.id}`}>
+                <Link className="text-deep underline" href={`/brand-ambassadors/${log.profiles?.id}?campaign=${log.campaign_id}`}>
                   {log.profiles?.full_name}
                 </Link>{' '}
                 <span className="font-mono text-xs text-muted">{log.profiles?.phone}</span>

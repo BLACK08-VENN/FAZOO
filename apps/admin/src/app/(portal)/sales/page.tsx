@@ -44,15 +44,17 @@ export default async function SalesPage({
     query = query.eq('daily_logs.campaign_id', filters.campaign_id);
   }
 
-  const [salesRes, logsRes] = await Promise.all([
-    query,
-    client
-      .from('daily_logs')
-      .select('id, status, attendance_status, store_id')
-      .gte('attendance_date', filters.preset === 'custom' && from ? from : lagosDaysAgo(30))
-      .lte('attendance_date', to || undefined)
-      .limit(5000),
-  ]);
+  // Attendance side must respect the campaign filter too — otherwise
+  // campaign A's stores would show campaign B's BA-days alongside them.
+  let logsQuery = client
+    .from('daily_logs')
+    .select('id, status, attendance_status, store_id')
+    .gte('attendance_date', filters.preset === 'custom' && from ? from : lagosDaysAgo(30))
+    .lte('attendance_date', to || undefined)
+    .limit(5000);
+  if (filters.campaign_id) logsQuery = logsQuery.eq('campaign_id', filters.campaign_id);
+
+  const [salesRes, logsRes] = await Promise.all([query, logsQuery]);
 
   const sales = (salesRes.data ?? []) as unknown as Array<{
     quantity: number;
@@ -181,7 +183,10 @@ export default async function SalesPage({
                           </span>
                         ))}
                       {r.skuCounts.size > 4 ? (
-                        <Link href={`/stores/${r.storeId}`} className="underline">more…</Link>
+                        <Link
+                          href={`/stores/${r.storeId}${filters.campaign_id ? `?campaign=${filters.campaign_id}` : ''}`}
+                          className="underline"
+                        >more…</Link>
                       ) : null}
                     </div>
                   </Td>

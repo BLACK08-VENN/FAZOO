@@ -23,7 +23,17 @@ export function parseLogFilters(params: URLSearchParams | Record<string, string 
         )
       : params;
   const parsed = logFiltersSchema.safeParse(raw);
-  return parsed.success ? parsed.data : logFiltersSchema.parse({ preset: '30d' });
+  if (parsed.success) return parsed.data;
+  // A malformed date must never widen a scoped view: salvage the
+  // campaign/BA/store filters so drill-downs keep their campaign context.
+  const salvaged = logFiltersSchema.safeParse({
+    preset: '30d',
+    campaign_id: raw.campaign_id,
+    ba_id: raw.ba_id,
+    store_id: raw.store_id,
+    sku_id: raw.sku_id,
+  });
+  return salvaged.success ? salvaged.data : logFiltersSchema.parse({ preset: '30d' });
 }
 
 export interface LogRow {

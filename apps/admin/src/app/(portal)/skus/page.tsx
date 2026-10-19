@@ -7,9 +7,16 @@ import { Button } from '@/components/ui/button';
 import { TableWrap, Table, Td, Th } from '@/components/ui/table';
 import { skuInputSchema } from '@fazoo/validation';
 
-type SkusSearchParams = { brand?: string };
+type SkusSearchParams = { brand?: string; campaign?: string };
 
 type ReadableBrand = { id: string; name: string; slug: string };
+
+type CampaignOption = {
+  id: string;
+  name: string;
+  organization_id: string;
+  status?: string;
+};
 
 export default async function SkusPage({
   searchParams,
@@ -19,13 +26,13 @@ export default async function SkusPage({
   const { client, profile } = await requireStaff();
   const params = await searchParams;
   const requestedBrand = String(params.brand ?? '').trim();
+  const requestedCampaign = String(params.campaign ?? '').trim();
 
   const [{ data: orgs }, { data: campaigns }] = await Promise.all([
     client.from('organizations').select('id, name, slug').eq('status', 'active').order('name'),
     client
       .from('campaigns')
-      .select('id, name, organization_id')
-      .eq('status', 'active')
+      .select('id, name, organization_id, status')
       .order('name'),
   ]);
 
@@ -42,23 +49,54 @@ export default async function SkusPage({
   const scopeBrand = allBrands ? null : picked ?? active;
   const brandId = scopeBrand?.id ?? null;
 
-  const skuQuery = client.from('skus').select('*, organizations(name)').order('name');
+  const scopedCampaigns: CampaignOption[] = ((brandId
+    ? (campaigns ?? []).filter((c) => c.organization_id === brandId)
+    : (campaigns ?? [])
+  ) as CampaignOption[]).filter((c) => {
+    // Non-super-admins only ever see campaigns of brands they can read.
+    return profile.role === 'super_admin' || c.organization_id === profile.organization_id;
+  });
+  const activeScopedCampaigns = scopedCampaigns.filter((c) => c.status === 'active');
+
+  const pickedCampaign = scopedCampaigns.find((c) => c.id === requestedCampaign) ?? null;
+
+  const skuQuery = client
+    .from('skus')
+    .select('*, organizations(name), campaigns(name)')
+    .order('name');
   if (brandId) skuQuery.eq('organization_id', brandId);
+  if (pickedCampaign) skuQuery.eq('campaign_id', pickedCampaign.id);
   const { data: skus } = await skuQuery;
 
-  const scopedCampaigns = brandId
-    ? (campaigns ?? []).filter((c) => c.organization_id === brandId)
-    : campaigns ?? [];
+  // Group SKUs by campaign so each brand's products stay in their own
+  // campaign — a Lenovo SKU never renders under a Veda campaign and vice versa.
+  const byCampaign = new Map<
+    string,
+    { campaignName: string; brandName: string | null; rows: SkuRow[] }
+  >();
+  for (const s of (skus ?? []) as SkuRow[]) {
+    const key = s.campaign_id;
+    const group = byCampaign.get(key) ?? {
+      campaignName: s.campaigns?.name ?? 'Unknown campaign',
+      brandName: s.organizations?.name ?? null,
+      rows: [],
+    };
+    group.rows.push(s);
+    byCampaign.set(key, group);
+  }
+  const groups = [...byCampaign.entries()].sort((a, b) =>
+    a[1].campaignName.localeCompare(b[1].campaignName),
+  );
 
   return (
     <>
       <PageHeader
         title="SKUs"
-        description="Products available for sales recording, grouped by brand. Add, update, or remove products for the selected workspace."
+        description="Products available for sales recording, grouped by campaign. Each SKU belongs to exactly one campaign."
       />
 
       <div className="mb-6 flex flex-wrap items-end gap-3">
-        <form action="/skus" method="get" className="flex items-end gap-3">
+        <form action="/skus" method="get" className="flex flex-wrap items-end gap-3">
           <div>
             <Label htmlFor="sku-brand">Brand</Label>
             <Select
@@ -74,12 +112,23 @@ export default async function SkusPage({
               ))}
             </Select>
           </div>
+          <div>
+            <Label htmlFor="sku-campaign">Campaign</Label>
+            <Select id="sku-campaign" name="campaign" defaultValue={requestedCampaign}>
+              <option value="">All campaigns</option>
+              {scopedCampaigns.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          </div>
           <Button type="submit" variant="outline">View</Button>
         </form>
         <p className="text-sm text-muted">
-          {scopeBrand
-            ? `Showing ${(skus ?? []).length} SKU${(skus ?? []).length === 1 ? '' : 's'} for ${scopeBrand.name}.`
-            : 'Showing SKUs across all brands.'}
+          Showing {(skus ?? []).length} SKU{(skus ?? []).length === 1 ? '' : 's'} in{' '}
+          {groups.length} campaign{groups.length === 1 ? '' : 's'}
+          {scopeBrand ? ` for ${scopeBrand.name}` : ' across all brands'}.
         </p>
       </div>
 
@@ -95,11 +144,36 @@ export default async function SkusPage({
                 <Th className="text-right">Actions</Th>
               </tr>
             </thead>
-            <tbody>
-              {((skus ?? []) as SkuRow[]).map((s) => (
-                <EditSkuRow key={s.id} sku={s} showBrand={allBrands} />
-              ))}
-            </tbody>
+            {groups.length === 0 ? (
+              <tbody>
+                <tr>
+                  <Td colSpan={allBrands ? 5 : 4}>
+                    <span className="text-muted">No SKUs yet.</span>
+                  </Td>
+                </tr>
+              </tbody>
+            ) : (
+              groups.map(([campaignId, group]) => (
+                <tbody key={campaignId}>
+                  <tr className="bg-lavender/50">
+                    <Td colSpan={allBrands ? 5 : 4}>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-deep">
+                        {group.campaignName}
+                        {allBrands && group.brandName ? ` · ${group.brandName}` : ''}
+                      </span>
+                    </Td>
+                  </tr>
+                  {group.rows.map((s) => (
+                    <EditSkuRow
+                      key={s.id}
+                      sku={s}
+                      showBrand={allBrands}
+                      campaigns={(campaigns ?? []) as CampaignOption[]}
+                    />
+                  ))}
+                </tbody>
+              ))
+            )}
           </Table>
         </TableWrap>
 
@@ -118,9 +192,20 @@ export default async function SkusPage({
                 });
                 if (!parsed.success) return;
                 const { client: c, profile: p } = await requireStaff();
+                // The SKU's org always follows its campaign — never the
+                // viewer's current workspace — so products can't leak across
+                // brands.
+                const { data: camp } = await c
+                  .from('campaigns')
+                  .select('organization_id')
+                  .eq('id', parsed.data.campaign_id)
+                  .single();
+                const orgId = (camp as { organization_id: string } | null)?.organization_id;
+                if (!orgId) return;
+                if (p.role !== 'super_admin' && orgId !== p.organization_id) return;
                 await c.from('skus').insert({
                   ...parsed.data,
-                  organization_id: brandId ?? p.organization_id,
+                  organization_id: orgId,
                 });
                 revalidatePath('/skus');
               }}
@@ -129,11 +214,11 @@ export default async function SkusPage({
               <div>
                 <Label htmlFor="k-campaign">Campaign</Label>
                 <Select id="k-campaign" name="campaign_id" required>
-                  {scopedCampaigns.map((c) => (
+                  {activeScopedCampaigns.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </Select>
-                {scopedCampaigns.length === 0 ? (
+                {activeScopedCampaigns.length === 0 ? (
                   <p className="mt-1 text-xs text-muted">
                     No active campaigns in this brand yet — create one first.
                   </p>
@@ -165,9 +250,28 @@ type SkuRow = {
   description: string | null;
   status: 'active' | 'inactive';
   organizations?: { name: string } | null;
+  campaigns?: { name: string } | null;
 };
 
-async function EditSkuRow({ sku, showBrand }: { sku: SkuRow; showBrand: boolean }) {
+async function EditSkuRow({
+  sku,
+  showBrand,
+  campaigns,
+}: {
+  sku: SkuRow;
+  showBrand: boolean;
+  campaigns: CampaignOption[];
+}) {
+  const ownCampaigns = campaigns.filter((c) => c.organization_id === sku.organization_id);
+  // Keep the SKU's current campaign selectable even if it's completed or
+  // cancelled, so the dropdown's default never silently points elsewhere.
+  const currentCampaign = ownCampaigns.find((c) => c.id === sku.campaign_id);
+  const campaignOptions = currentCampaign
+    ? ownCampaigns
+    : [
+        ...ownCampaigns,
+        { id: sku.campaign_id, name: sku.campaigns?.name ?? 'Current campaign', organization_id: sku.organization_id },
+      ];
   return (
     <tr>
       <Td colSpan={showBrand ? 4 : 3}>
@@ -176,15 +280,19 @@ async function EditSkuRow({ sku, showBrand }: { sku: SkuRow; showBrand: boolean 
           action={async (formData: FormData) => {
             'use server';
             const parsed = skuInputSchema.safeParse({
-              campaign_id: sku.campaign_id,
+              campaign_id: formData.get('campaign_id') || sku.campaign_id,
               name: formData.get('name'),
               code: formData.get('code'),
               description: formData.get('description') || null,
               status: formData.get('status'),
             });
             if (!parsed.success) return;
-            const { client: c } = await requireStaff();
+            const { client: c, profile: p } = await requireStaff();
+            // Moving between campaigns stays inside the SKU's brand; org
+            // never changes here, so products can't cross brands.
+            if (p.role !== 'super_admin' && sku.organization_id !== p.organization_id) return;
             await c.from('skus').update({
+              campaign_id: parsed.data.campaign_id,
               name: parsed.data.name,
               code: parsed.data.code,
               description: parsed.data.description,
@@ -198,6 +306,20 @@ async function EditSkuRow({ sku, showBrand }: { sku: SkuRow; showBrand: boolean 
             <div className="min-w-32">
               <Label>Brand</Label>
               <p className="pt-1 text-sm font-semibold">{sku.organizations?.name ?? '—'}</p>
+            </div>
+          ) : null}
+          {campaignOptions.length > 0 ? (
+            <div className="min-w-40">
+              <Label htmlFor={`s-campaign-${sku.id}`}>Campaign</Label>
+              <Select
+                id={`s-campaign-${sku.id}`}
+                name="campaign_id"
+                defaultValue={sku.campaign_id}
+              >
+                {campaignOptions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </Select>
             </div>
           ) : null}
           <input type="hidden" name="description" value={sku.description ?? ''} />

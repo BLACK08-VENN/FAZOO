@@ -7,7 +7,13 @@ import { Card } from '@/components/ui/card';
  * of the period's visits; the biggest single store drives the scale so one
  * outlier never washes out the rest.
  */
-export function StoreHeatmap({ rows }: { rows: LogRow[] }) {
+export function StoreHeatmap({
+  rows,
+  campaignId,
+}: {
+  rows: LogRow[];
+  campaignId?: string | undefined;
+}) {
   const byStore = new Map<string, { name: string; id: string; visits: number }>();
   for (const r of rows) {
     const entry = byStore.get(r.store_id) ?? { name: r.store_name, id: r.store_id, visits: 0 };
@@ -47,7 +53,7 @@ export function StoreHeatmap({ rows }: { rows: LogRow[] }) {
           return (
             <Link
               key={s.id}
-              href={`/stores/${s.id}`}
+              href={`/stores/${s.id}${campaignId ? `?campaign=${campaignId}` : ''}`}
               className="group flex min-h-16 flex-col justify-between rounded-lg border border-ink/8 p-3 transition-transform hover:-translate-y-0.5"
               style={{ backgroundColor: `rgba(123, 47, 190, ${0.12 + intensity * 0.88})` }}
             >

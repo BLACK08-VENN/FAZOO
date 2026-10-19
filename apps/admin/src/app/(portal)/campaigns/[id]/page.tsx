@@ -267,7 +267,7 @@ export default async function CampaignDetailPage({
                       <tr key={a.id}>
                         <Td>
                           <Link
-                            href={`/brand-ambassadors/${a.brand_ambassador_id}`}
+                            href={`/brand-ambassadors/${a.brand_ambassador_id}?campaign=${id}`}
                             className="text-deep underline"
                           >
                             {(a.profiles as unknown as { full_name: string } | null)?.full_name}
@@ -457,7 +457,7 @@ export default async function CampaignDetailPage({
                         <tr key={log.id}>
                           <Td>
                             <Link
-                              href={`/brand-ambassadors/${log.ba_id}`}
+                              href={`/brand-ambassadors/${log.ba_id}?campaign=${id}`}
                               className="text-deep underline"
                             >
                               {log.ba_name}
@@ -493,7 +493,7 @@ export default async function CampaignDetailPage({
                           </Td>
                           <Td className="text-right">
                             <Link
-                              href={`/daily-logs/${log.id}`}
+                              href={`/daily-logs/${log.id}?campaign=${id}`}
                               className="whitespace-nowrap text-xs text-deep underline underline-offset-2"
                             >
                               Details
@@ -546,7 +546,7 @@ export default async function CampaignDetailPage({
                           <Td className="whitespace-nowrap">{row.attendance_date}</Td>
                           <Td>
                             <Link
-                              href={`/brand-ambassadors/${row.ba_id}`}
+                              href={`/brand-ambassadors/${row.ba_id}?campaign=${id}`}
                               className="text-deep underline"
                             >
                               {row.ba_name}
