@@ -1456,6 +1456,7 @@ REVOKE ALL ON FUNCTION public.staff_session_verified() FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.staff_session_verified() TO authenticated;
 DO $$ DECLARE t record; BEGIN
  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'profiles' LOOP
+   EXECUTE format('DROP POLICY IF EXISTS staff_mfa ON public.%I', t.tablename);
    EXECUTE format('CREATE POLICY staff_mfa ON public.%I AS RESTRICTIVE FOR ALL TO authenticated USING (public.staff_session_verified()) WITH CHECK (public.staff_session_verified())',t.tablename);
  END LOOP;
 END; $$;
@@ -1509,4 +1510,5 @@ BEGIN
  END IF;
  RETURN NEW;
 END; $$;
+DROP POLICY IF EXISTS staff_mfa_storage ON storage.objects;
 CREATE POLICY staff_mfa_storage ON storage.objects AS RESTRICTIVE FOR ALL TO authenticated USING(public.staff_session_verified()) WITH CHECK(public.staff_session_verified());

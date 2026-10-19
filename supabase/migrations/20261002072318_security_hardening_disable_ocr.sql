@@ -182,6 +182,7 @@ BEGIN
  RETURN NEW;
 END; $$;
 REVOKE ALL ON FUNCTION public.guard_membership_privileges() FROM PUBLIC,anon,authenticated;
+DROP TRIGGER IF EXISTS guard_membership_privileges ON public.organization_memberships;
 CREATE TRIGGER guard_membership_privileges BEFORE INSERT OR UPDATE OR DELETE ON public.organization_memberships FOR EACH ROW EXECUTE FUNCTION public.guard_membership_privileges();
 -- Avoid a recursive RLS self-query and limit colleague access to staff.
 ALTER POLICY memberships_org_select ON public.organization_memberships USING (public.can_read_org(organization_id));

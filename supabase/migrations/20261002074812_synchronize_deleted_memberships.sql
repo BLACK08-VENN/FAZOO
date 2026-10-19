@@ -40,4 +40,5 @@ begin
 end;
 $function$
 ;
+DROP TRIGGER IF EXISTS profiles_sync_membership_delete_trg ON public.organization_memberships;
 CREATE TRIGGER profiles_sync_membership_delete_trg AFTER DELETE ON public.organization_memberships FOR EACH ROW EXECUTE FUNCTION public.profiles_sync_primary_membership();
