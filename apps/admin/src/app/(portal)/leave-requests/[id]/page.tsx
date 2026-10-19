@@ -33,7 +33,9 @@ export default async function LeaveRequestDetail({
     .single();
   if (!row) notFound();
   const ba = row.profiles as unknown as { full_name: string; phone: string };
-  const store = row.stores as unknown as { name: string };
+  // Store-less assignments (e.g. school-based BAs) submit leave with a null
+  // store — dereferencing it would crash the page that hosts the approve form.
+  const store = row.stores as unknown as { name: string } | null;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -83,7 +85,7 @@ export default async function LeaveRequestDetail({
             <dl className="grid gap-5 sm:grid-cols-3">
               <Item label="Name">{ba.full_name}</Item>
               <Item label="Mobile number">{ba.phone}</Item>
-              <Item label="Store">{store.name}</Item>
+              <Item label="Store">{store?.name ?? 'Not assigned'}</Item>
             </dl>
           </section>
           <section className="mt-8">
