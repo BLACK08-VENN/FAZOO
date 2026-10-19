@@ -1,6 +1,6 @@
-import Link from 'next/link';
+import { SidebarNav } from '@/components/sidebar-nav';
 import { requireStaff } from '@/lib/auth';
-import { navFor, resolveOrgKind } from '@/lib/nav';
+import { resolveOrgKind } from '@/lib/nav';
 import { MobileNav } from '@/components/mobile-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CommandPalette } from '@/components/command-palette';
@@ -11,7 +11,6 @@ import { signOutAction, switchAdminBrandAction } from './actions';
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const { client, profile } = await requireStaff();
   const orgKind = await resolveOrgKind(client);
-  const nav = navFor(orgKind);
 
   const { data: organizations } = await client
     .from('organizations')
@@ -21,7 +20,9 @@ export default async function PortalLayout({ children }: { children: React.React
 
   const activeBrands = organizations ?? [];
   const activeBrand =
-    activeBrands.find((brand) => brand.id === profile.organization_id) ?? activeBrands[0] ?? null;
+    activeBrands.find((brand) => brand.id === profile.organization_id) ??
+    activeBrands[0] ??
+    null;
   const canSwitchBrand = profile.role === 'super_admin' && activeBrands.length > 1;
 
   return (
@@ -32,7 +33,10 @@ export default async function PortalLayout({ children }: { children: React.React
       >
         <div className="mb-5 px-3">
           <FazooMark className="size-12" />
-          <span className="sr-only">Fazoo</span>
+          <p className="mt-3 text-xl font-bold tracking-wide text-white">FAZOO</p>
+          <p className="text-[10px] uppercase tracking-widest text-white/70">
+            Field activations
+          </p>
         </div>
 
         {activeBrand ? (
@@ -43,7 +47,6 @@ export default async function PortalLayout({ children }: { children: React.React
             <div className="flex items-center gap-2.5">
               {activeBrand.logo_url ? (
                 <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={activeBrand.logo_url}
                     alt={`${activeBrand.name} logo`}
@@ -91,18 +94,7 @@ export default async function PortalLayout({ children }: { children: React.React
           </div>
         ) : null}
 
-        <nav aria-label="Primary" className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-          {nav.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
-            >
-              <Icon size={16} aria-hidden="true" />
-              {label}
-            </Link>
-          ))}
-        </nav>
+        <SidebarNav orgKind={orgKind} />
         <div className="border-t border-white/10 pt-4">
           <CommandPalette orgKind={orgKind} />
           <div className="mt-3">
@@ -125,13 +117,12 @@ export default async function PortalLayout({ children }: { children: React.React
         </div>
       </aside>
 
-      <div className="flex w-full flex-col">
+      <div className="flex min-w-0 w-full flex-col">
         <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-14 items-center justify-between border-b px-4 xl:hidden">
           <div className="flex min-w-0 items-center gap-2.5">
             <FazooMark className="size-9" />
             {activeBrand?.logo_url ? (
               <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={activeBrand.logo_url}
                   alt={`${activeBrand.name} logo`}
@@ -161,7 +152,10 @@ export default async function PortalLayout({ children }: { children: React.React
         {canSwitchBrand && activeBrand ? (
           <div className="no-print border-b border-ink/10 bg-white/90 px-4 py-2 xl:hidden">
             <form action={switchAdminBrandAction} className="flex items-center gap-2">
-              <label htmlFor="mobile-admin-active-brand" className="shrink-0 text-xs font-semibold text-muted">
+              <label
+                htmlFor="mobile-admin-active-brand"
+                className="shrink-0 text-xs font-semibold text-muted"
+              >
                 Brand
               </label>
               <select

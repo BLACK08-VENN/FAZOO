@@ -34,7 +34,7 @@ export async function requireStaff(): Promise<{ client: FazooClient; profile: Ad
     redirect('/not-authorized');
   }
 
-  if (profile.role === 'brand_ambassador') {
+  if (profile.role === 'brand_ambassador' || profile.role === 'client') {
     redirect('/brand');
   }
 

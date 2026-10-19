@@ -1,18 +1,21 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { requireStaff } from '@/lib/auth';
+import { requireApprovedProfile } from '@/lib/auth';
 import { signedDocumentUrl } from '@/server/documents';
 
 export const dynamic = 'force-dynamic';
 
 function safeFileName(value: string): string {
-  return value.replace(/[^a-z0-9._-]+/gi, '-').replace(/-{2,}/g, '-').slice(0, 120);
+  return value
+    .replace(/[^a-z0-9._-]+/gi, '-')
+    .replace(/-{2,}/g, '-')
+    .slice(0, 120);
 }
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ gradeId: string }> },
 ) {
-  const { client, profile } = await requireStaff();
+  const { client, profile } = await requireApprovedProfile();
   const { gradeId } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(gradeId)) {
     return NextResponse.json({ error: 'Invalid grade print order id' }, { status: 400 });
@@ -47,7 +50,10 @@ export async function GET(
   const storagePath = kind === 'word' ? row.word_storage_path : row.storage_path;
   if (!storagePath) {
     return NextResponse.json(
-      { error: kind === 'word' ? 'Word document not generated yet' : 'Original document not found' },
+      {
+        error:
+          kind === 'word' ? 'Word document not generated yet' : 'Original document not found',
+      },
       { status: 404 },
     );
   }
@@ -62,13 +68,12 @@ export async function GET(
     const url = await signedDocumentUrl(storagePath, fileName, bucket);
 
     if (!proxy) {
-      return NextResponse.redirect(url, { status: 302 });
+      const response = NextResponse.redirect(url, { status: 302 });
+      response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+      return response;
     }
 
-    // Browser OCR must not follow the signed Supabase URL itself. Some browsers,
-    // PWAs and privacy settings turn that cross-origin redirect into a generic
-    // "Failed to fetch". Stream raw source files through this authenticated
-    // same-origin route instead. Word downloads can still use the signed redirect.
+    // Stream originals as attachments through the authenticated route.
     const upstream = await fetch(url, {
       cache: 'no-store',
       redirect: 'follow',
@@ -82,7 +87,10 @@ export async function GET(
     }
 
     const headers = new Headers({
-      'Content-Type': kind === 'raw' ? 'application/octet-stream' : (mimeType || upstream.headers.get('content-type') || 'application/octet-stream'),
+      'Content-Type':
+        kind === 'raw'
+          ? 'application/octet-stream'
+          : mimeType || upstream.headers.get('content-type') || 'application/octet-stream',
       'Content-Disposition': `attachment; filename="${fileName}"`,
       'Cache-Control': 'private, no-store, max-age=0',
       'X-Content-Type-Options': 'nosniff',
@@ -93,7 +101,8 @@ export async function GET(
 
     return new Response(upstream.body, { status: 200, headers });
   } catch (signError) {
-    const message = signError instanceof Error ? signError.message : 'Could not create a download link';
+    const message =
+      signError instanceof Error ? signError.message : 'Could not create a download link';
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

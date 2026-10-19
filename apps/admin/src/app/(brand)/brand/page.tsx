@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireClient, type ClientBrand, type ClientProfile } from '@/lib/client-auth';
 import type { FazooClient } from '@fazoo/database';
 import { PageHeader, StatCard } from '@/components/page';
@@ -250,6 +251,19 @@ async function BrandAmbassadorOverview({
 
   return (
     <>
+      <div className="fazoo-overview-hero">
+        <PageHeader
+          title={`Hello, ${profile.full_name.split(' ')[0]}`}
+          description="Your assignments, activity and daily reporting."
+        >
+          <Link
+            href="/brand/logs"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white"
+          >
+            Create daily log
+          </Link>
+        </PageHeader>
+      </div>
       <WorkProfile
         client={client}
         profile={profile}
@@ -262,15 +276,29 @@ async function BrandAmbassadorOverview({
         description="Your own shifts, sales and check-ins. Data you can see from the mobile app."
       />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Days logged" value={rows.length} />
-        <StatCard label="Units sold" value={units} />
-        <StatCard label="Days completed" value={completed} />
-        <StatCard label="Open days" value={open} />
-        <StatCard label="Days present" value={present} />
-        <StatCard label="Stores visited" value={stores} />
-        <StatCard label="Campaigns" value={campaigns} />
-        <StatCard label="Flagged" value={flagged} />
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: 'Days logged', value: rows.length },
+          { label: 'Units sold', value: units },
+          { label: 'Days completed', value: completed },
+          { label: 'Open days', value: open },
+          { label: 'Days present', value: present },
+          { label: 'Stores visited', value: stores },
+          { label: 'Campaigns', value: campaigns },
+          { label: 'Flagged', value: flagged },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="flex min-h-[66px] flex-col justify-center rounded-xl border border-ink/10 bg-white px-3 py-2 shadow-sm"
+          >
+            <p className="text-[10px] font-semibold uppercase leading-tight tracking-[0.04em] text-muted">
+              {stat.label}
+            </p>
+            <p className="mt-1 text-xl font-bold leading-none tabular-nums text-ink">
+              {stat.value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {rows.length > 0 ? (

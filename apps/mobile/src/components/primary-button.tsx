@@ -3,7 +3,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const GRADIENT = ['#9B4FE8', '#7B2FBE', '#5A1E82'] as const;
+const GRADIENT = ['#6327DF', '#6327DF', '#6327DF'] as const;
 
 type ButtonVariant = 'primary' | 'ghost' | 'danger' | 'secondary';
 
@@ -43,26 +43,54 @@ export function PrimaryButton({
 
   const content = (
     <View className="min-h-14 flex-row items-center justify-center px-5">
-      <Content busy={busy} label={label} children={children} icon={icon} textClass={textClass} toneColor={toneColor} />
+      <Content
+        busy={busy}
+        label={label}
+        children={children}
+        icon={icon}
+        textClass={textClass}
+        toneColor={toneColor}
+      />
     </View>
   );
 
-  const className = `my-1 overflow-hidden rounded-[18px] ${shellClass} ${disabled ? 'opacity-50' : ''}`;
+  const className = `my-1 overflow-hidden rounded-xl ${shellClass} ${disabled ? 'opacity-50' : ''}`;
   const style = {
-    shadowColor: variant === 'primary' ? '#7B2FBE' : variant === 'danger' ? '#DC2626' : '#1B1623',
-    shadowOpacity: disabled || variant === 'ghost' ? 0 : variant === 'primary' || variant === 'danger' ? 0.32 : 0.08,
+    shadowColor:
+      variant === 'primary' ? '#7B2FBE' : variant === 'danger' ? '#DC2626' : '#1B1623',
+    shadowOpacity:
+      disabled || variant === 'ghost'
+        ? 0
+        : variant === 'primary' || variant === 'danger'
+          ? 0.08
+          : 0.04,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
-    elevation: disabled || variant === 'ghost' ? 0 : variant === 'primary' || variant === 'danger' ? 4 : 2,
+    elevation:
+      disabled || variant === 'ghost'
+        ? 0
+        : variant === 'primary' || variant === 'danger'
+          ? 4
+          : 2,
   };
 
   const facade =
     variant === 'primary' ? (
-      <LinearGradient colors={GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="absolute inset-0" />
+      <LinearGradient
+        colors={GRADIENT}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="absolute inset-0"
+      />
     ) : null;
 
   if (!onPress) {
-    return <View className={className} style={style}>{facade}{content}</View>;
+    return (
+      <View className={className} style={style}>
+        {facade}
+        {content}
+      </View>
+    );
   }
 
   return (
@@ -100,7 +128,11 @@ function Content({
 }) {
   if (busy) return <ActivityIndicator color={toneColor} accessibilityLabel="Loading" />;
   if (children) {
-    return <View className="h-full w-full items-center justify-center overflow-hidden rounded-2xl">{children}</View>;
+    return (
+      <View className="h-full w-full items-center justify-center overflow-hidden rounded-2xl">
+        {children}
+      </View>
+    );
   }
   return (
     <View className="flex-row items-center justify-center gap-2">

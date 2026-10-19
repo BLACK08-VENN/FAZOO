@@ -1,6 +1,8 @@
 import 'server-only';
 import { serviceSupabase, type FazooClient } from '@fazoo/database';
-import { BOOKLIST_BUCKET, DOCX_MIME } from './ocr/convert';
+import { inspectPreparedDocument } from '@/lib/document-upload';
+const BOOKLIST_BUCKET = 'booklist-documents';
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 /**
  * Document handling for the booklist pipeline.
@@ -16,7 +18,10 @@ import { BOOKLIST_BUCKET, DOCX_MIME } from './ocr/convert';
 /** Vercel's serverless body limit is 4.5 MB; leave headroom for multipart. */
 export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
-const SIGNED_URL_TTL_SECONDS = Number(process.env.ADMIN_SIGNED_URL_TTL_SECONDS ?? 300);
+const configuredTtl = Number(process.env.ADMIN_SIGNED_URL_TTL_SECONDS ?? 300);
+const SIGNED_URL_TTL_SECONDS = Number.isFinite(configuredTtl)
+  ? Math.max(15, Math.min(300, configuredTtl))
+  : 300;
 
 const ACCEPTED_FORMATTED_TYPES = new Set([DOCX_MIME, 'application/msword', 'application/pdf']);
 
@@ -68,16 +73,15 @@ export async function storeJobDocument({
     );
   }
 
-  const extension = file.name.includes('.')
-    ? file.name.split('.').pop()!.toLowerCase()
-    : 'docx';
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const { extension, mimeType } = inspectPreparedDocument(file.name, file.type, bytes);
   const storagePath = `${organizationId}/documents/${jobId}/${slug}-${Date.now()}.${extension}`;
 
   const db = serviceSupabase();
   const { error } = await db.storage
     .from(BOOKLIST_BUCKET)
-    .upload(storagePath, Buffer.from(await file.arrayBuffer()), {
-      contentType: mimeTypeFor(file),
+    .upload(storagePath, Buffer.from(bytes), {
+      contentType: mimeType,
       upsert: false,
     });
 

@@ -9,8 +9,6 @@ export type LeaveFormState = {
   success: string | null;
 };
 
-export const initialLeaveFormState: LeaveFormState = { error: null, success: null };
-
 export async function submitLeaveRequest(
   _previous: LeaveFormState,
   formData: FormData,

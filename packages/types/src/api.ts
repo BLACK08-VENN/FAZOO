@@ -94,6 +94,9 @@ export interface AssignmentToday {
   id: Uuid;
   campaign_id?: Uuid;
   campaign_name?: string;
+  /** Optional configured shift hours (not yet supplied by ba_today unless backend supports them). */
+  shift_start_time?: string | null;
+  shift_end_time?: string | null;
   store_id?: Uuid;
   store_name?: string;
   store_address?: string | null;

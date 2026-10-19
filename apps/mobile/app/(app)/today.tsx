@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, Text, View } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { router, useFocusEffect } from 'expo-router';
 import type { BaTodayResult } from '@fazoo/types';
 import { lagosDate, weeklyOffDayName } from '@fazoo/config';
+import { useSessionProfile } from '@/lib/session';
 import { useToday } from '@/lib/today';
 import { useOrgKind } from '@/lib/org-kind';
 import { operationCounts, retryTerminal } from '@/lib/offline/db';
 import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
-import { Card, HeroCard, MetricTile, Page } from '@/components/ui';
+import { Card, MetricTile, Page } from '@/components/ui';
 import SchoolsToday from '@/components/schools-today';
 
 /**
@@ -34,8 +35,18 @@ export default function Today() {
   return <RetailToday />;
 }
 
+function localShiftTime(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit', hour12: true,
+  }).format(date);
+}
+
 function RetailToday() {
   const { data, loading, error, refresh } = useToday();
+  const { profile } = useSessionProfile();
   const [counts, setCounts] = useState({ pending: 0, failed: 0 });
   const [online, setOnline] = useState<boolean | null>(null);
 
@@ -78,36 +89,54 @@ function RetailToday() {
   const assignments = data?.assignments ?? [];
 
   return (
-    <Page bottomInset={false}>
-      <HeroCard
-        eyebrow={`Today · ${lagosDate()} (Nigeria)`}
-        title="Today's route"
-        subtitle={`${assignments.length} assignment${assignments.length === 1 ? '' : 's'} · ${online === false ? 'Offline' : 'Ready to work'}`}
-        icon="navigate"
-      />
+    <Page bottomInset={true}>
+      <View className="mb-5 items-center pt-2">
+        <Text className="font-sans text-3xl font-black tracking-[2px] text-ink">FAZOO</Text>
+        <Text className="font-sans text-[10px] font-bold tracking-[2.5px] text-primary">FIELD ACTIVATIONS</Text>
+      </View>
+      <Text className="font-sans text-[27px] font-extrabold leading-9 text-ink">
+        {(() => {
+          const hour = new Date().getHours();
+          const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+          return `${greeting}${profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}`;
+        })()}
+      </Text>
+      <Text className="font-sans mb-5 mt-1 text-base text-muted">Let's make today count.</Text>
 
       <View className="mb-4 flex-row gap-3">
         <MetricTile label="Assignments" value={assignments.length} />
-        <MetricTile label="Pending sync" value={counts.pending} tone={counts.pending > 0 ? 'warning' : 'default'} />
+        <MetricTile
+          label="Pending sync"
+          value={counts.pending}
+          tone={counts.pending > 0 ? 'warning' : 'default'}
+        />
       </View>
 
       {counts.failed > 0 ? (
         <Card className="mb-4 border-bad/25 bg-bad/10">
           <View className="flex-row items-center justify-between gap-4">
             <View className="flex-1">
-              <Text className="font-sans text-base font-semibold text-bad">{counts.failed} action{counts.failed > 1 ? 's' : ''} failed to sync</Text>
+              <Text className="font-sans text-base font-semibold text-bad">
+                {counts.failed} action{counts.failed > 1 ? 's' : ''} failed to sync
+              </Text>
               <Text className="font-sans mt-1 text-sm leading-6 text-bad/80">
                 Retry now when you have a stable connection.
               </Text>
             </View>
-            <PrimaryButton label="Retry" variant="ghost" onPress={() => void retryTerminal().then(refreshCounts)} />
+            <PrimaryButton
+              label="Retry"
+              variant="ghost"
+              onPress={() => void retryTerminal().then(refreshCounts)}
+            />
           </View>
         </Card>
       ) : null}
 
       {assignments.length === 0 ? (
         <Card>
-          <Text className="font-sans text-lg font-semibold text-ink">No assignment scheduled.</Text>
+          <Text className="font-sans text-lg font-semibold text-ink">
+            No assignment scheduled.
+          </Text>
           <Text className="font-sans mt-2 text-base leading-7 text-muted">
             Check back later or contact your supervisor if you expected a route today.
           </Text>
@@ -118,16 +147,109 @@ function RetailToday() {
             const assignment = item.assignment;
 
             return (
-              <Card key={assignment.id}>
-                <Text className="font-sans text-[11px] uppercase tracking-[1.5px] text-primary">{assignment.campaign_name}</Text>
-                <Text className="font-sans mt-1.5 text-xl font-bold leading-7 text-ink">{assignment.store_name}</Text>
-                <Text className="font-sans mt-1 text-sm leading-5 text-muted">{assignment.store_address}</Text>
+              <Card key={assignment.id} className="overflow-hidden border-primary/15 bg-white/90">
+                <View className="-mx-4 -mt-4 mb-4 rounded-t-2xl bg-primary px-4 py-3">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-sans text-base font-bold text-white">Your shift today</Text>
+                    <Text className="font-sans text-xs text-white/85">{lagosDate()}</Text>
+                  </View>
+                </View>
+                <Text className="font-sans text-lg font-extrabold text-ink">
+                  {assignment.campaign_name}
+                </Text>
+                <Text className="font-sans mt-1 text-xs text-muted">Your assigned campaign</Text>
+                <View className="mt-4 rounded-xl border border-primary/10 bg-lavender/60 px-3 py-3">
+                  <Text className="font-sans text-xs text-muted">⌖  Assigned location</Text>
+                  <Text className="font-sans mt-1 text-lg font-bold text-ink">{assignment.store_name || 'Location to be confirmed'}</Text>
+                  {assignment.store_address ? (
+                    <Text className="font-sans mt-1 text-sm text-muted">{assignment.store_address}</Text>
+                  ) : null}
+                </View>
+                <View className="mt-3 rounded-xl border border-primary/10 bg-white/90 px-3 py-3">
+                  <Text className="font-sans text-xs font-semibold text-primary">◷  Today's shift hours</Text>
+                  <Text className="font-sans mt-1 text-base font-bold text-ink">
+                    {assignment.shift_start_time && assignment.shift_end_time
+                      ? `${assignment.shift_start_time} – ${assignment.shift_end_time}`
+                      : 'Scheduled hours not configured'}
+                  </Text>
+                  {item.log?.checkin_at ? (
+                    <Text className="font-sans mt-1 text-sm text-muted">
+                      Checked in: {localShiftTime(item.log.checkin_at)}
+                      {item.log.checkout_at ? `  ·  Checked out: ${localShiftTime(item.log.checkout_at)}` : ''}
+                    </Text>
+                  ) : null}
+                </View>
                 {item.log ? (
                   <View className="self-start">
                     <StatusPill
-                      tone={item.log.status === 'completed' ? 'ok' : item.log.attendance_status === 'sick_leave' ? 'warn' : 'purple'}
+                      tone={
+                        item.log.status === 'completed'
+                          ? 'ok'
+                          : item.log.attendance_status === 'sick_leave'
+                            ? 'warn'
+                            : 'purple'
+                      }
                       label={`${item.log.attendance_status.replace('_', ' ')} · ${item.log.status.replace('_', ' ')}`}
                     />
+                  </View>
+                ) : null}
+
+                {!item.is_weekly_off_today && item.log?.attendance_status !== 'sick_leave' ? (
+                  <View className="mt-5">
+                    <View className="mb-3 flex-row items-center justify-between">
+                      <Text className="font-sans text-lg font-extrabold text-ink">Today's tasks</Text>
+                      <Text className="font-sans text-xs text-muted">
+                        {[
+                          !!item.log,
+                          item.counting ? (item.stock ?? []).some((row) => row.opening != null) : (item.sales ?? []).length > 0,
+                          item.log?.status === 'completed',
+                        ].filter(Boolean).length} of 3 done
+                      </Text>
+                    </View>
+                    {([
+                      {
+                        title: item.counting ? 'Morning stock' : 'Check in',
+                        detail: item.counting ? 'Count and record opening stock' : 'Verify your location and start the shift',
+                        done: item.counting
+                          ? (item.stock ?? []).some((row) => row.opening != null)
+                          : !!item.log,
+                        route: item.log ? '/opening-counts' : '/checkin',
+                      },
+                      {
+                        title: item.counting ? 'Daily sales' : 'Daily sales',
+                        detail: item.counting ? 'Review sales from stock movements' : 'Log units sold during your shift',
+                        done: item.counting
+                          ? item.log?.status === 'completed'
+                          : (item.sales ?? []).length > 0,
+                        route: item.counting ? '/opening-counts' : '/sales',
+                      },
+                      {
+                        title: item.counting ? 'Evening stock' : 'Check out',
+                        detail: item.counting ? 'Count and record closing stock' : 'Finish your shift and submit',
+                        done: item.log?.status === 'completed',
+                        route: '/checkout',
+                      },
+                    ] as const).map((task, index) => (
+                      <Pressable
+                        key={task.title}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${task.title}, ${task.done ? 'completed' : 'pending'}`}
+                        onPress={() => router.push({
+                          pathname: task.route,
+                          params: { assignment: assignment.id },
+                        })}
+                        className={`flex-row items-center rounded-xl border border-primary/10 bg-white px-3 py-3 ${index > 0 ? 'mt-2' : ''}`}
+                      >
+                        <View className={`mr-3 h-7 w-7 items-center justify-center rounded-full border-2 ${task.done ? 'border-primary bg-primary' : 'border-primary/45'}`}>
+                          {task.done ? <Text className="font-sans text-sm font-bold text-white">✓</Text> : null}
+                        </View>
+                        <View className="flex-1">
+                          <Text className="font-sans text-base font-bold text-ink">{task.title}</Text>
+                          <Text className="font-sans mt-0.5 text-xs text-muted">{task.detail}</Text>
+                        </View>
+                        <Text className="font-sans text-xl text-primary/70">›</Text>
+                      </Pressable>
+                    ))}
                   </View>
                 ) : null}
 
@@ -156,12 +278,20 @@ function RetailToday() {
                     )
                   ) : (item.sales ?? []).length > 0 ? (
                     <View className="mt-2 space-y-1">
-                      {(item.sales ?? []).map((sale: NonNullable<BaTodayResult['assignments'][number]['sales']>[number]) => (
-                        <View key={sale.id} className="flex-row justify-between">
-                          <Text className="font-sans text-ink/70">{sale.sku_name}</Text>
-                          <Text className="font-sans font-medium tabular-nums text-ink/70">{sale.quantity}</Text>
-                        </View>
-                      ))}
+                      {(item.sales ?? []).map(
+                        (
+                          sale: NonNullable<
+                            BaTodayResult['assignments'][number]['sales']
+                          >[number],
+                        ) => (
+                          <View key={sale.id} className="flex-row justify-between">
+                            <Text className="font-sans text-ink/70">{sale.sku_name}</Text>
+                            <Text className="font-sans font-medium tabular-nums text-ink/70">
+                              {sale.quantity}
+                            </Text>
+                          </View>
+                        ),
+                      )}
                     </View>
                   ) : (
                     <Text className="font-sans mt-1 text-muted">No sales recorded yet.</Text>
@@ -179,14 +309,20 @@ function RetailToday() {
                       <PrimaryButton
                         label="Check In"
                         onPress={() =>
-                          router.push({ pathname: '/checkin', params: { assignment: assignment.id } })
+                          router.push({
+                            pathname: '/checkin',
+                            params: { assignment: assignment.id },
+                          })
                         }
                       />
                       <PrimaryButton
                         label="Mark Sick Leave"
                         variant="ghost"
                         onPress={() =>
-                          router.push({ pathname: '/sick-leave', params: { assignment: assignment.id } })
+                          router.push({
+                            pathname: '/sick-leave',
+                            params: { assignment: assignment.id },
+                          })
                         }
                       />
                     </>
@@ -196,14 +332,20 @@ function RetailToday() {
                         <PrimaryButton
                           label="Update opening counts"
                           onPress={() =>
-                            router.push({ pathname: '/opening-counts', params: { assignment: assignment.id } })
+                            router.push({
+                              pathname: '/opening-counts',
+                              params: { assignment: assignment.id },
+                            })
                           }
                         />
                         <PrimaryButton
                           label="Check Out"
                           variant="secondary"
                           onPress={() =>
-                            router.push({ pathname: '/checkout', params: { assignment: assignment.id } })
+                            router.push({
+                              pathname: '/checkout',
+                              params: { assignment: assignment.id },
+                            })
                           }
                         />
                       </>
@@ -212,20 +354,30 @@ function RetailToday() {
                         <PrimaryButton
                           label="Record Sale"
                           onPress={() =>
-                            router.push({ pathname: '/sales', params: { assignment: assignment.id } })
+                            router.push({
+                              pathname: '/sales',
+                              params: { assignment: assignment.id },
+                            })
                           }
                         />
                         <PrimaryButton
                           label="Check Out"
                           variant="secondary"
                           onPress={() =>
-                            router.push({ pathname: '/checkout', params: { assignment: assignment.id } })
+                            router.push({
+                              pathname: '/checkout',
+                              params: { assignment: assignment.id },
+                            })
                           }
                         />
                       </>
                     )
-                  ) : item.log.status === 'completed' && item.log.attendance_status === 'sick_leave' ? (
-                    <StatusPill tone="warn" label="Sick leave recorded for today — get well soon." />
+                  ) : item.log.status === 'completed' &&
+                    item.log.attendance_status === 'sick_leave' ? (
+                    <StatusPill
+                      tone="warn"
+                      label="Sick leave recorded for today — get well soon."
+                    />
                   ) : (
                     <StatusPill tone="ok" label="Day complete. Well done!" />
                   )}
@@ -238,14 +390,16 @@ function RetailToday() {
 
       {error ? <StatusPill tone="bad" label={error} /> : null}
 
-      <Card className="mt-5">
+      <Card className="mt-5 mb-5">
         <Text className="font-sans text-base font-bold text-ink">Need time off?</Text>
-        <Text className="font-sans mt-1 text-sm leading-5 text-muted">Submit a leave request for admin review.</Text>
+        <Text className="font-sans mt-1 text-sm leading-5 text-muted">
+          Submit a leave request for admin review.
+        </Text>
         <PrimaryButton
           label="Apply for leave"
           variant="secondary"
           icon="calendar-clear"
-          onPress={() => router.push('/leave')}
+          onPress={() => router.navigate('/(app)/leave')}
         />
       </Card>
 

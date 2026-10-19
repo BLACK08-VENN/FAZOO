@@ -1,6 +1,8 @@
 import type { ReactElement, ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  StyleSheet,
   ScrollView,
   Text,
   TextInput,
@@ -11,7 +13,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import type { RefreshControlProps } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrimaryButton } from './primary-button';
@@ -19,24 +20,16 @@ import { PrimaryButton } from './primary-button';
 const H_PADDING = 16;
 const V_PADDING = 16;
 
-export function AppBackdrop({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function AppBackdrop({ children }: { children: ReactNode }) {
   return (
-    <View className="flex-1 bg-backdrop">
-      <LinearGradient
-        colors={['rgba(165,87,224,0.16)', 'rgba(139,47,209,0.06)', 'rgba(246,244,251,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="absolute inset-0"
-      />
-      <LinearGradient
-        colors={['rgba(123,47,190,0.10)', 'rgba(246,244,251,0)']}
-        start={{ x: 1, y: 1 }}
-        end={{ x: 0, y: 0 }}
-        className="absolute inset-0"
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <Image
+        // Metro requires a static require for bundled image assets.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        source={require('../../assets/field-background.jpg')}
+        resizeMode="cover"
+        style={[StyleSheet.absoluteFill, { opacity: 0.5 }]}
+        accessible={false}
       />
       {children}
     </View>
@@ -103,7 +96,13 @@ export function Page({
   refreshControl?: ReactElement<RefreshControlProps>;
 }) {
   return (
-    <Screen scroll={scroll} bottomInset={bottomInset} style={style} contentStyle={contentStyle} refreshControl={refreshControl}>
+    <Screen
+      scroll={scroll}
+      bottomInset={bottomInset}
+      style={style}
+      contentStyle={contentStyle}
+      refreshControl={refreshControl}
+    >
       <View style={{ alignItems: 'center' }}>
         <View style={{ width: '100%', maxWidth: 720 }}>{children}</View>
       </View>
@@ -120,8 +119,14 @@ export function GlassCard({
 }) {
   return (
     <View
-      className={`overflow-hidden rounded-[24px] border border-edge bg-surface p-4 ${className}`}
-      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.1, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 3 }}
+      className={`overflow-hidden rounded-xl border border-edge bg-surface p-4 ${className}`}
+      style={{
+        shadowColor: '#7B2FBE',
+        shadowOpacity: 0.1,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 3,
+      }}
     >
       {children}
     </View>
@@ -137,8 +142,14 @@ export function Card({
 }) {
   return (
     <View
-      className={`overflow-hidden rounded-[22px] border border-edge bg-surface p-4 ${className}`}
-      style={{ shadowColor: '#7B2FBE', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 2 }}
+      className={`overflow-hidden rounded-xl border border-edge bg-surface p-4 ${className}`}
+      style={{
+        shadowColor: '#7B2FBE',
+        shadowOpacity: 0.08,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 2,
+      }}
     >
       {children}
     </View>
@@ -161,16 +172,23 @@ export function HeroCard({
   onBack?: () => void;
 }) {
   return (
-    <GlassCard className="mb-4">
+    <View className="mb-6 px-1 pb-6 pt-5">
       <View className="flex-row items-start justify-between gap-3">
         {onBack ? (
-          <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
+          <TouchableOpacity
+            onPress={onBack}
+            className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5"
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
             <Ionicons name="chevron-back" size={22} color="#1B1623" />
           </TouchableOpacity>
         ) : null}
         <View className="flex-1">
           {eyebrow ? (
-            <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">{eyebrow}</Text>
+            <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">
+              {eyebrow}
+            </Text>
           ) : null}
           <View className="mt-1.5 flex-row items-center gap-3">
             {icon ? (
@@ -179,14 +197,18 @@ export function HeroCard({
               </View>
             ) : null}
             <View className="flex-1">
-              <Text className="font-sans text-[23px] font-bold leading-7 text-ink">{title}</Text>
-              {subtitle ? <Text className="font-sans mt-1 text-sm leading-5 text-muted">{subtitle}</Text> : null}
+              <Text className="font-sans text-[23px] font-bold leading-7 text-ink">
+                {title}
+              </Text>
+              {subtitle ? (
+                <Text className="font-sans mt-1 text-sm leading-5 text-muted">{subtitle}</Text>
+              ) : null}
             </View>
           </View>
         </View>
         {trailing ? <View>{trailing}</View> : null}
       </View>
-    </GlassCard>
+    </View>
   );
 }
 
@@ -206,16 +228,27 @@ export function ScreenHeader({
   return (
     <View className="mb-4 flex-row items-start justify-between gap-3">
       {onBack ? (
-        <TouchableOpacity onPress={onBack} className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5" accessibilityLabel="Go back" accessibilityRole="button">
+        <TouchableOpacity
+          onPress={onBack}
+          className="mr-2 mt-1 h-10 w-10 items-center justify-center rounded-full bg-ink/5"
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={22} color="#1B1623" />
         </TouchableOpacity>
       ) : null}
       <View className="flex-1">
         {eyebrow ? (
-          <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">{eyebrow}</Text>
+          <Text className="font-sans text-xs uppercase tracking-[2px] text-primaryText">
+            {eyebrow}
+          </Text>
         ) : null}
-        <Text className="font-sans mt-1.5 text-[25px] font-bold leading-8 text-ink">{title}</Text>
-        {subtitle ? <Text className="font-sans mt-1.5 text-sm leading-5 text-muted">{subtitle}</Text> : null}
+        <Text className="font-sans mt-1.5 text-[25px] font-bold leading-8 text-ink">
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text className="font-sans mt-1.5 text-sm leading-5 text-muted">{subtitle}</Text>
+        ) : null}
       </View>
       {action ? <View className="pt-1">{action}</View> : null}
     </View>
@@ -223,7 +256,11 @@ export function ScreenHeader({
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
-  return <Text className="font-sans mb-3 mt-6 text-xs font-semibold uppercase tracking-[1.5px] text-muted">{children}</Text>;
+  return (
+    <Text className="font-sans mb-3 mt-6 text-xs font-semibold uppercase tracking-[1.5px] text-muted">
+      {children}
+    </Text>
+  );
 }
 
 export function MetricTile({
@@ -247,15 +284,21 @@ export function MetricTile({
   if (compact) {
     return (
       <View className={`overflow-hidden rounded-[16px] border px-3 py-1.5 ${toneClass}`}>
-        <Text className="font-sans text-[10px] uppercase tracking-[1.5px] text-muted">{label}</Text>
+        <Text className="font-sans text-[10px] uppercase tracking-[1.5px] text-muted">
+          {label}
+        </Text>
         <Text className="font-sans text-sm font-bold text-ink">{value}</Text>
       </View>
     );
   }
 
   return (
-    <View className={`min-w-0 flex-1 overflow-hidden rounded-[20px] border px-3.5 py-3 ${toneClass}`}>
-      <Text className="font-sans text-[10px] uppercase tracking-[1.2px] text-muted">{label}</Text>
+    <View
+      className={`min-w-0 flex-1 overflow-hidden rounded-[20px] border px-3.5 py-3 ${toneClass}`}
+    >
+      <Text className="font-sans text-[10px] uppercase tracking-[1.2px] text-muted">
+        {label}
+      </Text>
       <Text className="font-sans mt-1 text-[24px] font-bold leading-8 text-ink">{value}</Text>
     </View>
   );
@@ -268,13 +311,17 @@ export function Field({
 }: TextInputProps & { label?: string; hint?: string }) {
   return (
     <View className="mb-3">
-      {label ? <Text className="font-sans mb-2 text-base font-medium text-ink">{label}</Text> : null}
+      {label ? (
+        <Text className="font-sans mb-2 text-base font-medium text-ink">{label}</Text>
+      ) : null}
       <TextInput
         placeholderTextColor="#A196B2"
         className="h-14 rounded-2xl border border-edge bg-white px-4 font-sans text-[16px] text-ink"
         {...props}
       />
-      {hint ? <Text className="font-sans mt-2 text-sm leading-5 text-muted">{hint}</Text> : null}
+      {hint ? (
+        <Text className="font-sans mt-2 text-sm leading-5 text-muted">{hint}</Text>
+      ) : null}
     </View>
   );
 }
@@ -286,7 +333,9 @@ export function MultilineField({
 }: TextInputProps & { label?: string; hint?: string }) {
   return (
     <View className="mb-3">
-      {label ? <Text className="font-sans mb-2 text-base font-medium text-ink">{label}</Text> : null}
+      {label ? (
+        <Text className="font-sans mb-2 text-base font-medium text-ink">{label}</Text>
+      ) : null}
       <TextInput
         placeholderTextColor="#A196B2"
         multiline
@@ -294,7 +343,9 @@ export function MultilineField({
         className="min-h-28 rounded-2xl border border-edge bg-white px-4 py-4 font-sans text-[16px] text-ink"
         {...props}
       />
-      {hint ? <Text className="font-sans mt-2 text-sm leading-5 text-muted">{hint}</Text> : null}
+      {hint ? (
+        <Text className="font-sans mt-2 text-sm leading-5 text-muted">{hint}</Text>
+      ) : null}
     </View>
   );
 }
@@ -327,7 +378,9 @@ export function EmptyState({
     <GlassCard className="items-center px-2 py-3">
       <View className="items-center justify-center px-4 py-6">
         <Text className="font-sans text-center text-2xl font-bold text-ink">{title}</Text>
-        <Text className="font-sans mt-3 text-center text-base leading-7 text-muted">{body}</Text>
+        <Text className="font-sans mt-3 text-center text-base leading-7 text-muted">
+          {body}
+        </Text>
         {actionLabel && onAction ? (
           <View className="mt-6 w-full">
             <PrimaryButton label={actionLabel} onPress={onAction} />

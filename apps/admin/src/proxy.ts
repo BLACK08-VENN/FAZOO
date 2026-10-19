@@ -10,14 +10,34 @@ const PUBLIC_PATHS = [
 ];
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const csp = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "worker-src 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+  request.headers.set('x-nonce', nonce);
+  request.headers.set('Content-Security-Policy', csp);
+  const secure = (res: NextResponse) => {
+    res.headers.set('Content-Security-Policy', csp);
+    return res;
+  };
+  let response = secure(NextResponse.next({ request: { headers: request.headers } }));
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
     // Unconfigured environment: allow public paths, block portal routes.
     if (!PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))) {
-      return NextResponse.redirect(new URL('/sign-in', request.url));
+      return secure(NextResponse.redirect(new URL('/sign-in', request.url)));
     }
     return response;
   }
@@ -31,7 +51,7 @@ export async function proxy(request: NextRequest) {
         for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
-        response = NextResponse.next({ request });
+        response = secure(NextResponse.next({ request: { headers: request.headers } }));
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);
         }
@@ -44,12 +64,14 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic =
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
+    /^\/api\/booklists\/(?:grades\/)?[^/]+\/convert$/.test(pathname);
 
   if (!user && !isPublic) {
     const redirect = new URL('/sign-in', request.url);
     redirect.searchParams.set('next', pathname);
-    return NextResponse.redirect(redirect);
+    return secure(NextResponse.redirect(redirect));
   }
 
   if (user && pathname === '/sign-in') {
@@ -61,7 +83,7 @@ export async function proxy(request: NextRequest) {
       .single();
     const role = profile?.role;
     const target = role === 'client' || role === 'brand_ambassador' ? '/brand' : '/overview';
-    return NextResponse.redirect(new URL(target, request.url));
+    return secure(NextResponse.redirect(new URL(target, request.url)));
   }
 
   return response;

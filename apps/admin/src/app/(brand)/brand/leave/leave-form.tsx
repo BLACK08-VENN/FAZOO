@@ -3,12 +3,14 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { submitLeaveRequest, initialLeaveFormState } from './actions';
+import { submitLeaveRequest, type LeaveFormState } from './actions';
 
 export type LeaveAssignment = {
   id: string;
   label: string;
 };
+
+const initialLeaveFormState: LeaveFormState = { error: null, success: null };
 
 const fieldClass =
   'mt-1 min-h-11 w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15';

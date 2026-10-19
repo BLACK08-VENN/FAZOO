@@ -56,8 +56,8 @@ export default async function ConversionQueuePage({
   return (
     <>
       <PageHeader
-        title="Conversion queue"
-        description="Booklists the school has handed over that still need an editable, formatted Word document before the BA can print them."
+        title="Document preparation"
+        description="OCR is temporarily disabled. Download originals and upload prepared Word or PDF documents to continue."
       >
         <Link
           href="/booklists"
@@ -78,7 +78,7 @@ export default async function ConversionQueuePage({
         <StatCard
           label="Needs manual conversion"
           value={counts.manual_required}
-          hint="Low confidence or no OCR provider configured."
+          hint="Prepare and upload a corrected document."
         />
         <StatCard
           label="Formatted, ready to print"
@@ -124,7 +124,9 @@ export default async function ConversionQueuePage({
 
       <TableWrap>
         <Table>
-          <caption className="sr-only">Booklist documents waiting to be converted and formatted</caption>
+          <caption className="sr-only">
+            Booklist documents waiting to be converted and formatted
+          </caption>
           <thead>
             <tr>
               <Th>School</Th>
@@ -133,7 +135,9 @@ export default async function ConversionQueuePage({
               <Th>Handed over as</Th>
               <Th>Conversion</Th>
               <Th>Brand ambassador</Th>
-              <Th><span className="sr-only">Open</span></Th>
+              <Th>
+                <span className="sr-only">Open</span>
+              </Th>
             </tr>
           </thead>
           <tbody>
@@ -153,13 +157,17 @@ export default async function ConversionQueuePage({
                     >
                       {item.school_name}
                     </Link>
-                    <p className="mt-0.5 text-xs text-muted">{item.school_region ?? 'Region not recorded'}</p>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {item.school_region ?? 'Region not recorded'}
+                    </p>
                   </Td>
                   <Td>
                     <StageBadge stage={item.stage} />
                   </Td>
                   <Td className="whitespace-nowrap text-xs">
-                    {item.document_received_at ? nairobiTime(item.document_received_at) : NOT_YET}
+                    {item.document_received_at
+                      ? nairobiTime(item.document_received_at)
+                      : NOT_YET}
                   </Td>
                   <Td className="text-xs">
                     {item.document_id ? (

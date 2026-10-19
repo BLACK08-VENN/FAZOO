@@ -1,8 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import {
-  BOOKLIST_DOCUMENT_MAX_BYTES,
-} from '@fazoo/config';
+import { BOOKLIST_DOCUMENT_MAX_BYTES, BOOKLIST_DOCUMENT_MIME_TYPES } from '@fazoo/config';
 import { supabase } from './supabase';
 
 export interface PickedDocument {
@@ -43,7 +41,7 @@ function extensionOf(name: string, mimeType: string): string {
  */
 export async function pickBooklistFile(): Promise<PickedDocument | null> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: '*/*',
+    type: [...BOOKLIST_DOCUMENT_MIME_TYPES],
     copyToCacheDirectory: true,
     multiple: false,
   });
@@ -53,6 +51,8 @@ export async function pickBooklistFile(): Promise<PickedDocument | null> {
   if (!asset) return null;
 
   const mimeType = asset.mimeType ?? 'application/octet-stream';
+  if (!(BOOKLIST_DOCUMENT_MIME_TYPES as readonly string[]).includes(mimeType))
+    throw new Error('Choose a PDF, Word document or supported photo.');
 
   const size = asset.size ?? null;
   if (size !== null && size > BOOKLIST_DOCUMENT_MAX_BYTES) {
