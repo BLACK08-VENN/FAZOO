@@ -7,7 +7,7 @@ export const SOURCE_BUCKET = 'daily-log-photos';
 const MAX_PHOTO_BYTES = 32 * 1024 * 1024;
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
-export function destinationKey(path) {
+export function destinationKey(path, digest) {
   if (
     !path ||
     path.startsWith('/') ||
@@ -15,7 +15,35 @@ export function destinationKey(path) {
   ) {
     throw new Error('Invalid source path');
   }
-  return `${SOURCE_BUCKET}/${path}`;
+  if (digest !== undefined && !/^[a-f0-9]{64}$/.test(digest)) {
+    throw new Error('Invalid content digest');
+  }
+  return digest ? `${SOURCE_BUCKET}/${digest}/${path}` : `${SOURCE_BUCKET}/${path}`;
+}
+
+export function b2Endpoint(value) {
+  const match = /^https:\/\/s3\.([a-z0-9]+(?:-[a-z0-9]+)+)\.backblazeb2\.com\/?$/.exec(value);
+  if (!match)
+    throw new Error('Invalid B2_ENDPOINT; use the HTTPS S3 endpoint shown for your bucket');
+  return { endpoint: value.replace(/\/$/, ''), region: match[1] };
+}
+
+export function assertPrivateBucket(acl) {
+  const owner = acl?.Owner?.ID;
+  if (
+    !owner ||
+    !Array.isArray(acl.Grants) ||
+    acl.Grants.length === 0 ||
+    acl.Grants.some(
+      (grant) =>
+        grant.Grantee?.Type !== 'CanonicalUser' ||
+        grant.Grantee?.ID !== owner ||
+        grant.Permission !== 'FULL_CONTROL',
+    )
+  )
+    throw new Error(
+      'Invalid bucket privacy: migration requires an owner-only private B2 bucket',
+    );
 }
 
 /** List recursively: Supabase returns virtual folders with a null object id. */
@@ -58,10 +86,13 @@ export async function inventory(storage) {
 
 /** Never overwrite a different object; re-read destination bytes on every run. */
 export async function copyAndVerify(file, io) {
-  const key = destinationKey(file.path);
+  destinationKey(file.path);
   const source = await io.readSource(file.path);
   if (source.length !== file.bytes) throw new Error('Source size changed; repeat inventory');
   const digest = sha256(source);
+  // B2's documented PUT API does not promise R2-style conditional creation.
+  // Different source content receives a different key instead of replacing it.
+  const key = destinationKey(file.path, digest);
   let destination = await io.readDestination(key);
   let copied = false;
   if (destination === null) {
@@ -93,7 +124,7 @@ function required(name) {
 }
 
 export function parseArgs(args) {
-  const options = { copy: false, limit: Infinity, output: 'migration/data/r2-manifest.json' };
+  const options = { copy: false, limit: Infinity, output: 'migration/data/b2-manifest.json' };
   for (let i = 0; i < args.length; i += 1) {
     if (args[i] === '--copy') options.copy = true;
     else if (args[i] === '--dry-run') continue;
@@ -124,12 +155,12 @@ async function saveManifest(path, value) {
 async function main() {
   if (process.argv.includes('--help')) {
     console.log(
-      'Usage: node --env-file=.env.r2-migration scripts/r2-migration.mjs [--dry-run | --copy] [--limit N] [--output PATH]',
+      'Usage: node --env-file=.env.b2-migration scripts/b2-migration.mjs [--dry-run | --copy] [--limit N] [--output PATH]',
     );
     return;
   }
   const options = parseArgs(process.argv.slice(2));
-  // Prevent accidentally copying another client/project into FAZOO's R2 bucket.
+  // Prevent accidentally copying another client/project into FAZOO's B2 bucket.
   const sourceUrl = required('SUPABASE_URL');
   if (new URL(sourceUrl).origin !== 'https://lcptkprosdmprizvsgsp.supabase.co') {
     throw new Error('Source URL is not the verified FAZOO Supabase project');
@@ -168,23 +199,24 @@ async function main() {
   );
   if (!options.copy) return;
 
-  const accountId = required('R2_ACCOUNT_ID');
-  if (!/^[a-f0-9]{32}$/i.test(accountId)) throw new Error('Invalid R2_ACCOUNT_ID');
-  const bucket = required('R2_BUCKET_NAME');
-  const { S3Client, HeadBucketCommand, GetObjectCommand, PutObjectCommand } =
+  const { endpoint, region } = b2Endpoint(required('B2_ENDPOINT'));
+  const bucket = required('B2_BUCKET_NAME');
+  const { S3Client, GetBucketAclCommand, GetObjectCommand, PutObjectCommand } =
     await import('@aws-sdk/client-s3');
-  const r2 = new S3Client({
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    region: 'auto',
+  const b2 = new S3Client({
+    endpoint,
+    region,
+    forcePathStyle: true,
     credentials: {
-      accessKeyId: required('R2_ACCESS_KEY_ID'),
-      secretAccessKey: required('R2_SECRET_ACCESS_KEY'),
+      accessKeyId: required('B2_KEY_ID'),
+      secretAccessKey: required('B2_APPLICATION_KEY'),
     },
     requestChecksumCalculation: 'WHEN_REQUIRED',
     responseChecksumValidation: 'WHEN_REQUIRED',
     maxAttempts: 3,
   });
-  await r2.send(new HeadBucketCommand({ Bucket: bucket }));
+  assertPrivateBucket(await b2.send(new GetBucketAclCommand({ Bucket: bucket })));
+  manifest.destinationEndpoint = endpoint;
   manifest.destinationBucket = bucket;
   manifest.status = 'copying';
   const io = {
@@ -196,7 +228,7 @@ async function main() {
     },
     async readDestination(key) {
       try {
-        const response = await r2.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+        const response = await b2.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
         if (Number(response.ContentLength) > MAX_PHOTO_BYTES)
           throw new Error('Destination exceeds migration size limit');
         return Buffer.from(await response.Body.transformToByteArray());
@@ -206,8 +238,9 @@ async function main() {
       }
     },
     async writeNew(key, bytes, contentType, digest) {
-      // Atomic create-only write: a collision never replaces an existing object.
-      await r2.send(
+      // Key includes SHA-256. Repeating this content cannot replace different
+      // content from another migration pass. Run only one migrator per bucket.
+      await b2.send(
         new PutObjectCommand({
           Bucket: bucket,
           Key: key,
@@ -215,8 +248,6 @@ async function main() {
           ContentType: contentType,
           ContentMD5: createHash('md5').update(bytes).digest('base64'),
           CacheControl: 'private, no-store',
-          StorageClass: 'STANDARD',
-          IfNoneMatch: '*',
           Metadata: { sha256: digest },
         }),
       );
@@ -236,7 +267,7 @@ async function main() {
     );
   } finally {
     await saveManifest(output, manifest);
-    r2.destroy();
+    b2.destroy();
   }
   console.log(
     'Copy verification complete. Live application still uses Supabase. No source files or database references were changed.',
