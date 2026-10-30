@@ -1,0 +1,35 @@
+/* Reference palette is scoped to authentication, including inherited controls. */
+.surface {
+  --color-primary: #c41a84;
+  --color-deep: #7b027a;
+  --color-bright: #7b027a;
+  --color-ink: #30152d;
+  --color-muted: #705065;
+  --color-lavender: #feece4;
+  --color-white: #ffffff;
+  --auth-pink: #f767a0;
+  --auth-blush: #fa9fb5;
+  --auth-peach: #fdc5c0;
+  background: linear-gradient(145deg, #feece4, #fdc5c0);
+}
+
+.surface input:not([type='hidden']) {
+  background-color: #fff8f4;
+  border-color: rgb(123 2 122 / 0.2);
+}
+
+.surface input:not([type='hidden']):focus {
+  background-color: #ffffff;
+  border-color: #7b027a;
+  box-shadow: 0 0 0 4px rgb(247 103 160 / 0.18);
+}
+
+.surface button[type='submit'] {
+  background: #7b027a;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgb(123 2 122 / 0.2);
+}
+
+.surface button[type='submit']:hover:not(:disabled) {
+  background: #c41a84;
+}

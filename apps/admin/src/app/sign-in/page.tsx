@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import styles from './sign-in.module.css';
 import Link from 'next/link';
 import { SignInForm } from './sign-in-form';
 import { FazooMark } from '@/components/fazoo-mark';
@@ -14,62 +15,62 @@ export default async function SignInPage({
     : '/login-bg-3.jpg';
 
   return (
-    <main id="main-content" className="relative grid min-h-screen bg-[#f5f1f8] lg:grid-cols-[1.16fr_0.84fr]">
+    <main id="main-content" className={`${styles.surface} relative grid min-h-screen lg:grid-cols-[1.16fr_0.84fr]`}>
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url('${previewBackground}')` }}
       />
-      <div aria-hidden="true" className="absolute inset-0 bg-[#f5f1f8]/55" />
-      <section className="relative hidden min-h-screen overflow-hidden bg-[#09070d] px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12">
+      <div aria-hidden="true" className="absolute inset-0 bg-[#FEECE4]/55" />
+      <section className="relative hidden min-h-screen overflow-hidden bg-[#7B027A] px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12">
         <div aria-hidden="true" className="absolute inset-0">
           <div className="fazoo-aurora absolute -left-32 top-1/4 h-[32rem] w-[32rem] rounded-full bg-primary/30 blur-[100px]" />
-          <div className="fazoo-aurora-delayed absolute -right-28 bottom-0 h-96 w-96 rounded-full bg-[#d45cff]/20 blur-[110px]" />
+          <div className="fazoo-aurora-delayed absolute -right-28 bottom-0 h-96 w-96 rounded-full bg-[#F767A0]/20 blur-[110px]" />
           <div className="absolute inset-0 opacity-[0.055] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
-          <div className="fazoo-scan-line absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#c468ff]/40 to-transparent" />
+          <div className="fazoo-scan-line absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#FA9FB5]/40 to-transparent" />
         </div>
 
         <div className="fazoo-rise relative flex items-center gap-3" style={{ animationDelay: '0.05s' }}>
           <FazooMark />
           <div>
             <p className="text-lg font-bold tracking-tight">Fazoo</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
               Field operations
             </p>
           </div>
         </div>
 
         <div className="relative max-w-2xl">
-          <span className="fazoo-rise inline-flex items-center gap-2 rounded-full border border-[#b967ed]/20 bg-[#b967ed]/[0.07] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#dba7fa] backdrop-blur" style={{ animationDelay: '0.15s' }}>
-            <span className="fazoo-pulse size-1.5 rounded-full bg-[#c76dff] shadow-[0_0_12px_#c76dff]" />
+          <span className="fazoo-rise inline-flex items-center gap-2 rounded-full border border-[#FA9FB5]/20 bg-[#FA9FB5]/[0.07] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#FEECE4] backdrop-blur" style={{ animationDelay: '0.15s' }}>
+            <span className="fazoo-pulse size-1.5 rounded-full bg-[#F767A0] shadow-[0_0_12px_#F767A0]" />
             Operations network online
           </span>
           <h1 className="fazoo-rise mt-6 text-5xl font-semibold leading-[1.03] tracking-[-0.05em] xl:text-[4.1rem]" style={{ animationDelay: '0.22s' }}>
             Field intelligence,
             <br />
-            <span className="bg-gradient-to-r from-[#f0d7ff] via-[#c76dff] to-[#8e46d6] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#FEECE4] via-[#F767A0] to-[#FDC5C0] bg-clip-text text-transparent">
               moving in real time.
             </span>
           </h1>
-          <p className="fazoo-rise mt-5 max-w-xl text-sm leading-6 text-white/48 xl:text-base xl:leading-7" style={{ animationDelay: '0.3s' }}>
+          <p className="fazoo-rise mt-5 max-w-xl text-sm leading-6 text-white/80 xl:text-base xl:leading-7" style={{ animationDelay: '0.3s' }}>
             A live command layer for verified visits, store execution and sales
             performance across every territory.
           </p>
 
           <div aria-hidden="true" className="fazoo-rise relative mt-7 h-44 overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.035] shadow-[inset_0_1px_0_rgba(255,255,255,.06)] backdrop-blur-xl xl:h-52" style={{ animationDelay: '0.38s' }}>
-            <div className="absolute inset-0 [background-image:radial-gradient(circle_at_center,rgba(196,104,255,.14),transparent_55%)]" />
-            <div className="fazoo-radar-ring absolute left-1/2 top-1/2 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#b45ef0]/20 xl:size-44">
-              <div className="absolute inset-5 rounded-full border border-[#b45ef0]/20" />
-              <div className="absolute inset-10 rounded-full border border-[#b45ef0]/25" />
-              <div className="fazoo-radar-sweep absolute left-1/2 top-1/2 h-1/2 w-1/2 origin-top-left bg-gradient-to-br from-[#bd68f5]/25 to-transparent" />
+            <div className="absolute inset-0 [background-image:radial-gradient(circle_at_center,rgba(253,197,192,.14),transparent_55%)]" />
+            <div className="fazoo-radar-ring absolute left-1/2 top-1/2 size-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#FDC5C0]/20 xl:size-44">
+              <div className="absolute inset-5 rounded-full border border-[#FDC5C0]/20" />
+              <div className="absolute inset-10 rounded-full border border-[#FDC5C0]/25" />
+              <div className="fazoo-radar-sweep absolute left-1/2 top-1/2 h-1/2 w-1/2 origin-top-left bg-gradient-to-br from-[#FA9FB5]/25 to-transparent" />
             </div>
-            <span className="fazoo-node absolute left-[28%] top-[33%] size-2 rounded-full bg-[#cf7dff] shadow-[0_0_14px_#cf7dff]" />
+            <span className="fazoo-node absolute left-[28%] top-[33%] size-2 rounded-full bg-[#F767A0] shadow-[0_0_14px_#F767A0]" />
             <span className="fazoo-node-delayed absolute bottom-[29%] right-[25%] size-2 rounded-full bg-[#50e3a4] shadow-[0_0_14px_#50e3a4]" />
             <span className="absolute right-5 top-4 rounded-lg border border-white/[0.08] bg-black/25 px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-white/45 backdrop-blur">
               Lagos · Live
             </span>
             <div className="absolute bottom-4 left-5 flex items-center gap-2 text-[10px] uppercase tracking-[0.12em] text-white/35">
-              <span className="h-px w-7 bg-[#b967ed]" /> 42 active locations
+              <span className="h-px w-7 bg-[#FA9FB5]" /> 42 active locations
             </div>
           </div>
 
@@ -81,21 +82,21 @@ export default async function SignInPage({
             ].map(([value, label]) => (
               <div key={label} className="rounded-2xl border border-white/[0.07] bg-white/[0.035] px-4 py-3 backdrop-blur-sm">
                 <p className="text-sm font-bold text-white">{value}</p>
-                <p className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-white/32">{label}</p>
+                <p className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-white/75">{label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="fazoo-rise relative flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-white/25" style={{ animationDelay: '0.54s' }}>
+        <div className="fazoo-rise relative flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-white/70" style={{ animationDelay: '0.54s' }}>
           <span>Encrypted workspace</span>
           <span>Fazoo OS · 01</span>
         </div>
       </section>
 
       <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-10 lg:px-12">
-        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_75%_10%,rgba(123,47,190,.11),transparent_32%),radial-gradient(circle_at_15%_90%,rgba(181,76,255,.08),transparent_30%)]" />
-        <div aria-hidden="true" className="absolute inset-0 opacity-[0.35] [background-image:linear-gradient(rgba(123,47,190,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(123,47,190,.04)_1px,transparent_1px)] [background-size:36px_36px]" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_75%_10%,rgba(123,2,122,.11),transparent_32%),radial-gradient(circle_at_15%_90%,rgba(247,103,160,.08),transparent_30%)]" />
+        <div aria-hidden="true" className="absolute inset-0 opacity-[0.35] [background-image:linear-gradient(rgba(123,2,122,.04)_1px,transparent_1px),linear-gradient(90deg,rgba(123,2,122,.04)_1px,transparent_1px)] [background-size:36px_36px]" />
         <div className="relative w-full max-w-md">
           <div className="fazoo-rise mb-10 flex items-center gap-3 lg:hidden">
             <FazooMark />
@@ -107,10 +108,10 @@ export default async function SignInPage({
               <span className="fazoo-pulse size-1.5 rounded-full bg-[#31c88a] shadow-[0_0_8px_#31c88a]" /> Secure
             </span>
             <div className="fazoo-rise inline-flex items-center gap-2.5 rounded-xl border border-primary/10 bg-gradient-to-r from-primary/[0.09] to-white/40 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,.9)]" style={{ animationDelay: '0.18s' }}>
-              <span className="relative grid size-6 place-items-center rounded-lg bg-[#17121c] shadow-[0_0_18px_rgba(123,47,190,.24)]">
-                <span className="size-2 rotate-45 rounded-[2px] border border-[#d99dff] bg-[#a84ee3]/40 shadow-[0_0_8px_#b967ed]" />
+              <span className="relative grid size-6 place-items-center rounded-lg bg-[#7B027A] shadow-[0_0_18px_rgba(123,2,122,.24)]">
+                <span className="size-2 rotate-45 rounded-[2px] border border-[#FDC5C0] bg-[#C41A84]/40 shadow-[0_0_8px_#FA9FB5]" />
               </span>
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#251b2b]">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#7B027A]">
                 Command access
               </span>
             </div>
