@@ -127,7 +127,9 @@ export default async function SignInPage({
         </div>
       </section>
 
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-10 lg:px-12">
+      <section
+        className={`${styles.entryPanel} relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-10 lg:px-12`}
+      >
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[radial-gradient(circle_at_75%_10%,rgba(64,34,98,.11),transparent_32%),radial-gradient(circle_at_15%_90%,rgba(96,0,83,.08),transparent_30%)]"
@@ -143,7 +145,7 @@ export default async function SignInPage({
           </div>
 
           <div
-            className="fazoo-rise relative rounded-[2rem] border border-white/15 bg-[#0A1A3A]/85 p-6 shadow-[0_30px_100px_rgba(0,0,0,.3),inset_0_1px_0_rgba(255,255,255,.08)] backdrop-blur-2xl sm:p-9"
+            className={`${styles.glassTile} fazoo-rise relative rounded-[2rem] p-6 sm:p-9`}
             style={{ animationDelay: '0.1s' }}
           >
             <span className="absolute right-7 top-7 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.14em] text-muted/70">
