@@ -10,7 +10,7 @@
     "lint": "eslint src",
     "test:e2e": "playwright test",
     "test:e2e:local": "node scripts/e2e-local.mjs",
-    "test": "echo 'No unit tests for admin'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@fazoo/config": "workspace:*",
@@ -40,6 +40,7 @@
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.5",
     "tailwindcss": "^4.3.3",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "4.1.11"
   }
 }

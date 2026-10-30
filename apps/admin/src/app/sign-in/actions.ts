@@ -3,68 +3,34 @@
 import { createHash } from 'node:crypto';
 import { headers } from 'next/headers';
 import { serverSupabase, serviceSupabase } from '@fazoo/database';
-import { safeLocalRedirect } from '@/lib/document-upload';
-import { toAuthEmail } from '@fazoo/validation';
+import { postSignInPath, signInEmail } from '@/lib/auth-routing';
 import { RATE_LIMIT_SIGNIN_MAX, RATE_LIMIT_SIGNIN_WINDOW_S } from '@fazoo/config';
 
 export type SignInState = { error: string | null; redirectTo?: string };
 
-/**
- * Portal sign-in with an account-type selector (role tab).
- *
- *   • Admin      – email + password (super_admin / organization_admin / supervisor)
- *   • BA         – phone + password (brand_ambassador)
- *   • Brand      – email or phone + password (client)
- *
- * Phone numbers map to the internal email alias (<digits>@ba.fazoo.app);
- * brand clients may also sign in with a plain email address.
- * Rate-limited via the check_rate_limit RPC when the service role is
- * configured; unavailable limits fail closed.
- *
- * Returns a redirectTo URL on success instead of calling redirect() so the
- * client component can navigate via router.push — avoids a Next.js 16
- * useActionState / redirect() interaction that leaves the form pending.
+/** One sign-in for all roles. Identity and access come from the verified profile.
+ * Rate limiting fails closed. Returning a destination avoids pending-form issues
+ * caused by redirect() inside useActionState on this Next.js version.
  */
 export async function signInAction(
   _prev: SignInState,
   formData: FormData,
 ): Promise<SignInState> {
-  // Selected role tab: 'admin' (email), 'ba' (phone), 'brand' (phone).
-  const role = String(formData.get('role') ?? 'admin') as 'admin' | 'ba' | 'brand';
   const identifier = String(formData.get('identifier') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const next = String(formData.get('next') ?? '/overview');
 
   if (!identifier || !password) {
-    return { error: 'Enter your identifier and password.' };
+    return { error: 'Enter your email or phone number and password.' };
   }
-
-  // Admins sign in with an email address; brand ambassadors and brands may
-  // use a phone number that maps to their internal email alias
-  // (<digits>@ba.fazoo.app) or, when provisioned with an email, directly.
-  let email: string | null;
-  if (role === 'admin') {
-    if (!identifier.includes('@')) {
-      return { error: 'Sign in to the admin portal with your email address.' };
-    }
-    email = identifier;
-  } else if (identifier.includes('@')) {
-    email = identifier;
-  } else {
-    try {
-      email = toAuthEmail(identifier);
-    } catch {
-      return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
-    }
-    if (!email) return { error: 'Enter a valid phone number (e.g. 0801 234 5678).' };
+  const email = signInEmail(identifier);
+  if (!email) {
+    return {
+      error:
+        'Enter a valid email or phone number. Include your country code for phone numbers.',
+    };
   }
-
-  const expectedRoles =
-    role === 'admin'
-      ? ['super_admin', 'organization_admin', 'supervisor']
-      : role === 'brand'
-        ? ['client']
-        : ['brand_ambassador'];
+  if (password.length > 4096) return { error: 'Invalid credentials. Please try again.' };
 
   // Run the actual sign-in in a guarded block: any unhandled server exception
   // would otherwise surface to the client as an opaque Next.js error digest
@@ -103,36 +69,25 @@ export async function signInAction(
       return { error: 'Invalid credentials. Please try again.' };
     }
 
-    // Determine redirect based on role, and confirm the account belongs to
-    // the selected login tab.
-    let redirectTo = safeLocalRedirect(next);
-    try {
-      const { data } = await client.auth.getUser();
-      const userId = data?.user?.id;
-      if (userId) {
-        const { data: profile } = await client
-          .from('profiles')
-          .select('role')
-          .eq('id', userId)
-          .single();
-        if (!profile?.role || !expectedRoles.includes(profile.role)) {
-          await client.auth.signOut();
-          return {
-            error: 'This account is not set up for the selected login. Choose the right one.',
-          };
-        }
-        if (profile.role === 'client' || profile.role === 'brand_ambassador') {
-          redirectTo = '/brand';
-        }
-      }
-    } catch {
-      // Fall back to default redirect.
+    const { data: userData, error: userError } = await client.auth.getUser();
+    if (userError || !userData.user) {
+      await client.auth.signOut({ scope: 'local' });
+      return { error: 'We could not verify your session. Please sign in again.' };
+    }
+    const { data: profile, error: profileError } = await client
+      .from('profiles')
+      .select('role, account_status')
+      .eq('id', userData.user.id)
+      .maybeSingle();
+    if (profileError) {
+      await client.auth.signOut({ scope: 'local' });
+      return { error: 'We could not load your workspace. Please try again.' };
     }
 
-    return { error: null, redirectTo };
-  } catch (cause) {
-    // cause may be an Error (Supabase, env, JSON) — never log credentials.
-    console.error('[sign-in] action failed', cause);
+    return { error: null, redirectTo: postSignInPath(profile, next) };
+  } catch {
+    // Do not log credential-bearing provider errors.
+    console.error('[sign-in] action failed');
     return {
       error: 'Something went wrong signing you in. Please try again in a moment.',
     };

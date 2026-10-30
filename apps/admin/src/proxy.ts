@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { postSignInPath } from './lib/auth-routing';
 
 const PUBLIC_PATHS = [
   '/sign-in',
@@ -28,15 +29,27 @@ export async function proxy(request: NextRequest) {
   request.headers.set('Content-Security-Policy', csp);
   const secure = (res: NextResponse) => {
     res.headers.set('Content-Security-Policy', csp);
+    res.headers.set('Cache-Control', 'private, no-store');
     return res;
   };
   let response = secure(NextResponse.next({ request: { headers: request.headers } }));
+
+  // Redirect responses must carry any refreshed or cleared session cookies too.
+  const redirectWithSession = (target: URL) => {
+    const redirect = secure(NextResponse.redirect(target));
+    for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+    return redirect;
+  };
+  const pathname = request.nextUrl.pathname;
+  const isPublic =
+    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
+    /^\/api\/booklists\/(?:grades\/)?[^/]+\/convert$/.test(pathname);
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
     // Unconfigured environment: allow public paths, block portal routes.
-    if (!PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))) {
+    if (!isPublic) {
       return secure(NextResponse.redirect(new URL('/sign-in', request.url)));
     }
     return response;
@@ -63,27 +76,21 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-  const isPublic =
-    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
-    /^\/api\/booklists\/(?:grades\/)?[^/]+\/convert$/.test(pathname);
-
   if (!user && !isPublic) {
     const redirect = new URL('/sign-in', request.url);
-    redirect.searchParams.set('next', pathname);
-    return secure(NextResponse.redirect(redirect));
+    redirect.searchParams.set('next', pathname + request.nextUrl.search);
+    return redirectWithSession(redirect);
   }
 
   if (user && pathname === '/sign-in') {
-    // Send brand-workspace roles (client / BA) to /brand, staff to /overview.
+    // Restore the verified workspace without asking the user to sign in again.
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, account_status')
       .eq('id', user.id)
       .single();
-    const role = profile?.role;
-    const target = role === 'client' || role === 'brand_ambassador' ? '/brand' : '/overview';
-    return secure(NextResponse.redirect(new URL(target, request.url)));
+    const target = postSignInPath(profile, request.nextUrl.searchParams.get('next') ?? '');
+    return redirectWithSession(new URL(target, request.url));
   }
 
   return response;

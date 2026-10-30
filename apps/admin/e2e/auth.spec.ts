@@ -34,6 +34,8 @@ test.describe('authentication & role isolation', () => {
     await expect(page.getByLabel('Mobile number or email')).toBeVisible();
     await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('tablist')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Forgot password?' })).toBeVisible();
   });
 
   test('sign-in shows error on invalid credentials', async ({ page }) => {
@@ -58,7 +60,9 @@ test.describe('authentication & role isolation', () => {
   test('not-authorized page renders', async ({ page }) => {
     await page.goto('/not-authorized');
     await expect(page.getByText('Not authorized')).toBeVisible();
-    await expect(page.getByText('Brand Ambassadors use the mobile app')).toBeVisible();
+    await expect(
+      page.getByText('Your account does not have access to this page.', { exact: false }),
+    ).toBeVisible();
   });
 });
 
