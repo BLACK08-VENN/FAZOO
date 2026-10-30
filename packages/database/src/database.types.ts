@@ -1709,6 +1709,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      submit_access_request: {
+        Args: {
+          p_client_request_id: string
+          p_full_name: string
+          p_contact: string
+          p_organization_name: string
+          p_requested_role: string
+        }
+        Returns: Json
+      }
       account_status_active: { Args: never; Returns: boolean }
       admin_advance_stage: {
         Args: {

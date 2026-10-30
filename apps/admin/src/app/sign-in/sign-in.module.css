@@ -1,38 +1,38 @@
-/* Navy, purple, orange and cream sampled from the supplied reference. */
+/* Plum #600053 and navy #0A1A3A from the supplied reference. */
 .surface {
-  --color-primary: #a84400;
-  --color-deep: #402262;
-  --color-bright: #65408b;
-  --color-ink: #180d33;
-  --color-muted: #685b72;
-  --color-lavender: #f8e8c5;
+  --color-primary: #d6b6dc;
+  --color-deep: #e7cbe4;
+  --color-bright: #c7a4d0;
+  --color-ink: #f6f1f8;
+  --color-charcoal: #f6f1f8;
+  --color-muted: #c3bed3;
+  --color-lavender: #291c40;
+  --color-bad: #fca5b0;
   --color-white: #ffffff;
-  --auth-orange: #ff870a;
-  --auth-purple: #65408b;
-  --auth-cream: #f8e8c5;
   background:
-    radial-gradient(ellipse at 100% 0%, rgb(255 135 10 / 0.13), transparent 50%),
-    linear-gradient(145deg, #faf3e2, #f8e8c5);
+    radial-gradient(ellipse at 8% 12%, rgb(96 0 83 / 0.8), transparent 60%),
+    linear-gradient(135deg, #600053 0%, #231336 45%, #0a1a3a 100%);
 }
 
-.surface input:not([type='hidden']) {
-  background-color: #fffaf0;
-  border-color: rgb(64 34 98 / 0.22);
+.surface input:not([type='hidden']):not([type='radio']) {
+  background-color: #101d3d;
+  border-color: rgb(199 164 208 / 0.4);
 }
 
-.surface input:not([type='hidden']):focus {
-  background-color: #ffffff;
-  border-color: #65408b;
-  box-shadow: 0 0 0 4px rgb(255 135 10 / 0.18);
+.surface input:not([type='hidden']):not([type='radio']):focus {
+  background-color: #0a1a3a;
+  border-color: #d6b6dc;
+  box-shadow: 0 0 0 4px rgb(199 164 208 / 0.18);
 }
 
 .surface button[type='submit'] {
-  background: #ff870a;
-  color: #180d33;
+  background: linear-gradient(110deg, #600053, #40225d);
+  color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 10px 24px rgb(168 68 0 / 0.2);
+  border: 1px solid rgb(199 164 208 / 0.4);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.2);
 }
 
 .surface button[type='submit']:hover:not(:disabled) {
-  background: #ffb450;
+  background: #78096c;
 }

@@ -10,7 +10,7 @@ export default function ForgotPasswordPage() {
       id="main-content"
       className={`${styles.surface} flex min-h-screen items-center justify-center px-5 py-10`}
     >
-      <section className="w-full max-w-md rounded-[2rem] border border-white/80 bg-white/90 p-8 shadow-xl">
+      <section className="w-full max-w-md rounded-[2rem] border border-white/15 bg-[#0A1A3A]/90 p-8 shadow-xl">
         <FazooMark />
         <h1 className="mt-6 text-2xl font-semibold text-ink">Recover your account</h1>
         <p className="mt-3 text-sm leading-6 text-muted">
