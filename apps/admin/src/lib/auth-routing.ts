@@ -5,6 +5,7 @@ export type RoutingProfile = { role: string; account_status: string };
 
 const STAFF_ROUTES = [
   '/overview',
+  '/service-desk',
   '/brand-ambassadors',
   '/campaigns',
   '/stores',
@@ -45,7 +46,7 @@ export function postSignInPath(profile: RoutingProfile | null, requested = ''): 
   if (!requested) return fallback;
   const target = safeLocalRedirect(requested);
   const pathname = target.split('?')[0] ?? '/';
-  const roots = isBrand ? ['/brand'] : STAFF_ROUTES;
+  const roots = isBrand ? ['/brand', '/service-desk'] : STAFF_ROUTES;
   return roots.some((root) => pathname === root || pathname.startsWith(`${root}/`))
     ? target
     : fallback;

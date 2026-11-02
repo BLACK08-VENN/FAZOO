@@ -1709,6 +1709,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      maintenance_workspace: { Args: Record<PropertyKey, never>; Returns: Json }
+      maintenance_mutate: { Args: { p_client_request_id: string; p_command: Json }; Returns: Json }
+
       submit_access_request: {
         Args: {
           p_client_request_id: string

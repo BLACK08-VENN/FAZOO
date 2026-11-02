@@ -1,3 +1,4 @@
+import { MaintenanceEntry } from '@/components/maintenance/entry';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { requireStaff } from '@/lib/auth';
 import { resolveOrgKind } from '@/lib/nav';
@@ -94,6 +95,7 @@ export default async function PortalLayout({ children }: { children: React.React
           </div>
         ) : null}
 
+        <MaintenanceEntry />
         <SidebarNav orgKind={orgKind} />
         <div className="border-t border-white/10 pt-4">
           <CommandPalette orgKind={orgKind} />
@@ -186,6 +188,7 @@ export default async function PortalLayout({ children }: { children: React.React
         >
           {children}
         </main>
+        <div className="fixed bottom-24 right-4 z-30 rounded-lg bg-[#0A1A3A] px-2 xl:hidden"><MaintenanceEntry /></div>
         <MobileNav orgKind={orgKind} />
         <Toaster />
       </div>

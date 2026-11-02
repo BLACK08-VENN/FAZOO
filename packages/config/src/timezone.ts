@@ -95,3 +95,13 @@ export function formatNairobiDisplay(
     timeStyle: 'short',
   }).format(d);
 }
+
+/** Convert an explicit Lagos wall-clock deadline into UTC; reject invalid dates. */
+export function lagosDateTimeToUtc(value: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) throw new RangeError('Invalid Lagos deadline');
+  const instant = new Date(`${value}:00+01:00`);
+  if (!Number.isFinite(instant.getTime()) || lagosDateTime(instant).replace(' ', 'T') !== value) {
+    throw new RangeError('Invalid Lagos deadline');
+  }
+  return instant.toISOString();
+}

@@ -1,3 +1,4 @@
+import { MaintenanceEntry } from '@/components/maintenance/entry';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -62,6 +63,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
             Powered by Fazoo
           </p>
         </div>
+        <MaintenanceEntry />
         <nav aria-label="Brand navigation" className="flex-1 space-y-1">
           {nav.map(({ href, label, icon: Icon }) => (
             <Link
@@ -109,6 +111,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
           className="fazoo-glass-dark sticky top-[44px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-1 xl:hidden"
           role="navigation"
         >
+          <MaintenanceEntry />
           {nav.map(({ href, label }) => (
             <Link
               key={href}
