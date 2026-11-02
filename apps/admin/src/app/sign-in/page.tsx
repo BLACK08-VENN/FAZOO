@@ -35,7 +35,7 @@ export default async function SignInPage({
           className="fazoo-rise relative flex items-center gap-3"
           style={{ animationDelay: '0.05s' }}
         >
-          <FazooMark className="size-16" />
+          <FazooMark />
           <div>
             <p className="text-lg font-bold tracking-tight">Fazoo</p>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
@@ -45,7 +45,7 @@ export default async function SignInPage({
         </div>
 
         <div className="relative my-12 w-full max-w-2xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D8CFF0]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E7CBE4]">
             Your field workspace
           </p>
           <h1 className="mt-5 max-w-xl text-5xl font-semibold leading-[1.08] tracking-[-0.045em] xl:text-6xl">
@@ -53,7 +53,7 @@ export default async function SignInPage({
             <br />
             Every sale.
             <br />
-            <span className="text-[#D8CFF0]">One clear picture.</span>
+            <span className="text-[#D6B6DC]">One clear picture.</span>
           </h1>
           <p className="mt-5 max-w-lg text-sm leading-7 text-white/75 xl:text-base">
             Bring store activity, sales and your people together. See what’s happening
@@ -92,7 +92,7 @@ export default async function SignInPage({
             className={`${styles.glassTile} fazoo-rise relative rounded-[2rem] p-6 sm:p-9`}
             style={{ animationDelay: '0.1s' }}
           >
-            <span className="absolute right-7 top-7 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.14em] text-muted">
+            <span className="absolute right-7 top-7 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.14em] text-muted/70">
               <span className="fazoo-pulse size-1.5 rounded-full bg-[#31c88a] shadow-[0_0_8px_#31c88a]" />{' '}
               Secure
             </span>
@@ -101,7 +101,7 @@ export default async function SignInPage({
               style={{ animationDelay: '0.18s' }}
             >
               <FazooMark className="size-7" />
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-deep">
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#F6F1F8]">
                 Welcome to Fazoo
               </span>
             </div>
