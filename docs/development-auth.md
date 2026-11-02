@@ -1,4 +1,4 @@
-# Unified web sign-in (development branch)
+# Unified web sign-in
 
 ## Behavior
 
@@ -28,10 +28,11 @@ are release blockers to review separately, not evidence of a production-ready bu
 
 The separate `fazoo-expansion-preview` Vercel project has no database credentials.
 It renders the new UI and help page, but disables credential submission explicitly.
-Only `feature/fazoo-expansion` is updated; no production database migrations,
-account changes, deployment promotions or main-branch merges are performed.
+The selected dark-glass design and unified sign-in are approved for main and
+production deployment. Existing production authentication configuration is retained.
+The access-request migration remains unapplied and submission stays disabled.
 
-Before enabling real sign-in, provision a separate test Supabase environment,
+For full end-to-end authentication acceptance checks, provision a separate test Supabase environment,
 apply the existing schema there and create fictional approved/pending users.
 Configure only that test project's public URL/key and server-side service key.
 Verify real sign-in and sign-out for every role, pending-account approval,
@@ -62,3 +63,16 @@ until the migration, RLS, duplicate retries and stored records are tested on the
 separate test database. The preview has no database and cannot accept applications.
 A platform review/invitation interface is not implemented in this change; do not
 claim this form automatically approves requests or sends notifications.
+
+## Production rollout
+
+Targeted authentication tests (62), validation tests (60) and admin TypeScript
+checks pass. Real-account end-to-end acceptance remains unverified; no user
+credentials are used by deployment checks. Existing dependency audit and whole-repo
+lint findings remain outstanding. The selected UI uses the supplied gold-purple
+monogram and enhanced 2160×3840 neon-wave background with dark glass surfaces.
+
+Production retains its existing Supabase credentials and database. No migration
+is applied in this rollout. `ACCESS_REQUESTS_ENABLED` is absent in production,
+so the server rejects intake submissions and the page directs users to their
+organization administrator instead.

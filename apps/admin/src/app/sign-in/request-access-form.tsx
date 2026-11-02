@@ -148,7 +148,7 @@ export function RequestAccessForm({
             ) : null}
             {!available ? (
               <p role="status" className="text-xs leading-5 text-muted">
-                Requests cannot be submitted in this preview yet.
+                Online access requests are not available yet. Contact your organization administrator.
               </p>
             ) : null}
             <Button type="submit" size="lg" disabled={pending || !available} className="w-full">
