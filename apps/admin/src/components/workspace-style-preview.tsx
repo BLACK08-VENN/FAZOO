@@ -200,15 +200,27 @@ export function WorkspaceStylePreview() {
                             className="flex items-center justify-between gap-3 py-3 text-xs text-ink"
                           >
                             <span>{text}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              type="button"
-                              aria-label={`Review ${text}`}
-                              onClick={() => setSection(index === 1 ? 'Reports' : 'Campaigns')}
-                            >
-                              <ArrowUpRight size={16} aria-hidden="true" />
-                            </Button>
+                            {index === 0 ? (
+                              <Link
+                                href="/maintenance-preview"
+                                aria-label={`Review ${text}`}
+                                className="inline-flex min-h-10 items-center justify-center rounded-[10px] px-3 hover:bg-lavender focus-visible:outline-2 focus-visible:outline-primary"
+                              >
+                                <ArrowUpRight size={16} aria-hidden="true" />
+                              </Link>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                type="button"
+                                aria-label={`Review ${text}`}
+                                onClick={() =>
+                                  setSection(index === 1 ? 'Reports' : 'Campaigns')
+                                }
+                              >
+                                <ArrowUpRight size={16} aria-hidden="true" />
+                              </Button>
+                            )}
                           </li>
                         ))}
                       </ul>

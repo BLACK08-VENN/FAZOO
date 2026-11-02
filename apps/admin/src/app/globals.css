@@ -63,11 +63,15 @@ body {
     sans-serif;
 }
 .fazoo-shell {
+  color-scheme: light;
   isolation: isolate;
   position: relative;
   background: var(--color-lavender);
   color: var(--color-ink);
   font-size: 14px;
+}
+.dark .fazoo-shell {
+  color-scheme: dark;
 }
 .fazoo-shell > div > main {
   width: 100%;
