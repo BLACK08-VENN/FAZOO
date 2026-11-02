@@ -93,3 +93,11 @@ GPS check-ins, offline synchronization, technician onboarding/invites, customer
 contracts, equipment registry, recurring schedules, parts inventory, billing,
 email/SMS and push notifications are not included. No automated safety or repair
 instructions are generated. Live or background location tracking is not added.
+
+## Browser acceptance on the isolated preview
+
+Verified request creation, assignment and Lagos deadline entry, switching to the
+technician view, starting work, submitting a completion summary, switching back
+to administrator, and approval to Completed. The event history retained every
+step. This check used the browser-only simulator; hosted Supabase acceptance
+and phone-device checks remain pending.

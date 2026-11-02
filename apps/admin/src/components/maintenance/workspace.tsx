@@ -17,7 +17,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import { formatLagosDisplay, lagosDateTimeToUtc } from '@fazoo/config';
+import { formatLagosDisplay, lagosDateTime, lagosDateTimeToUtc } from '@fazoo/config';
 import { FazooMark } from '@/components/fazoo-mark';
 import { mutateMaintenance } from '@/app/service-desk/actions';
 import {
@@ -572,7 +572,12 @@ function JobDetail({
           </label>
           <label>
             Deadline (Lagos time)
-            <input type="datetime-local" name="deadline" required />
+            <input
+              type="datetime-local"
+              name="deadline"
+              defaultValue={job.due_at ? lagosDateTime(job.due_at).replace(' ', 'T') : ''}
+              required
+            />
           </label>
           <label>
             Work instructions

@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { lagosDateTimeToUtc } from '@fazoo/config';
 import { applyDemo, DEMO_MANAGER, DEMO_TECH, initialDemo } from './demo';
-import { allowedUpdate, canReview, canRead, commandSchema } from './model';
+import { jobNumber, allowedUpdate, canReview, canRead, commandSchema } from './model';
 
 describe('Maintenance client rules', () => {
+  it('gives sample jobs distinct visible references', () => {
+    const jobs = initialDemo().jobs;
+    expect(new Set(jobs.map(jobNumber)).size).toBe(jobs.length);
+  });
   it('rejects privileged or unknown client fields and invalid descriptions', () => {
     const request = {
       action: 'create',

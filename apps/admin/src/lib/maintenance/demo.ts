@@ -32,7 +32,7 @@ export function initialDemo(now = Date.now()): Workspace {
     status: Job['status'],
     priority: Job['priority'],
   ): Job => ({
-    id: `20000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    id: `2000000${index}-0000-4000-8000-${String(index).padStart(12, '0')}`,
     title,
     location,
     status,
@@ -51,7 +51,7 @@ export function initialDemo(now = Date.now()): Workspace {
         : 'Inspect the equipment, isolate the fault and record the repair.',
     completion_note:
       status === 'ready_for_review'
-        ? 'Fault repaired and the equipment tested. Ready for supervisor review.'
+        ? 'Fault repaired and the equipment tested. Ready for administrator review.'
         : '',
     version: 1,
     created_at: created,
