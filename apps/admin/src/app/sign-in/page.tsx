@@ -105,9 +105,7 @@ export default async function SignInPage({
               className="fazoo-rise inline-flex items-center gap-2.5 rounded-xl border border-primary/10 bg-gradient-to-r from-primary/[0.09] to-white/40 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,.9)]"
               style={{ animationDelay: '0.18s' }}
             >
-              <span className="relative grid size-6 place-items-center rounded-lg bg-[#0A1A3A] shadow-[0_0_18px_rgba(64,34,98,.24)]">
-                <span className="size-2 rotate-45 rounded-[2px] border border-[#E7CBE4] bg-[#600053]/40 shadow-[0_0_8px_#C7A4D0]" />
-              </span>
+              <FazooMark className="size-7" />
               <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#F6F1F8]">
                 Welcome to Fazoo
               </span>

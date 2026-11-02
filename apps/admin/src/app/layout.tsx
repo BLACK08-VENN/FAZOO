@@ -12,10 +12,6 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Fazoo',
   },
-  icons: {
-    icon: '/icon.png',
-    apple: '/icon.png',
-  },
 };
 
 export const viewport: Viewport = {
