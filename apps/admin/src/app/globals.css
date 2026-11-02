@@ -4,15 +4,15 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary: #6327df;
-  --color-deep: #4820a8;
-  --color-bright: #8b2fd1;
-  --color-ink: #0b0b0f;
-  --color-charcoal: #17171c;
-  --color-lavender: #f6f2fa;
-  --color-muted: #6b6472;
-  --color-ok: #22c55e;
-  --color-warn: #f97316;
+  --color-primary: #64469a;
+  --color-deep: #513580;
+  --color-bright: #8a72ac;
+  --color-ink: #17233e;
+  --color-charcoal: #24304a;
+  --color-lavender: #f6f6fa;
+  --color-muted: #626b80;
+  --color-ok: #16815d;
+  --color-warn: #a85c0a;
   --color-bad: #dc2626;
 }
 
@@ -23,46 +23,35 @@
  * each component. The sidebar + mobile bar keep a true white for their own
  * labels by restoring the token locally.
  */
+/* The workspace palette is shared by staff, client and field-worker portals.
+   Auth screens retain their own scoped artwork and glass surfaces. */
+:root {
+  --workspace-border: #e1dfe9;
+  --workspace-soft: #eeeaf7;
+  --workspace-sidebar: linear-gradient(165deg, #15223e, #221c3d);
+  --workspace-panel: linear-gradient(125deg, #19243f, #2c2449);
+  --workspace-on-dark: #e8e4f3;
+  --workspace-on-dark-muted: #bbb4d1;
+  --workspace-shadow: 0 3px 12px #19263e05;
+}
 .dark {
-  --color-primary: #a678e8;
-  --color-deep: #8b5fd0;
-  --color-bright: #c08df5;
-  --color-ink: #f3f0f8;
-  --color-charcoal: #efeaf6;
-  --color-lavender: #151219;
-  --color-muted: #a9a0ba;
-  --color-ok: #4ade80;
-  --color-warn: #fb923c;
-  --color-bad: #f87171;
-  --color-white: #1d1a24;
+  --color-primary: #bba2e3;
+  --color-deep: #d5c4ee;
+  --color-bright: #c6b1e9;
+  --color-ink: #eeeaf6;
+  --color-charcoal: #ded8ea;
+  --color-lavender: #111a2d;
+  --color-muted: #b2b7ca;
+  --color-ok: #62d5aa;
+  --color-warn: #f6bd74;
+  --color-bad: #f7a3af;
+  --color-white: #19243a;
+  --workspace-border: #38415b;
+  --workspace-soft: #252e47;
+  --workspace-shadow: 0 3px 12px #0000000a;
 }
-
-.dark .fazoo-glass-dark,
-.dark .fazoo-mobile-nav {
-  --color-white: #ffffff;
-}
-
-.dark .fazoo-mobile-nav {
-  background: rgb(22 19 27 / 0.94);
-  border-color: rgb(255 255 255 / 0.1);
-  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.35);
-}
-
-.dark .fazoo-shell {
-  background:
-    radial-gradient(circle at 8% 8%, rgb(139 47 209 / 0.16), transparent 28rem),
-    radial-gradient(circle at 92% 88%, rgb(90 30 130 / 0.12), transparent 32rem),
-    linear-gradient(135deg, #16131c 0%, #100d15 52%, #16131c 100%);
-  background-attachment: fixed;
-}
-
 body {
   @apply bg-lavender text-ink antialiased;
-  background-image:
-    radial-gradient(circle at 8% 8%, rgb(139 47 209 / 0.12), transparent 28rem),
-    radial-gradient(circle at 92% 88%, rgb(90 30 130 / 0.09), transparent 32rem),
-    linear-gradient(135deg, #f8f5fb 0%, #f3edf8 52%, #f8f5fb 100%);
-  background-attachment: fixed;
   font-family:
     var(--font-sora),
     Inter,
@@ -73,58 +62,144 @@ body {
     'Segoe UI',
     sans-serif;
 }
-
 .fazoo-shell {
   isolation: isolate;
   position: relative;
+  background: var(--color-lavender);
+  color: var(--color-ink);
+  font-size: 14px;
 }
-
-/* Only the decorative layer is faded; controls and text stay opaque. */
-.fazoo-shell {
-  background: #fff;
-}
-.fazoo-shell::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: url('/images/field-background.jpg') center / cover no-repeat;
-  opacity: 0.5;
-}
-.dark .fazoo-shell::before {
-  opacity: 0.12;
+.fazoo-shell > div > main {
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
 }
 .fazoo-glass-dark {
-  background: #281b45;
-  border-color: rgb(255 255 255 / 0.1);
-  box-shadow: 4px 0 20px rgb(25 8 36 / 0.08);
+  --color-white: #ffffff;
+  background: var(--workspace-sidebar);
+  border-color: #ffffff18;
+  color: var(--workspace-on-dark);
+}
+.fazoo-shell aside.fazoo-glass-dark {
+  overflow-y: auto;
+}
+.fazoo-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 28px;
+}
+.fazoo-sidebar-brand strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #f4f0fc;
+}
+.fazoo-sidebar-brand small {
+  display: block;
+  margin-top: 4px;
+  font-size: 9px;
+  color: var(--workspace-on-dark-muted);
+}
+.fazoo-nav-caption {
+  margin: 12px 12px 14px;
+  color: var(--workspace-on-dark-muted);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.fazoo-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  padding: 11px 12px;
+  color: #cfc9df;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.fazoo-nav-link:hover,
+.fazoo-nav-link[aria-current='page'] {
+  background: #8c79ba25;
+  border-color: #8c79ba55;
+  color: #f4f0fc;
+}
+.fazoo-nav-link:focus-visible {
+  outline: 2px solid #d5c4ee;
+  outline-offset: -2px;
+}
+.fazoo-mobile-nav {
+  background: var(--color-white);
+  border-color: var(--workspace-border);
+  box-shadow: 0 -4px 24px #19263e08;
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+}
+.fazoo-mobile-nav [aria-current='page'] {
+  background: var(--workspace-soft);
+  color: var(--color-primary);
 }
 .fazoo-overview-hero {
-  min-height: 150px;
-  padding-top: 20px;
+  padding-top: 6px;
 }
-@media (min-width: 768px) {
-  .fazoo-overview-hero {
-    min-height: 180px;
-  }
+.fazoo-card {
+  border-color: var(--workspace-border);
+  box-shadow: var(--workspace-shadow);
 }
-
-.fazoo-mobile-nav {
-  background: rgb(255 255 255 / 0.94);
-  border-color: rgb(11 11 15 / 0.09);
-  box-shadow: 0 -12px 40px rgb(45 20 58 / 0.1);
-  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  backdrop-filter: blur(20px) saturate(140%);
+.fazoo-table {
+  border-color: var(--workspace-border);
+  box-shadow: var(--workspace-shadow);
 }
-
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .fazoo-glass-dark {
-    background: #0b0b0f;
-  }
+.fazoo-table thead {
+  background: var(--workspace-soft);
 }
-
+.fazoo-table tbody tr:hover {
+  background: color-mix(in srgb, var(--workspace-soft) 50%, transparent);
+}
+.fazoo-field {
+  border-color: var(--workspace-border);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.fazoo-field:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+/* Legacy hand-built workspace controls use the same surfaces as shared fields. */
+.fazoo-shell
+  main
+  :where(
+    input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):not(
+        [type='color']
+      ),
+    select,
+    textarea
+  ) {
+  border-color: var(--workspace-border);
+  border-radius: 9px;
+}
+.fazoo-shell main :where(textarea) {
+  background: var(--color-white);
+  color: var(--color-ink);
+}
+.fazoo-button-primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+.dark .fazoo-button-primary {
+  color: #1c2440;
+}
+.fazoo-button-destructive {
+  color: #fff;
+}
+.dark .fazoo-button-destructive {
+  color: #301922;
+}
 @keyframes fazoo-aurora-drift {
   0%,
   100% {
@@ -314,4 +389,8 @@ body {
     size: A4;
     margin: 12mm;
   }
+}
+
+.fazoo-shell > div > header .fazoo-sidebar-brand {
+  padding: 0;
 }

@@ -153,3 +153,19 @@ The Report an issue link opens the real service desk's new-request form directly
 In the fictional preview, My dashboard and Service desk controls demonstrate the
 same shared summary card for each Preview as role. They do not bypass login or
 organization permissions in the real application.
+
+## Web workspace style rollout
+
+The maintenance navy/lavender identity now drives the web workspace shell and
+shared cards, buttons, fields, badges, tables and page headers. Staff and brand
+layouts share the logo lockup, navy navigation and selected-link treatment. The
+workspace background is a solid lavender-white surface instead of a photograph.
+Existing authentication, queries, forms and permissions retain their behavior.
+Dark mode keeps navy surfaces with readable lavender accents. This change does
+not restyle the separately built Expo native app.
+
+`/maintenance-preview/style` uses the actual shared primitives with fictional
+content for an overview, campaign table/form, reports, field workspace and settings.
+Its search, filters and form validation run locally; it never writes company data.
+Like the maintenance simulator, it is guarded to credential-free Vercel previews.
+Real authenticated page and device acceptance remains required before release.

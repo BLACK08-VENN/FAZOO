@@ -203,6 +203,9 @@ export function MaintenanceWorkspace({
             <span>
               <strong>Interactive preview</strong> · Fictional data. Changes reset on refresh.
             </span>
+            <Link href="/maintenance-preview/style" className="font-semibold underline">
+              Explore app styling
+            </Link>
             <button
               type="button"
               onClick={() => {

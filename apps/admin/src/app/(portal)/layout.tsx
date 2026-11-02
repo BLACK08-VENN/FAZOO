@@ -1,3 +1,4 @@
+import { WorkspaceBrand } from '@/components/workspace-brand';
 import { MaintenanceEntry } from '@/components/maintenance/entry';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { requireStaff } from '@/lib/auth';
@@ -32,13 +33,7 @@ export default async function PortalLayout({ children }: { children: React.React
         className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex"
         aria-label="Sidebar navigation"
       >
-        <div className="mb-5 px-3">
-          <FazooMark className="size-12" />
-          <p className="mt-3 text-xl font-bold tracking-wide text-white">FAZOO</p>
-          <p className="text-[10px] uppercase tracking-widest text-white/70">
-            Field activations
-          </p>
-        </div>
+        <WorkspaceBrand />
 
         {activeBrand ? (
           <div className="mx-1 mb-5 rounded-xl border border-white/10 bg-white/5 p-3">
@@ -76,7 +71,7 @@ export default async function PortalLayout({ children }: { children: React.React
                   id="admin-active-brand"
                   name="organization_id"
                   defaultValue={activeBrand.id}
-                  className="h-9 w-full rounded-lg border border-white/15 bg-[#241238] px-2 text-xs text-white outline-none focus:border-white/40"
+                  className="h-9 w-full rounded-lg border border-white/15 bg-[#19243f] px-2 text-xs text-white outline-none focus:border-white/40"
                 >
                   {activeBrands.map((brand) => (
                     <option key={brand.id} value={brand.id}>
@@ -96,6 +91,7 @@ export default async function PortalLayout({ children }: { children: React.React
         ) : null}
 
         <MaintenanceEntry />
+        <p className="fazoo-nav-caption">Workspace</p>
         <SidebarNav orgKind={orgKind} />
         <div className="border-t border-white/10 pt-4">
           <CommandPalette orgKind={orgKind} />
@@ -120,7 +116,7 @@ export default async function PortalLayout({ children }: { children: React.React
       </aside>
 
       <div className="flex min-w-0 w-full flex-col">
-        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-14 items-center justify-between border-b px-4 xl:hidden">
+        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-[60px] items-center justify-between border-b px-4 xl:hidden">
           <div className="flex min-w-0 items-center gap-2.5">
             <FazooMark className="size-9" />
             {activeBrand?.logo_url ? (
@@ -188,7 +184,9 @@ export default async function PortalLayout({ children }: { children: React.React
         >
           {children}
         </main>
-        <div className="fixed bottom-24 right-4 z-30 rounded-lg bg-[#0A1A3A] px-2 xl:hidden"><MaintenanceEntry /></div>
+        <div className="fixed bottom-24 right-4 z-30 rounded-lg bg-[#0A1A3A] px-2 xl:hidden">
+          <MaintenanceEntry />
+        </div>
         <MobileNav orgKind={orgKind} />
         <Toaster />
       </div>
