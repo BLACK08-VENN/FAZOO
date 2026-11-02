@@ -18,9 +18,9 @@ const NAV = [
   { href: '/brand', label: 'Overview', icon: BarChart3, exact: true },
   { href: '/brand/logs', label: 'Create Log', icon: FilePlus2 },
   { href: '/brand/leave', label: 'Apply for Leave', icon: CalendarOff },
-  { href: '/brand/campaigns', label: 'Campaigns', icon: ClipboardList },
-  { href: '/brand/stores', label: 'Stores', icon: Store },
-  { href: '/brand/bas', label: 'Brand Ambassadors', icon: Users },
+  { href: '/brand/campaigns', label: 'Campaign progress', icon: ClipboardList },
+  { href: '/brand/bas', label: 'Team performance', icon: Users },
+  { href: '/brand/stores', label: 'Store coverage', icon: Store },
 ] as const;
 
 const ROLE_LABEL = { client: 'Client', brand_ambassador: 'Brand Ambassador' } as const;

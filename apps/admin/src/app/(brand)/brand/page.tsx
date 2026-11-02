@@ -4,8 +4,18 @@ import { requireClient, type ClientBrand, type ClientProfile } from '@/lib/clien
 import type { FazooClient } from '@fazoo/database';
 import { PageHeader, StatCard } from '@/components/page';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { TrendsChart, type TrendPoint } from '../../(portal)/overview/trends-chart';
 import { SchoolBooklistWorkflow } from './logs/school-booklist-workflow';
+import {
+  baPerformance,
+  campaignPerformance,
+  loadBrandBas,
+  loadBrandCampaigns,
+  loadBrandLogs,
+  summarizeLogs,
+  trendFromLogs,
+} from '@/server/brand-analytics';
 
 type BaHistoryRow = {
   attendance_date: string;
@@ -25,77 +35,23 @@ export default async function BrandOverviewPage() {
     return <BrandAmbassadorOverview brand={brand} profile={profile} />;
   }
 
-  const { data: campaigns } = await client
-    .from('campaigns')
-    .select('id, name, status, start_date, end_date')
-    .order('start_date', { ascending: false });
+  const [campaigns, allLogs, bas] = await Promise.all([
+    loadBrandCampaigns(client),
+    loadBrandLogs(client),
+    loadBrandBas(client),
+  ]);
 
-  const campaignIds = (campaigns ?? []).map((c) => c.id);
-
-  let allLogs: Array<{
-    attendance_date: string;
-    attendance_status: string;
-    status: string;
-    units_sold: number;
-    ba_id: string;
-    store_id: string;
-    campaign_id: string;
-  }> = [];
-
-  if (campaignIds.length > 0) {
-    const { data: logs } = await client
-      .from('daily_logs')
-      .select(
-        `
-        attendance_date, attendance_status, status,
-        brand_ambassador_id, store_id, campaign_id,
-        sales_entries ( quantity )
-      `,
-      )
-      .in('campaign_id', campaignIds)
-      .order('attendance_date', { ascending: false })
-      .limit(5000);
-
-    allLogs = (logs ?? []).map((r: Record<string, unknown>) => ({
-      attendance_date: r.attendance_date as string,
-      attendance_status: r.attendance_status as string,
-      status: r.status as string,
-      units_sold: ((r.sales_entries as Array<{ quantity: number }> | null) ?? []).reduce(
-        (s, e) => s + e.quantity,
-        0,
-      ),
-      ba_id: r.brand_ambassador_id as string,
-      store_id: r.store_id as string,
-      campaign_id: r.campaign_id as string,
-    }));
-  }
-
-  const bas = new Set(allLogs.map((r) => r.ba_id));
-  const stores = new Set(
-    allLogs.filter((r) => r.attendance_status === 'present').map((r) => r.store_id),
-  );
-  const units = allLogs.reduce((s, r) => s + r.units_sold, 0);
-  const completed = allLogs.filter((r) => r.status === 'completed').length;
-  const open = allLogs.filter((r) => r.status === 'open').length;
-
-  const byDay = new Map<string, { units: number; total: number; completed: number }>();
-  for (const r of allLogs) {
-    const day = byDay.get(r.attendance_date) ?? { units: 0, total: 0, completed: 0 };
-    day.units += r.units_sold;
-    day.total += 1;
-    if (r.status === 'completed') day.completed += 1;
-    byDay.set(r.attendance_date, day);
-  }
-
-  const trend: TrendPoint[] = [...byDay.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, v]) => ({
-      day,
-      units: v.units,
-      completionPct: v.total === 0 ? 0 : Math.round((v.completed / v.total) * 100),
-    }));
-
-  const activeCampaigns = (campaigns ?? []).filter((c) => c.status === 'active').length;
+  const summary = summarizeLogs(allLogs);
+  const trend = trendFromLogs(allLogs);
+  const campaignRows = campaignPerformance(campaigns, allLogs);
+  const baRows = baPerformance(bas, allLogs).filter((row) => row.logs > 0);
+  const activeCampaigns = campaigns.filter((campaign) => campaign.status === 'active').length;
+  const activeBas = new Set(allLogs.map((log) => log.ba_id)).size;
+  const activeStores = new Set(
+    allLogs
+      .filter((log) => log.attendance_status === 'present')
+      .map((log) => log.store_id),
+  ).size;
 
   return (
     <>
@@ -107,16 +63,13 @@ export default async function BrandOverviewPage() {
       <MaintenanceDashboard client={client} requester />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Active campaigns" value={activeCampaigns} />
-        <StatCard label="BA-days" value={allLogs.length} />
-        <StatCard label="Units sold" value={units} />
-        <StatCard
-          label="Completion rate"
-          value={`${allLogs.length ? Math.round((completed / allLogs.length) * 100) : 0}%`}
-        />
-        <StatCard label="Active BAs" value={bas.size} />
-        <StatCard label="Active stores" value={stores.size} />
-        <StatCard label="Completed days" value={completed} />
-        <StatCard label="Open / incomplete" value={open} />
+        <StatCard label="BA-days" value={summary.logs} />
+        <StatCard label="Units sold" value={summary.units} />
+        <StatCard label="Completion rate" value={`${summary.completionRate}%`} />
+        <StatCard label="Active BAs" value={activeBas} />
+        <StatCard label="Active stores" value={activeStores} />
+        <StatCard label="Completed days" value={summary.completed} />
+        <StatCard label="Open / incomplete" value={summary.open} />
       </div>
 
       <Card className="mt-6">
@@ -130,46 +83,104 @@ export default async function BrandOverviewPage() {
       </Card>
 
       <Card className="mt-6">
-        <div className="border-b border-ink/8 px-5 py-4">
-          <h2 className="text-sm font-semibold text-ink">Campaigns</h2>
+        <div className="flex items-start justify-between gap-3 border-b border-ink/8 px-5 py-4">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Campaigns</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Progress and sales across every campaign.
+            </p>
+          </div>
+          <Link href="/brand/campaigns" className="text-xs font-medium text-deep underline">
+            View all
+          </Link>
         </div>
         <div className="divide-y divide-ink/5">
-          {(campaigns ?? []).map((c) => {
-            const campaignLogs = allLogs.filter((l) => l.campaign_id === c.id);
-            const campaignCompleted = campaignLogs.filter(
-              (l) => l.status === 'completed',
-            ).length;
-            const campaignUnits = campaignLogs.reduce((s, l) => s + l.units_sold, 0);
-            return (
-              <div key={c.id} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <p className="text-sm font-medium text-ink">{c.name}</p>
-                  <p className="text-xs text-muted">
-                    {c.start_date} → {c.end_date ?? 'ongoing'}
+          {campaignRows.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-muted">No campaigns have been set up yet.</p>
+          ) : (
+            campaignRows.map((row) => (
+              <Link
+                key={row.campaign.id}
+                href={`/brand/campaigns/${row.campaign.id}`}
+                className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-lavender/40"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-ink">{row.campaign.name}</p>
+                  <p className="truncate text-xs text-muted">
+                    {row.campaign.start_date} → {row.campaign.end_date ?? 'ongoing'} · {row.bas}{' '}
+                    BA{row.bas === 1 ? '' : 's'}
                   </p>
                 </div>
-                <div className="flex gap-6 text-right">
+                <div className="flex shrink-0 gap-4 text-right sm:gap-6">
                   <div>
-                    <p className="text-sm font-semibold text-ink">{campaignLogs.length}</p>
+                    <p className="text-sm font-semibold text-ink">{row.logs}</p>
                     <p className="text-xs text-muted">BA-days</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-ink">{campaignUnits}</p>
+                    <p className="text-sm font-semibold text-ink">{row.units}</p>
                     <p className="text-xs text-muted">Units</p>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-ink">
-                      {campaignLogs.length
-                        ? Math.round((campaignCompleted / campaignLogs.length) * 100)
-                        : 0}
-                      %
-                    </p>
+                    <p className="text-sm font-semibold text-ink">{row.completionRate}%</p>
                     <p className="text-xs text-muted">Completion</p>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              </Link>
+            ))
+          )}
+        </div>
+      </Card>
+
+      <Card className="mt-6">
+        <div className="flex items-start justify-between gap-3 border-b border-ink/8 px-5 py-4">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Team performance</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Top ambassadors by units sold. Full board in Team performance.
+            </p>
+          </div>
+          <Link href="/brand/bas" className="text-xs font-medium text-deep underline">
+            View all
+          </Link>
+        </div>
+        <div className="divide-y divide-ink/5">
+          {baRows.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-muted">
+              No ambassador activity has been logged yet.
+            </p>
+          ) : (
+            baRows.slice(0, 5).map((row) => (
+              <Link
+                key={row.ba.id}
+                href={`/brand/bas/${row.ba.id}`}
+                className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-lavender/40"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-ink">{row.ba.full_name}</p>
+                  <p className="truncate text-xs text-muted">
+                    {row.campaignNames.length > 0
+                      ? row.campaignNames.join(', ')
+                      : 'No campaign activity'}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-4 text-right sm:gap-6">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{row.logs}</p>
+                    <p className="text-xs text-muted">Days</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{row.units}</p>
+                    <p className="text-xs text-muted">Units</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{row.completionRate}%</p>
+                    <p className="text-xs text-muted">Completion</p>
+                  </div>
+                  {row.flagged > 0 ? <Badge tone="danger">{row.flagged}</Badge> : null}
+                </div>
+              </Link>
+            ))
+          )}
         </div>
       </Card>
     </>
