@@ -1,9 +1,13 @@
 'use client';
 
+import { LocationPicker } from './location-picker';
+import { locationMapUrl, type LocationPin } from '@/lib/maintenance/location';
+
 import { useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle,
+  Flag,
   ArrowLeft,
   ArrowUpRight,
   Check,
@@ -28,6 +32,7 @@ import {
   initialDemo,
 } from '@/lib/maintenance/demo';
 import {
+  byPriority,
   canRead,
   canReview,
   canUpdate,
@@ -50,8 +55,9 @@ export function MaintenanceWorkspace({
   demo?: boolean;
 }) {
   const [workspace, setWorkspace] = useState(initial);
-  const [selectedId, setSelectedId] = useState(initial.jobs[0]?.id ?? '');
+  const [selectedId, setSelectedId] = useState([...initial.jobs].sort(byPriority)[0]?.id ?? '');
   const [filter, setFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
   const [pending, setPending] = useState(false);
@@ -59,16 +65,19 @@ export function MaintenanceWorkspace({
   const [now, setNow] = useState(() => Date.now());
   const attempt = useRef<{ key: string; id: string } | null>(null);
   const visible = workspace.jobs.filter((job) => canRead(job, workspace.viewer));
-  const jobs = visible.filter(
-    (job) =>
-      (filter === 'all' ||
-        (filter === 'mine'
-          ? job.assigned_to === workspace.viewer.id
-          : job.status === filter)) &&
-      `${job.title} ${job.location} ${jobNumber(job)}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-  );
+  const jobs = visible
+    .filter(
+      (job) =>
+        (filter === 'all' ||
+          (filter === 'mine'
+            ? job.assigned_to === workspace.viewer.id
+            : job.status === filter)) &&
+        (priorityFilter === 'all' || job.priority === priorityFilter) &&
+        `${job.title} ${job.location} ${job.address} ${job.location_details} ${jobNumber(job)}`
+          .toLowerCase()
+          .includes(search.toLowerCase()),
+    )
+    .sort(byPriority);
   const selected = jobs.find((job) => job.id === selectedId) ?? jobs[0];
   const totals = [
     {
@@ -184,6 +193,7 @@ export function MaintenanceWorkspace({
                 setCreating(false);
                 setFilter('all');
                 setSearch('');
+                setPriorityFilter('all');
               }}
               disabled={pending}
             >
@@ -304,6 +314,20 @@ export function MaintenanceWorkspace({
               </button>
             ))}
           </div>
+          <label className={styles.priorityFilter}>
+            Priority
+            <select
+              aria-label="Filter by priority"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              <option value="all">All priorities</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="normal">Normal</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
           <label className={styles.search}>
             <Search size={16} aria-hidden="true" />
             <input
@@ -321,21 +345,26 @@ export function MaintenanceWorkspace({
                 <button
                   type="button"
                   className={`${styles.job} ${selected?.id === job.id ? styles.selected : ''}`}
+                  data-priority={job.priority}
                   key={job.id}
                   onClick={() => setSelectedId(job.id)}
                   aria-pressed={selected?.id === job.id}
                 >
                   <div className={styles.jobTop}>
                     <span>{jobNumber(job)}</span>
-                    <span className={`${styles.priority} ${styles[job.priority]}`}>
-                      {job.priority}
-                    </span>
+                    <PriorityBadge priority={job.priority} />
                   </div>
                   <h3>{job.title}</h3>
                   <p>
                     <MapPin size={13} aria-hidden="true" />
                     {job.location}
                   </p>
+                  {job.address ? <p className={styles.jobAddress}>{job.address}</p> : null}
+                  {job.pin ? (
+                    <span className={styles.pinTag}>
+                      <MapPin size={11} aria-hidden="true" /> Map pin attached
+                    </span>
+                  ) : null}
                   <div className={styles.jobBottom}>
                     <span className={styles.status} data-status={job.status}>
                       {statusLabels[job.status]}
@@ -389,14 +418,21 @@ function RequestForm({
   pending: boolean;
   close: () => void;
 }) {
+  const [pin, setPin] = useState<LocationPin | null>(null);
+  const [locationError, setLocationError] = useState('');
+  const [locating, setLocating] = useState(false);
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (locationError || locating) return;
     const form = new FormData(event.currentTarget);
     const ok = await submit({
       action: 'create',
       title: String(form.get('title')),
       description: String(form.get('description')),
       location: String(form.get('location')),
+      address: String(form.get('address')),
+      location_details: String(form.get('location_details')),
+      pin,
       priority: String(form.get('priority')) as 'normal',
     });
     if (ok) close();
@@ -409,7 +445,7 @@ function RequestForm({
           type="button"
           className={styles.iconButton}
           onClick={close}
-          disabled={pending}
+          disabled={pending || locating}
           aria-label="Close new request"
         >
           <X size={20} />
@@ -427,27 +463,69 @@ function RequestForm({
             autoFocus
           />
         </label>
+        <fieldset className={styles.priorityChoices}>
+          <legend>Job priority</legend>
+          {(
+            [
+              ['urgent', 'Immediate attention'],
+              ['high', 'Time-sensitive'],
+              ['normal', 'Routine work'],
+              ['low', 'Can be scheduled'],
+            ] as const
+          ).map(([value, description]) => (
+            <label key={value} data-priority={value}>
+              <input
+                type="radio"
+                name="priority"
+                value={value}
+                defaultChecked={value === 'normal'}
+                required
+              />
+              <span>
+                <strong>{value}</strong>
+                <small>{description}</small>
+              </span>
+            </label>
+          ))}
+        </fieldset>
         <div className={styles.formRow}>
           <label>
-            Location
+            Site / building name
             <input
               name="location"
-              placeholder="Site, building or room"
+              placeholder="Name of the site or building"
               minLength={3}
               maxLength={240}
               required
             />
           </label>
           <label>
-            Priority
-            <select name="priority" defaultValue="normal">
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
+            Full site address
+            <input
+              name="address"
+              placeholder="Street, area and city"
+              minLength={5}
+              maxLength={500}
+              required
+            />
           </label>
         </div>
+        <label>
+          Floor, room, equipment & access details
+          <input
+            name="location_details"
+            placeholder="Floor, room, equipment label, entrance or nearby landmark"
+            maxLength={500}
+          />
+        </label>
+        <LocationPicker
+          disabled={pending}
+          onBusyChange={setLocating}
+          onChange={(next, error) => {
+            setPin(next);
+            setLocationError(error);
+          }}
+        />
         <label>
           Describe the issue
           <textarea
@@ -459,7 +537,11 @@ function RequestForm({
             required
           />
         </label>
-        <button type="submit" className={styles.primary} disabled={pending}>
+        <button
+          type="submit"
+          className={styles.primary}
+          disabled={pending || locating || Boolean(locationError)}
+        >
           {pending ? 'Saving…' : 'Create service request'}
         </button>
       </form>
@@ -523,11 +605,56 @@ function JobDetail({
           {statusLabels[job.status]}
         </span>
       </div>
+      <div className={styles.detailPriority}>
+        <PriorityBadge priority={job.priority} />
+      </div>
       <h2 id="job-detail-title">{job.title}</h2>
       <p className={styles.location}>
         <MapPin size={15} aria-hidden="true" />
         {job.location}
       </p>
+      <div className={styles.preciseLocation}>
+        {job.address ? (
+          <p>
+            <strong>Site address</strong>
+            {job.address}
+          </p>
+        ) : null}
+        {job.location_details ? (
+          <p>
+            <strong>Find the exact spot</strong>
+            {job.location_details}
+          </p>
+        ) : null}
+        {job.pin ? (
+          <>
+            <p>
+              <strong>Pinned coordinates</strong>
+              {job.pin.latitude.toFixed(6)}, {job.pin.longitude.toFixed(6)}
+            </p>
+            <p className={styles.pinHint}>
+              {job.pin.source === 'gps'
+                ? `Device GPS · reported accuracy ±${Math.ceil(job.pin.accuracy_m ?? 0)} m`
+                : 'Manual pin · accuracy not measured'}
+              {job.pin.captured_at
+                ? ` · Captured ${formatLagosDisplay(job.pin.captured_at)} (Lagos time)`
+                : ''}
+            </p>
+            <div className={styles.mapActions}>
+              <a href={locationMapUrl(job.pin)} target="_blank" rel="noopener noreferrer">
+                View map pin ↗
+              </a>
+              <a href={locationMapUrl(job.pin, true)} target="_blank" rel="noopener noreferrer">
+                Get directions ↗
+              </a>
+            </div>
+          </>
+        ) : (
+          <p className={styles.pinHint}>
+            No map pin recorded. Use the site details to locate this job.
+          </p>
+        )}
+      </div>
       <p className={styles.description}>{job.description}</p>
       <dl className={styles.facts}>
         <div>
@@ -700,5 +827,18 @@ function JobDetail({
         </ol>
       </section>
     </section>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: Job['priority'] }) {
+  return (
+    <span className={`${styles.priority} ${styles[priority]}`}>
+      {priority === 'urgent' ? (
+        <AlertCircle size={14} aria-hidden="true" />
+      ) : (
+        <Flag size={13} aria-hidden="true" />
+      )}
+      {priority} priority
+    </span>
   );
 }

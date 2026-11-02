@@ -37,6 +37,9 @@ export function initialDemo(now = Date.now()): Workspace {
     location,
     status,
     priority,
+    address: 'Fictional service campus · Demo City',
+    location_details: location.split('·')[1]?.trim() ?? '',
+    pin: null,
     description: 'Fictional service request for testing the maintenance workflow.',
     reported_by: DEMO_REPORTER.id,
     assigned_to: status === 'requested' ? null : DEMO_TECH.id,
@@ -98,6 +101,9 @@ export function applyDemo(workspace: Workspace, raw: Command, now = Date.now()):
   if (command.action === 'create') {
     const job: Job = {
       ...command,
+      address: command.address ?? '',
+      location_details: command.location_details ?? '',
+      pin: command.pin ?? null,
       id: crypto.randomUUID(),
       status: 'requested',
       reported_by: viewer.id,

@@ -79,6 +79,15 @@ describe.sequential('Maintenance migration on isolated PostgreSQL (PGlite)', () 
       ),
     );
     await db.exec(readFileSync(migration, 'utf8'));
+    await db.exec(
+      readFileSync(
+        migration.replace(
+          '20261102123815_maintenance_service_workflow.sql',
+          '20261102132420_maintenance_precise_locations.sql',
+        ),
+        'utf8',
+      ),
+    );
   }, 30000);
   afterAll(async () => {
     await db.close();
@@ -295,6 +304,72 @@ describe.sequential('Maintenance migration on isolated PostgreSQL (PGlite)', () 
         note: 'Attempting to approve my own job.',
       }),
     ).rejects.toThrow(/independent administrator/);
+  });
+  it('persists address, access details and a valid manual pin', async () => {
+    await as(admin);
+    const pin = {
+      latitude: Math.random() * 80,
+      longitude: Math.random() * 170,
+      source: 'manual',
+      accuracy_m: null,
+      captured_at: null,
+    };
+    const result = await mutate({
+      ...request,
+      address: 'Fictional avenue, Test City',
+      location_details: 'Second floor, room 7, rear entrance',
+      pin,
+    });
+    const row = await db.query<{ address: string; location_details: string; pin: typeof pin }>(
+      'select address,location_details,pin from maintenance_jobs where id=$1',
+      [result.id],
+    );
+    expect(row.rows[0]).toEqual({
+      address: 'Fictional avenue, Test City',
+      location_details: 'Second floor, room 7, rear entrance',
+      pin,
+    });
+  });
+  it('rejects invalid coordinates, missing pin fields and false GPS precision', async () => {
+    const good = {
+      latitude: Math.random() * 80,
+      longitude: Math.random() * 170,
+      source: 'manual',
+      accuracy_m: null,
+      captured_at: null,
+    };
+    for (const pin of [
+      { ...good, latitude: 91 },
+      { ...good, longitude: -181 },
+      { source: 'manual' },
+      { ...good, source: null },
+      { ...good, accuracy_m: 5 },
+      { ...good, source: 'gps' },
+      { ...good, source: 'gps', accuracy_m: 0, captured_at: new Date().toISOString() },
+    ]) {
+      await expect(mutate({ ...request, pin })).rejects.toThrow();
+    }
+  });
+  it('retains reported GPS accuracy and rejects future timestamps', async () => {
+    const pin = {
+      latitude: Math.random() * 80,
+      longitude: Math.random() * 170,
+      source: 'gps',
+      accuracy_m: 75,
+      captured_at: new Date().toISOString(),
+    };
+    const result = await mutate({ ...request, pin });
+    const row = await db.query<{ pin: typeof pin }>(
+      'select pin from maintenance_jobs where id=$1',
+      [result.id],
+    );
+    expect(row.rows[0]?.pin).toEqual(pin);
+    await expect(
+      mutate({
+        ...request,
+        pin: { ...pin, captured_at: new Date(Date.now() + 86400000).toISOString() },
+      }),
+    ).rejects.toThrow(/future/);
   });
   it('rejects a suspended account, including receipt replay', async () => {
     await db.exec(

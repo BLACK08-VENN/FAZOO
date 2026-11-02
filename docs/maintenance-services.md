@@ -101,3 +101,36 @@ technician view, starting work, submitting a completion summary, switching back
 to administrator, and approval to Completed. The event history retained every
 step. This check used the browser-only simulator; hosted Supabase acceptance
 and phone-device checks remain pending.
+
+## Priority and precise locations
+
+Jobs now sort by priority (Urgent, High, Normal, Low), with updated time as the
+secondary order. Strong labelled badges, coloured card edges, a prominent priority
+selector and a separate priority filter help dispatchers spot urgent work.
+
+New request forms collect site/building name, a full address, optional floor/room,
+equipment and access directions, plus an optional precise map pin. Pin input can
+use a one-time, explicitly requested browser GPS reading or manually supplied
+latitude/longitude. No geocoding is inferred from the address and no coordinates
+are invented for sample jobs. Existing requests remain usable without a pin.
+
+Browser GPS requests high accuracy, disallows cached readings, has a timeout and
+shows permission/unavailability errors. The reported metre accuracy and capture
+time are retained; readings broader than 50m display an advisory to retry/add
+indoor details. Manual editing removes GPS precision metadata. GPS is client
+reported information, not verified attendance or proof of being at the site.
+There is no background tracking. A current reading should only be used on site.
+
+Job details show address/access instructions, pin coordinates and labelled GPS or
+manual provenance, with Google Maps pin/directions links. No location is sent to
+Google automatically: those links open only when the user chooses them. This
+version does not embed a map or use a geocoding provider/API key. Pins assist
+outdoor navigation; the floor/room/access directions identify the exact indoor job.
+
+Migration `20261102132420_maintenance_precise_locations.sql` adds location columns
+and refreshes the RPCs, preserving existing permissions and receipt/version rules.
+It remains unapplied to hosted databases. Both maintenance migrations run in the
+local PostgreSQL test suite, covering coordinate limits, missing fields, false GPS
+precision, timestamp checks and persistence. Geolocation unit tests exercise success,
+permission denial, timeout, invalid readings and capture options without requesting
+any person's real location.

@@ -1,3 +1,4 @@
+import { pinSchema } from './location';
 import { z } from 'zod';
 
 export const statuses = [
@@ -27,6 +28,9 @@ export const commandSchema = z.discriminatedUnion('action', [
       title: text(5, 160),
       description: text(10, 3000),
       location: text(3, 240),
+      address: text(5, 500).optional(),
+      location_details: text(0, 500).optional(),
+      pin: pinSchema.nullable().optional(),
       priority: z.enum(['low', 'normal', 'high', 'urgent']),
     })
     .strict(),
@@ -63,6 +67,9 @@ export const jobSchema = z.object({
   title: z.string(),
   description: z.string(),
   location: z.string(),
+  address: z.string().default(''),
+  location_details: z.string().default(''),
+  pin: pinSchema.nullable().default(null),
   priority: z.enum(['low', 'normal', 'high', 'urgent']),
   status: z.enum(statuses),
   reported_by: z.uuid(),
@@ -111,4 +118,12 @@ export function overdue(job: Job, now: number) {
 }
 export function jobNumber(job: Job) {
   return `${job.status === 'requested' ? 'SR' : 'WO'}-${job.id.slice(0, 8).toUpperCase()}`;
+}
+
+export const priorityRank = { urgent: 0, high: 1, normal: 2, low: 3 } as const;
+export function byPriority(a: Job, b: Job) {
+  return (
+    priorityRank[a.priority] - priorityRank[b.priority] ||
+    Date.parse(b.updated_at) - Date.parse(a.updated_at)
+  );
 }
