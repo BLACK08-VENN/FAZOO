@@ -134,3 +134,22 @@ local PostgreSQL test suite, covering coordinate limits, missing fields, false G
 precision, timestamp checks and persistence. Geolocation unit tests exercise success,
 permission denial, timeout, invalid readings and capture options without requesting
 any person's real location.
+
+## Dashboard entry points
+
+The maintenance branch adds a server-rendered summary card to the staff overview
+(including schools), the client brand overview, and both retail/school field-worker
+home views. Existing Service desk navigation remains available on desktop/mobile.
+Cards and navigation stay hidden when `MAINTENANCE_ENABLED` is off; no maintenance
+query runs in that case. A maintenance query failure shows an isolated unavailable
+message and does not break the existing field dashboard.
+
+Administrators see recent organization request/work/urgent/review totals.
+Technicians see their assigned active/overdue/submitted jobs and their own requests.
+Client requesters see only requests they created. All server counts use the
+identity-scoped maintenance RPC and clearly state the 250-job reporting limit.
+The Report an issue link opens the real service desk's new-request form directly.
+
+In the fictional preview, My dashboard and Service desk controls demonstrate the
+same shared summary card for each Preview as role. They do not bypass login or
+organization permissions in the real application.

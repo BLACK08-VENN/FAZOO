@@ -5,7 +5,11 @@ import { loadMaintenanceWorkspace } from '@/lib/maintenance/server';
 import { MaintenanceWorkspace } from '@/components/maintenance/workspace';
 
 export const metadata = { title: 'Service desk — Fazoo' };
-export default async function ServiceDeskPage() {
+export default async function ServiceDeskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ new?: string }>;
+}) {
   if (process.env.MAINTENANCE_ENABLED !== 'true') notFound();
   // Authentication redirects must propagate outside the data-loading error boundary.
   const { client } = await requireApprovedProfile();
@@ -26,5 +30,6 @@ export default async function ServiceDeskPage() {
       </main>
     );
   }
-  return <MaintenanceWorkspace initial={workspace} />;
+  const params = await searchParams;
+  return <MaintenanceWorkspace initial={workspace} startNew={params.new === '1'} />;
 }

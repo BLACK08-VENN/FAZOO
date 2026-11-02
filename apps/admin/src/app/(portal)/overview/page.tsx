@@ -1,3 +1,4 @@
+import { MaintenanceDashboard } from '@/components/maintenance/dashboard';
 import { ActivityChart } from './activity-chart';
 import Link from 'next/link';
 import { requireStaff } from '@/lib/auth';
@@ -241,7 +242,13 @@ export default async function OverviewPage({
   // aggregate below would render an all-zero landing page. Hand those admins
   // the booklist pipeline view instead.
   const orgKind = await resolveOrgKind(client);
-  if (orgKind === 'schools') return <SchoolsOverview client={client} />;
+  if (orgKind === 'schools')
+    return (
+      <>
+        <MaintenanceDashboard client={client} />
+        <SchoolsOverview client={client} />
+      </>
+    );
 
   const params = await searchParams;
   const filters = parseLogFilters(params);
@@ -279,6 +286,7 @@ export default async function OverviewPage({
           }
         />
       </div>
+      <MaintenanceDashboard client={client} />
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Active BAs"

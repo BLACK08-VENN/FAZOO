@@ -1,3 +1,4 @@
+import { MaintenanceDashboard } from '@/components/maintenance/dashboard';
 import Link from 'next/link';
 import { requireClient, type ClientBrand, type ClientProfile } from '@/lib/client-auth';
 import type { FazooClient } from '@fazoo/database';
@@ -103,6 +104,7 @@ export default async function BrandOverviewPage() {
         description="Aggregate metrics across all campaigns."
       />
 
+      <MaintenanceDashboard client={client} requester />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Active campaigns" value={activeCampaigns} />
         <StatCard label="BA-days" value={allLogs.length} />
@@ -215,6 +217,7 @@ async function BrandAmbassadorOverview({
           title="My school overview"
           description="Your logged schools, live progress, next actions and approvals in one place."
         />
+        <MaintenanceDashboard client={client} />
         <SchoolBooklistWorkflow
           organizationId={profile.organization_id}
           userId={profile.id}
@@ -264,6 +267,7 @@ async function BrandAmbassadorOverview({
           </Link>
         </PageHeader>
       </div>
+      <MaintenanceDashboard client={client} />
       <WorkProfile
         client={client}
         profile={profile}

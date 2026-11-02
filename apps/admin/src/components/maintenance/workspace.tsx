@@ -1,5 +1,7 @@
 'use client';
 
+import { MaintenanceDashboardCard } from './dashboard-card';
+import { maintenanceSummary } from '@/lib/maintenance/summary';
 import { LocationPicker } from './location-picker';
 import { locationMapUrl, type LocationPin } from '@/lib/maintenance/location';
 
@@ -50,16 +52,19 @@ type Submit = (command: Command) => Promise<boolean>;
 export function MaintenanceWorkspace({
   initial,
   demo = false,
+  startNew = false,
 }: {
   initial: Workspace;
   demo?: boolean;
+  startNew?: boolean;
 }) {
   const [workspace, setWorkspace] = useState(initial);
   const [selectedId, setSelectedId] = useState([...initial.jobs].sort(byPriority)[0]?.id ?? '');
   const [filter, setFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(startNew);
+  const [dashboardView, setDashboardView] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -168,9 +173,22 @@ export function MaintenanceWorkspace({
           </span>
         </Link>
         <p className={styles.navLabel}>WORKSPACE</p>
-        <span className={styles.activeNav}>
+        {demo ? (
+          <button
+            type="button"
+            className={dashboardView ? styles.activeNav : styles.back}
+            onClick={() => setDashboardView(true)}
+          >
+            My dashboard
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={!dashboardView ? styles.activeNav : styles.back}
+          onClick={() => setDashboardView(false)}
+        >
           <Wrench size={17} aria-hidden="true" /> Service desk
-        </span>
+        </button>
         <div className={styles.sidebarNote}>
           <span className={styles.smallDot} /> One shared picture
           <p>From the first report to the final sign-off.</p>
@@ -210,7 +228,10 @@ export function MaintenanceWorkspace({
           <button
             type="button"
             className={styles.primary}
-            onClick={() => setCreating(true)}
+            onClick={() => {
+              setDashboardView(false);
+              setCreating(true);
+            }}
             disabled={pending}
           >
             <Plus size={17} aria-hidden="true" /> New service request
@@ -252,154 +273,195 @@ export function MaintenanceWorkspace({
             </span>
           )}
         </div>
-        <section className={styles.metrics} aria-label="Service summary">
-          {totals.map(({ name, value, icon: Icon }) => (
-            <div className={styles.metric} key={name}>
-              <span>
-                {name}
-                <Icon size={17} aria-hidden="true" />
-              </span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </section>
-        {feedback ? (
-          <p
-            className={feedback.error ? styles.error : styles.success}
-            role={feedback.error ? 'alert' : 'status'}
+        {demo ? (
+          <div
+            className={styles.previewNavigation}
+            role="group"
+            aria-label="Preview dashboard navigation"
           >
-            {feedback.error ? (
-              <AlertCircle size={17} aria-hidden="true" />
-            ) : (
-              <CheckCircle2 size={17} aria-hidden="true" />
-            )}
-            {feedback.text}
-            {feedback.error && !demo ? (
-              <button type="button" onClick={() => window.location.reload()}>
-                Refresh workspace
-              </button>
-            ) : null}
-          </p>
-        ) : null}
-        {creating ? (
-          <RequestForm submit={submit} pending={pending} close={() => setCreating(false)} />
-        ) : null}
-        <div className={styles.sectionHeading}>
-          <div>
-            <h2>Service activity</h2>
-            <p>
-              {demo
-                ? 'Try the full request-to-approval workflow.'
-                : 'Your most recent 250 visible jobs. Times shown in Lagos time.'}
-            </p>
-          </div>
-          <span className={styles.count}>{visible.length} jobs</span>
-        </div>
-        <div className={styles.toolbar}>
-          <div className={styles.filters} role="group" aria-label="Filter jobs">
-            {[
-              ['all', 'All jobs'],
-              ['requested', 'Requests'],
-              ['mine', 'My work'],
-              ['ready_for_review', 'For approval'],
-              ['completed', 'Completed'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={filter === value}
-                onClick={() => setFilter(value ?? 'all')}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <label className={styles.priorityFilter}>
-            Priority
-            <select
-              aria-label="Filter by priority"
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
+            <button
+              type="button"
+              aria-pressed={dashboardView}
+              onClick={() => setDashboardView(true)}
             >
-              <option value="all">All priorities</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="normal">Normal</option>
-              <option value="low">Low</option>
-            </select>
-          </label>
-          <label className={styles.search}>
-            <Search size={16} aria-hidden="true" />
-            <input
-              aria-label="Search jobs"
-              placeholder="Search jobs or locations"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </label>
-        </div>
-        <div className={styles.board}>
-          <section className={styles.jobList} aria-label="Service requests and work orders">
-            {jobs.length ? (
-              jobs.map((job) => (
-                <button
-                  type="button"
-                  className={`${styles.job} ${selected?.id === job.id ? styles.selected : ''}`}
-                  data-priority={job.priority}
-                  key={job.id}
-                  onClick={() => setSelectedId(job.id)}
-                  aria-pressed={selected?.id === job.id}
-                >
-                  <div className={styles.jobTop}>
-                    <span>{jobNumber(job)}</span>
-                    <PriorityBadge priority={job.priority} />
-                  </div>
-                  <h3>{job.title}</h3>
-                  <p>
-                    <MapPin size={13} aria-hidden="true" />
-                    {job.location}
-                  </p>
-                  {job.address ? <p className={styles.jobAddress}>{job.address}</p> : null}
-                  {job.pin ? (
-                    <span className={styles.pinTag}>
-                      <MapPin size={11} aria-hidden="true" /> Map pin attached
-                    </span>
-                  ) : null}
-                  <div className={styles.jobBottom}>
-                    <span className={styles.status} data-status={job.status}>
-                      {statusLabels[job.status]}
-                    </span>
-                    <ArrowUpRight size={16} aria-hidden="true" />
-                  </div>
-                  <div className={styles.jobMeta}>
-                    <span>{job.technician_name ?? 'Unassigned'}</span>
-                    {overdue(job, now) ? <span className={styles.overdue}>Overdue</span> : null}
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className={styles.empty}>
-                <ClipboardList size={28} aria-hidden="true" />
-                <h3>No jobs here yet</h3>
-                <p>Change your filters or create a service request.</p>
-              </div>
+              My dashboard
+            </button>
+            <button
+              type="button"
+              aria-pressed={!dashboardView}
+              onClick={() => setDashboardView(false)}
+            >
+              Service desk
+            </button>
+          </div>
+        ) : null}
+        {dashboardView ? (
+          <MaintenanceDashboardCard
+            summary={maintenanceSummary(
+              workspace,
+              workspace.viewer.id === DEMO_REPORTER.id,
+              now,
             )}
-          </section>
-          {selected ? (
-            <JobDetail
-              key={`${selected.id}-${selected.version}-${workspace.viewer.id}`}
-              job={selected}
-              workspace={workspace}
-              submit={submit}
-              pending={pending}
-            />
-          ) : (
-            <section className={styles.detail}>
-              <h3>Your job details will appear here</h3>
-              <p>Choose a request to see its instructions, updates and review history.</p>
+            onOpen={() => setDashboardView(false)}
+            onNew={() => {
+              setDashboardView(false);
+              setCreating(true);
+            }}
+          />
+        ) : (
+          <>
+            <section className={styles.metrics} aria-label="Service summary">
+              {totals.map(({ name, value, icon: Icon }) => (
+                <div className={styles.metric} key={name}>
+                  <span>
+                    {name}
+                    <Icon size={17} aria-hidden="true" />
+                  </span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
             </section>
-          )}
-        </div>
+            {feedback ? (
+              <p
+                className={feedback.error ? styles.error : styles.success}
+                role={feedback.error ? 'alert' : 'status'}
+              >
+                {feedback.error ? (
+                  <AlertCircle size={17} aria-hidden="true" />
+                ) : (
+                  <CheckCircle2 size={17} aria-hidden="true" />
+                )}
+                {feedback.text}
+                {feedback.error && !demo ? (
+                  <button type="button" onClick={() => window.location.reload()}>
+                    Refresh workspace
+                  </button>
+                ) : null}
+              </p>
+            ) : null}
+            {creating ? (
+              <RequestForm submit={submit} pending={pending} close={() => setCreating(false)} />
+            ) : null}
+            <div className={styles.sectionHeading}>
+              <div>
+                <h2>Service activity</h2>
+                <p>
+                  {demo
+                    ? 'Try the full request-to-approval workflow.'
+                    : 'Your most recent 250 visible jobs. Times shown in Lagos time.'}
+                </p>
+              </div>
+              <span className={styles.count}>{visible.length} jobs</span>
+            </div>
+            <div className={styles.toolbar}>
+              <div className={styles.filters} role="group" aria-label="Filter jobs">
+                {[
+                  ['all', 'All jobs'],
+                  ['requested', 'Requests'],
+                  ['mine', 'My work'],
+                  ['ready_for_review', 'For approval'],
+                  ['completed', 'Completed'],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={filter === value}
+                    onClick={() => setFilter(value ?? 'all')}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <label className={styles.priorityFilter}>
+                Priority
+                <select
+                  aria-label="Filter by priority"
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                >
+                  <option value="all">All priorities</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="normal">Normal</option>
+                  <option value="low">Low</option>
+                </select>
+              </label>
+              <label className={styles.search}>
+                <Search size={16} aria-hidden="true" />
+                <input
+                  aria-label="Search jobs"
+                  placeholder="Search jobs or locations"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </label>
+            </div>
+            <div className={styles.board}>
+              <section className={styles.jobList} aria-label="Service requests and work orders">
+                {jobs.length ? (
+                  jobs.map((job) => (
+                    <button
+                      type="button"
+                      className={`${styles.job} ${selected?.id === job.id ? styles.selected : ''}`}
+                      data-priority={job.priority}
+                      key={job.id}
+                      onClick={() => setSelectedId(job.id)}
+                      aria-pressed={selected?.id === job.id}
+                    >
+                      <div className={styles.jobTop}>
+                        <span>{jobNumber(job)}</span>
+                        <PriorityBadge priority={job.priority} />
+                      </div>
+                      <h3>{job.title}</h3>
+                      <p>
+                        <MapPin size={13} aria-hidden="true" />
+                        {job.location}
+                      </p>
+                      {job.address ? <p className={styles.jobAddress}>{job.address}</p> : null}
+                      {job.pin ? (
+                        <span className={styles.pinTag}>
+                          <MapPin size={11} aria-hidden="true" /> Map pin attached
+                        </span>
+                      ) : null}
+                      <div className={styles.jobBottom}>
+                        <span className={styles.status} data-status={job.status}>
+                          {statusLabels[job.status]}
+                        </span>
+                        <ArrowUpRight size={16} aria-hidden="true" />
+                      </div>
+                      <div className={styles.jobMeta}>
+                        <span>{job.technician_name ?? 'Unassigned'}</span>
+                        {overdue(job, now) ? (
+                          <span className={styles.overdue}>Overdue</span>
+                        ) : null}
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className={styles.empty}>
+                    <ClipboardList size={28} aria-hidden="true" />
+                    <h3>No jobs here yet</h3>
+                    <p>Change your filters or create a service request.</p>
+                  </div>
+                )}
+              </section>
+              {selected ? (
+                <JobDetail
+                  key={`${selected.id}-${selected.version}-${workspace.viewer.id}`}
+                  job={selected}
+                  workspace={workspace}
+                  submit={submit}
+                  pending={pending}
+                />
+              ) : (
+                <section className={styles.detail}>
+                  <h3>Your job details will appear here</h3>
+                  <p>Choose a request to see its instructions, updates and review history.</p>
+                </section>
+              )}
+            </div>
+          </>
+        )}
         <footer className={styles.footer}>
           <span>FAZOO · Service operations</span>
           <span>Reported → Assigned → In progress → Reviewed</span>
