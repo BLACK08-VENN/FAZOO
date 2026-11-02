@@ -29,7 +29,7 @@ export default async function SignInPage({
         }
       />
       <div aria-hidden="true" className="absolute inset-0 bg-[#0A1A3A]/10" />
-      <section className={`${styles.infoPanel} relative hidden min-h-screen overflow-hidden px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12`}>
+      <section className="relative hidden min-h-screen overflow-hidden px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12">
 
         <div
           className="fazoo-rise relative flex items-center gap-3"
