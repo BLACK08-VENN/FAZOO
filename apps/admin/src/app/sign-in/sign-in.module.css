@@ -1,7 +1,7 @@
-/* Plum #600053 and navy #0A1A3A from the supplied reference. */
+/* Navy, plum and a soft lavender-tonic accent. */
 .surface {
   --color-primary: #d6b6dc;
-  --color-deep: #e7cbe4;
+  --color-deep: #d8cff0;
   --color-bright: #c7a4d0;
   --color-ink: #f6f1f8;
   --color-charcoal: #f6f1f8;
@@ -11,7 +11,7 @@
   --color-white: #ffffff;
   background-color: #06132d;
   background-image:
-    linear-gradient(180deg, rgb(4 12 32 / 0.15), rgb(7 15 36 / 0.2) 48%, rgb(7 12 30 / 0.3)),
+    linear-gradient(180deg, rgb(18 22 47 / 0.52), rgb(20 23 48 / 0.58) 48%, rgb(10 18 38 / 0.72)),
     url('/brand/field-workspace-waves-4k.webp');
   background-size: cover;
   background-position: center;
@@ -47,37 +47,59 @@
 }
 
 .glassTile {
+  --color-primary: #65508f;
+  --color-deep: #513a78;
+  --color-bright: #7b65a8;
+  --color-ink: #17233e;
+  --color-charcoal: #17233e;
+  --color-muted: #596078;
+  --color-lavender: #e8e2f2;
+  --color-bad: #a32246;
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.025) 48%),
-    rgb(10 26 58 / 0.3);
-  border: 1px solid rgb(255 255 255 / 0.23);
+    linear-gradient(145deg, rgb(255 255 255 / 0.94), rgb(233 228 246 / 0.88));
+  border: 1px solid rgb(255 255 255 / 0.8);
   box-shadow:
-    0 28px 80px rgb(0 0 0 / 0.28),
-    inset 0 1px 0 rgb(255 255 255 / 0.32),
-    inset 0 -1px 0 rgb(255 255 255 / 0.04);
-  -webkit-backdrop-filter: blur(28px) saturate(155%);
-  backdrop-filter: blur(28px) saturate(155%);
+    0 28px 80px rgb(0 0 0 / 0.24),
+    inset 0 1px 0 #ffffff;
+  -webkit-backdrop-filter: blur(28px) saturate(105%);
+  backdrop-filter: blur(28px) saturate(105%);
 }
 
 .glassTile input:not([type='hidden']):not([type='radio']) {
-  background-color: rgb(10 26 58 / 0.35);
-  border-color: rgb(226 211 236 / 0.3);
+  background-color: rgb(255 255 255 / 0.72);
+  border-color: #b8b2cb;
+  color: #17233e;
+}
+
+.glassTile input:not([type='hidden']):not([type='radio'])::placeholder {
+  color: #687087;
+  opacity: 1;
 }
 
 .glassTile input:not([type='hidden']):not([type='radio']):focus {
-  background-color: rgb(10 26 58 / 0.6);
+  background-color: #ffffff;
+  border-color: #65508f;
+  box-shadow: 0 0 0 4px rgb(101 80 143 / 0.12);
+}
+
+.glassTile button[type='submit'] {
+  background: #58417f;
+  border-color: #58417f;
+  box-shadow: 0 8px 20px rgb(81 58 120 / 0.16);
+}
+
+.glassTile button[type='submit']:hover:not(:disabled) {
+  background: #463166;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glassTile {
-    background: #17203b;
-  }
+  .glassTile { background: #f1edf8; }
 }
 
 @media (max-width: 640px) {
   .glassTile {
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(105%);
+    backdrop-filter: blur(18px) saturate(105%);
   }
 }
 
@@ -111,7 +133,7 @@
   min-height: 2.75rem;
   border: 1px solid transparent;
   border-radius: 0.875rem;
-  color: #d6c9de;
+  color: #d8cff0;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -125,7 +147,7 @@
   color: #fff;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
 }
-.showcaseChoice:focus-visible { outline: 2px solid #e7cbe4; outline-offset: -3px; }
+.showcaseChoice:focus-visible { outline: 2px solid #d8cff0; outline-offset: -3px; }
 .showcaseContent { padding: 1.5rem; }
 .showcaseHeading { display: flex; align-items: center; gap: 0.75rem; }
 .showcaseIcon {
@@ -137,9 +159,9 @@
   border: 1px solid rgb(231 203 228 / 0.2);
   border-radius: 0.875rem;
   background: rgb(214 182 220 / 0.1);
-  color: #e7cbe4;
+  color: #d8cff0;
 }
-.showcaseEyebrow { color: #d8c8df; font-size: 0.6875rem; line-height: 1.5; }
+.showcaseEyebrow { color: #d8cff0; font-size: 0.6875rem; line-height: 1.5; }
 .showcaseIndex { margin-left: auto; color: #c8b8d1; font-size: 0.625rem; white-space: nowrap; letter-spacing: 0.08em; }
 .showcaseTitle { margin-top: 1.125rem; color: #fff; font-size: 1.25rem; font-weight: 600; line-height: 1.4; letter-spacing: -0.025em; }
 .showcaseDescription { margin-top: 0.5rem; min-height: 2.75rem; color: #d0c5db; font-size: 0.8125rem; line-height: 1.7; }
@@ -154,11 +176,11 @@
   margin-top: 0.125rem;
   border-radius: 50%;
   background: rgb(214 182 220 / 0.15);
-  color: #e7cbe4;
+  color: #d8cff0;
 }
 .workflowSteps p { color: #f6f1f8; font-size: 0.8125rem; font-weight: 600; line-height: 1.5; }
 .workflowSteps span:not(.workflowCheck) { color: #c7bdd2; font-size: 0.75rem; line-height: 1.6; }
-.showcaseOutcome { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid rgb(255 255 255 / 0.1); padding-top: 1rem; color: #e7cbe4; font-size: 0.75rem; font-weight: 500; }
+.showcaseOutcome { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid rgb(255 255 255 / 0.1); padding-top: 1rem; color: #d8cff0; font-size: 0.75rem; font-weight: 500; }
 
 @media (prefers-reduced-motion: reduce) {
   .showcaseChoice { transition: none; }
