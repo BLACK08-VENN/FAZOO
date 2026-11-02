@@ -29,12 +29,7 @@ export default async function SignInPage({
         }
       />
       <div aria-hidden="true" className="absolute inset-0 bg-[#0A1A3A]/10" />
-      <section className="relative hidden min-h-screen overflow-hidden bg-transparent px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12">
-        <div aria-hidden="true" className="absolute inset-0">
-          <div className="fazoo-aurora absolute -left-32 top-1/4 h-[32rem] w-[32rem] rounded-full bg-[#600053]/45 blur-[100px]" />
-          <div className="fazoo-aurora-delayed absolute -right-28 bottom-0 h-96 w-96 rounded-full bg-[#B78ACA]/20 blur-[110px]" />
-          <div className="absolute inset-0 opacity-[0.025] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
-        </div>
+      <section className={`${styles.infoPanel} relative hidden min-h-screen overflow-hidden px-14 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-12`}>
 
         <div
           className="fazoo-rise relative flex items-center gap-3"
