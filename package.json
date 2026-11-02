@@ -19,12 +19,15 @@
     "db:push": "cd supabase && supabase db push",
     "db:types": "supabase gen types typescript --local > packages/database/src/database.types.ts",
     "migrate:csv": "tsx scripts/migrate-csv.ts",
+    "migrate:b2": "node --env-file=.env.b2-migration scripts/b2-migration.mjs",
+    "test:b2": "node --test scripts/b2-migration.test.mjs",
     "clean": "pnpm -r exec rm -rf node_modules .next .expo dist",
     "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,css,md,json}\"",
     "security:check": "node --import tsx --test scripts/security.test.ts && node --test scripts/forge-regression.test.mjs && node scripts/security-audit.mjs"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "3.1157.0",
     "@eslint/js": "^9.36.0",
     "@fazoo/typescript-config": "workspace:*",
     "@supabase/supabase-js": "2.112.3",
