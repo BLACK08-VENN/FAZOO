@@ -47,6 +47,12 @@ export default function PreviewLayout({
         >
           Hanan case study
         </Link>
+        <Link
+          href="/maintenance-preview/airtel"
+          className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          Airtel maintenance
+        </Link>
       </nav>
       {children}
     </>

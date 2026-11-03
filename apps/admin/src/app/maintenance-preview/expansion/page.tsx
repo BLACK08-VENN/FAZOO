@@ -47,6 +47,14 @@ const previews = [
     icon: Store,
     label: 'Interactive case study',
   },
+  {
+    title: 'Airtel maintenance case study',
+    description:
+      'Fictional internet-service faults, fibre-link jobs, router inspections, parts delays and technician-to-manager completion approval.',
+    href: '/maintenance-preview/airtel',
+    icon: Wrench,
+    label: 'ISP maintenance demo',
+  },
 ] as const;
 export default function ExpansionPreviewHome() {
   if (
@@ -119,8 +127,9 @@ export default function ExpansionPreviewHome() {
           <p className="mt-3 text-xs leading-6 text-muted">
             The interactive demos use fictional records and stay in your
             browser. No company data, supplier orders, payments or external
-            notifications are sent. The Hanan case study is unaffiliated and its
-            competitor prices are illustrative.
+            notifications are sent. The Hanan and Airtel case studies are
+            unaffiliated. All company scenarios and competitor prices are
+            illustrative.
           </p>
           <p className="mt-3 text-xs leading-6 text-muted">
             Client campaign requests, administrator approvals and brand
