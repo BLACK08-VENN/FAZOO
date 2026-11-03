@@ -5,19 +5,24 @@ import { PageHeader, StatCard } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
-import { ProgressBar } from '@/components/brand-analytics';
+import {
+  AttendanceBar,
+  ProgressBar,
+  campaignStatusLabel,
+  campaignStatusTone,
+} from '@/components/brand-analytics';
 import { TrendsChart } from '../../../../(portal)/overview/trends-chart';
 import { ActivityTable } from '../../../_components/activity-table';
 import {
-  baPerformance,
+  attendanceMix,
   campaignTimeline,
-  loadBrandBas,
   loadBrandCampaign,
   loadBrandLogs,
   loadBrandStores,
   skuBreakdown,
   storePerformance,
   summarizeLogs,
+  toActivityLogs,
   trendFromLogs,
 } from '@/server/brand-analytics';
 
@@ -33,18 +38,18 @@ export default async function BrandCampaignDetailPage({
   const campaign = await loadBrandCampaign(client, id);
   if (!campaign) notFound();
 
-  const [logs, bas, stores] = await Promise.all([
+  const [logs, stores] = await Promise.all([
     loadBrandLogs(client, { campaignId: id }),
-    loadBrandBas(client),
     loadBrandStores(client),
   ]);
 
   const summary = summarizeLogs(logs);
   const trend = trendFromLogs(logs);
   const timeline = campaignTimeline(campaign);
-  const baRows = baPerformance(bas, logs).filter((row) => row.logs > 0);
   const storeRows = storePerformance(stores, logs).filter((row) => row.logs > 0);
   const skus = skuBreakdown(logs);
+  const mix = attendanceMix(logs);
+  const fieldMembers = new Set(logs.map((log) => log.ba_id)).size;
   const recent = logs.slice(0, 50);
 
   const timelineLabel =
@@ -71,10 +76,10 @@ export default async function BrandCampaignDetailPage({
           All campaigns
         </Link>
         <Link
-          href="/brand/bas"
+          href="/brand/stores"
           className="inline-flex min-h-11 items-center justify-center rounded-lg border border-ink/15 bg-white px-4 text-sm font-medium text-ink hover:bg-lavender"
         >
-          Team performance
+          Store coverage
         </Link>
       </PageHeader>
 
@@ -84,18 +89,8 @@ export default async function BrandCampaignDetailPage({
             <p className="text-sm font-semibold text-ink">Campaign progress</p>
             <p className="mt-0.5 text-xs text-muted">{timelineLabel}</p>
           </div>
-          <Badge
-            tone={
-              campaign.status === 'active'
-                ? 'success'
-                : campaign.status === 'completed'
-                  ? 'purple'
-                  : campaign.status === 'cancelled'
-                    ? 'danger'
-                    : 'neutral'
-            }
-          >
-            {campaign.status}
+          <Badge tone={campaignStatusTone(campaign.status)}>
+            {campaignStatusLabel(campaign.status)}
           </Badge>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -109,11 +104,20 @@ export default async function BrandCampaignDetailPage({
         </div>
       </Card>
 
+      {campaign.review_note ? (
+        <Card className="mt-4 p-4">
+          <p className="text-xs text-muted">
+            <span className="font-semibold text-ink">Administrator note:</span>{' '}
+            {campaign.review_note}
+          </p>
+        </Card>
+      ) : null}
+
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="BA-days" value={summary.logs} />
+        <StatCard label="Field days" value={summary.logs} />
         <StatCard label="Completion" value={`${summary.completionRate}%`} />
         <StatCard label="Units sold" value={summary.units} />
-        <StatCard label="Brand ambassadors" value={baRows.length} />
+        <StatCard label="Field members" value={fieldMembers} />
         <StatCard label="Stores covered" value={storeRows.length} />
         <StatCard label="Flagged reports" value={summary.flagged} />
       </div>
@@ -131,53 +135,14 @@ export default async function BrandCampaignDetailPage({
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <div className="border-b border-ink/8 px-5 py-4">
-            <h2 className="text-sm font-semibold text-ink">Brand ambassador performance</h2>
-            <p className="mt-0.5 text-xs text-muted">Everyone who has logged activity here.</p>
+            <h2 className="text-sm font-semibold text-ink">Attendance mix</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Field days for this campaign, without ambassador identities.
+            </p>
           </div>
-          <TableWrap className="rounded-none border-0">
-            <Table>
-              <thead>
-                <tr>
-                  <Th>BA</Th>
-                  <Th className="text-right">Days</Th>
-                  <Th className="text-right">Units</Th>
-                  <Th className="text-right">Completion</Th>
-                  <Th className="text-right">Flagged</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {baRows.length === 0 ? (
-                  <EmptyRow colSpan={5}>No activity logged for this campaign yet.</EmptyRow>
-                ) : (
-                  baRows.map((row) => (
-                    <tr key={row.ba.id} className="hover:bg-lavender/40">
-                      <Td>
-                        <Link
-                          href={`/brand/bas/${row.ba.id}`}
-                          className="font-medium text-deep underline underline-offset-2"
-                        >
-                          {row.ba.full_name}
-                        </Link>
-                        {row.ba.phone ? (
-                          <p className="text-xs text-muted">{row.ba.phone}</p>
-                        ) : null}
-                      </Td>
-                      <Td className="text-right tabular-nums">{row.logs}</Td>
-                      <Td className="text-right font-medium tabular-nums">{row.units}</Td>
-                      <Td className="text-right tabular-nums">{row.completionRate}%</Td>
-                      <Td className="text-right tabular-nums">
-                        {row.flagged > 0 ? (
-                          <span className="font-medium text-bad">{row.flagged}</span>
-                        ) : (
-                          <span className="text-muted">0</span>
-                        )}
-                      </Td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </TableWrap>
+          <div className="p-5">
+            <AttendanceBar mix={mix} />
+          </div>
         </Card>
 
         <Card>
@@ -192,7 +157,7 @@ export default async function BrandCampaignDetailPage({
                   <Th>Store</Th>
                   <Th className="text-right">Visits</Th>
                   <Th className="text-right">Units</Th>
-                  <Th className="text-right">BAs</Th>
+                  <Th className="text-right">Field team</Th>
                   <Th className="text-right">Last visit</Th>
                 </tr>
               </thead>
@@ -265,7 +230,7 @@ export default async function BrandCampaignDetailPage({
           </p>
         </div>
         <ActivityTable
-          logs={recent}
+          logs={toActivityLogs(recent)}
           linkCampaigns={false}
           empty="No log activity for this campaign yet."
         />

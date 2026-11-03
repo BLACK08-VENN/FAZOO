@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { lagosDateTime } from '@fazoo/config';
-import type { BrandLog } from '@/server/brand-analytics';
+import type { ActivityLog } from '@/server/brand-analytics';
 import { Badge, attendanceTone, completionBadge } from '@/components/ui/badge';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 
@@ -15,24 +15,22 @@ function time(value: string | null): string {
 
 export function ActivityTable({
   logs,
-  linkBas = true,
   linkStores = true,
   linkCampaigns = true,
   empty = 'No activity recorded yet.',
 }: {
-  logs: BrandLog[];
-  linkBas?: boolean;
+  logs: ActivityLog[];
   linkStores?: boolean;
   linkCampaigns?: boolean;
   empty?: string;
 }) {
+  const columns = linkCampaigns ? 7 : 6;
   return (
     <TableWrap>
       <Table>
         <thead>
           <tr>
             <Th>Date</Th>
-            <Th>Brand ambassador</Th>
             <Th className="hidden md:table-cell">Store</Th>
             <Th className="hidden lg:table-cell">Campaign</Th>
             <Th>Attendance</Th>
@@ -43,23 +41,11 @@ export function ActivityTable({
         </thead>
         <tbody>
           {logs.length === 0 ? (
-            <EmptyRow colSpan={8}>{empty}</EmptyRow>
+            <EmptyRow colSpan={columns}>{empty}</EmptyRow>
           ) : (
             logs.map((log) => (
               <tr key={log.id} className="hover:bg-lavender/40">
                 <Td className="whitespace-nowrap text-xs tabular-nums">{log.attendance_date}</Td>
-                <Td>
-                  {linkBas ? (
-                    <Link
-                      href={`/brand/bas/${log.ba_id}`}
-                      className="font-medium text-deep underline underline-offset-2"
-                    >
-                      {log.ba_name}
-                    </Link>
-                  ) : (
-                    <span className="font-medium">{log.ba_name}</span>
-                  )}
-                </Td>
                 <Td className="hidden md:table-cell">
                   {linkStores ? (
                     <Link

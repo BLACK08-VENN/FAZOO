@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { WEEKDAY_NAMES } from '@fazoo/config';
 import { assignmentInputSchema, campaignInputSchema } from '@fazoo/validation';
@@ -9,6 +10,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label, Select } from '@/components/ui/input';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
 import { requireStaff } from '@/lib/auth';
+import { reviewCampaignAction } from './actions';
 
 function campaignStatusTone(status: string) {
   switch (status) {
@@ -16,6 +18,9 @@ function campaignStatusTone(status: string) {
       return 'success' as const;
     case 'completed':
       return 'purple' as const;
+    case 'pending_approval':
+      return 'warning' as const;
+    case 'rejected':
     case 'cancelled':
       return 'danger' as const;
     default:
@@ -23,8 +28,13 @@ function campaignStatusTone(status: string) {
   }
 }
 
-export default async function CampaignsPage() {
+export default async function CampaignsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ review?: string; reason?: string }>;
+}) {
   const { client, profile } = await requireStaff();
+  const params = await searchParams;
 
   const [{ data: campaigns }, { data: bas }, { data: stores }] = await Promise.all([
     client.from('campaigns').select('*').order('start_date', { ascending: false }),
@@ -37,12 +47,83 @@ export default async function CampaignsPage() {
     client.from('stores').select('id, name').eq('status', 'active').order('name'),
   ]);
 
+  const pending = (campaigns ?? []).filter(
+    (campaign) => campaign.status === 'pending_approval',
+  );
+
   return (
     <>
       <PageHeader
         title="Campaigns"
-        description="Create campaigns quickly, assign BAs, and remove campaigns you no longer need."
+        description="Create campaigns quickly, review brand requests, assign BAs, and remove campaigns you no longer need."
       />
+
+      {params.review === 'ok' ? (
+        <Card className="mb-5 border-ok/30 bg-ok/5 p-4">
+          <p className="text-sm font-medium text-ok" role="status">
+            Campaign review saved.
+          </p>
+        </Card>
+      ) : null}
+      {params.review === 'error' ? (
+        <Card className="mb-5 border-bad/30 bg-bad/5 p-4">
+          <p className="text-sm font-medium text-bad" role="alert">
+            {params.reason ?? 'The campaign review could not be saved.'}
+          </p>
+        </Card>
+      ) : null}
+
+      {pending.length > 0 ? (
+        <Card className="mb-6">
+          <CardHeader
+            title={`Approval queue · ${pending.length}`}
+            description="Brand clients can request activations. Approving starts the campaign; rejecting keeps it visible to the client with your note."
+          />
+          <CardBody className="space-y-4">
+            {pending.map((campaign) => (
+              <div
+                key={campaign.id}
+                className="rounded-lg border border-ink/10 bg-ink/[0.02] p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink">{campaign.name}</p>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {campaign.start_date} → {campaign.end_date ?? 'ongoing'}
+                      {campaign.description ? ` · ${campaign.description}` : ''}
+                    </p>
+                  </div>
+                  <Badge tone="warning">Awaiting approval</Badge>
+                </div>
+                <form action={reviewCampaignAction} className="mt-3 space-y-2">
+                  <input type="hidden" name="campaign_id" value={campaign.id} />
+                  <input type="hidden" name="client_request_id" value={randomUUID()} />
+                  <Input
+                    name="note"
+                    placeholder="Optional note to the brand client"
+                    aria-label={`Review note for ${campaign.name}`}
+                    maxLength={2000}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="submit" name="decision" value="approve" className="h-9 px-3 text-xs">
+                      Approve and activate
+                    </Button>
+                    <Button
+                      type="submit"
+                      name="decision"
+                      value="reject"
+                      variant="destructive"
+                      className="h-9 px-3 text-xs"
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            ))}
+          </CardBody>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <TableWrap>
@@ -77,7 +158,9 @@ export default async function CampaignsPage() {
                       </Td>
                       <Td className="whitespace-nowrap">
                         <Badge tone={campaignStatusTone(campaign.status)}>
-                          {campaign.status}
+                          {campaign.status === 'pending_approval'
+                            ? 'Awaiting approval'
+                            : campaign.status}
                         </Badge>
                         {(campaign as unknown as { stock_count_model?: boolean })
                           .stock_count_model ? (

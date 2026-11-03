@@ -32,8 +32,10 @@ export type OrganizationKind = (typeof OrganizationKind)[keyof typeof Organizati
 
 export const CampaignStatus = {
   Draft: 'draft',
+  PendingApproval: 'pending_approval',
   Active: 'active',
   Completed: 'completed',
+  Rejected: 'rejected',
   Cancelled: 'cancelled',
 } as const;
 export type CampaignStatus = (typeof CampaignStatus)[keyof typeof CampaignStatus];

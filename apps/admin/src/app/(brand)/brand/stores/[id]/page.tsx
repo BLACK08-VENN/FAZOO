@@ -5,17 +5,17 @@ import { PageHeader, StatCard } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyRow, Table, TableWrap, Td, Th } from '@/components/ui/table';
-import { ProgressBar } from '@/components/brand-analytics';
+import { AttendanceBar, ProgressBar } from '@/components/brand-analytics';
 import { TrendsChart } from '../../../../(portal)/overview/trends-chart';
 import { ActivityTable } from '../../../_components/activity-table';
 import {
-  baPerformance,
+  attendanceMix,
   campaignPerformance,
-  loadBrandBas,
   loadBrandCampaigns,
   loadBrandLogs,
   loadBrandStore,
   summarizeLogs,
+  toActivityLogs,
   trendFromLogs,
 } from '@/server/brand-analytics';
 
@@ -31,16 +31,16 @@ export default async function BrandStoreDetailPage({
   const store = await loadBrandStore(client, id);
   if (!store) notFound();
 
-  const [logs, bas, campaigns] = await Promise.all([
+  const [logs, campaigns] = await Promise.all([
     loadBrandLogs(client, { storeId: id }),
-    loadBrandBas(client),
     loadBrandCampaigns(client),
   ]);
 
   const summary = summarizeLogs(logs);
   const trend = trendFromLogs(logs);
-  const baRows = baPerformance(bas, logs).filter((row) => row.logs > 0);
   const campaignRows = campaignPerformance(campaigns, logs).filter((row) => row.logs > 0);
+  const mix = attendanceMix(logs);
+  const fieldMembers = new Set(logs.map((log) => log.ba_id)).size;
   const recent = logs.slice(0, 50);
   const lastVisit = logs.find((log) => log.attendance_status === 'present')?.attendance_date ?? null;
 
@@ -62,9 +62,9 @@ export default async function BrandStoreDetailPage({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Visits" value={summary.present} />
-        <StatCard label="BA-days" value={summary.logs} />
+        <StatCard label="Field days" value={summary.logs} />
         <StatCard label="Units sold" value={summary.units} />
-        <StatCard label="Brand ambassadors" value={baRows.length} />
+        <StatCard label="Field members" value={fieldMembers} />
         <StatCard label="Completion" value={`${summary.completionRate}%`} />
         <StatCard label="Flagged reports" value={summary.flagged} />
       </div>
@@ -102,45 +102,14 @@ export default async function BrandStoreDetailPage({
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <div className="border-b border-ink/8 px-5 py-4">
-            <h2 className="text-sm font-semibold text-ink">Brand ambassadors</h2>
-            <p className="mt-0.5 text-xs text-muted">Who has worked this store.</p>
+            <h2 className="text-sm font-semibold text-ink">Attendance mix</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Field days at this store, without ambassador identities.
+            </p>
           </div>
-          <TableWrap className="rounded-none border-0">
-            <Table>
-              <thead>
-                <tr>
-                  <Th>BA</Th>
-                  <Th className="text-right">Visits</Th>
-                  <Th className="text-right">Units</Th>
-                  <Th className="text-right">Completion</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {baRows.length === 0 ? (
-                  <EmptyRow colSpan={4}>No ambassador activity yet.</EmptyRow>
-                ) : (
-                  baRows.map((row) => (
-                    <tr key={row.ba.id} className="hover:bg-lavender/40">
-                      <Td>
-                        <Link
-                          href={`/brand/bas/${row.ba.id}`}
-                          className="font-medium text-deep underline underline-offset-2"
-                        >
-                          {row.ba.full_name}
-                        </Link>
-                        {row.ba.phone ? (
-                          <p className="text-xs text-muted">{row.ba.phone}</p>
-                        ) : null}
-                      </Td>
-                      <Td className="text-right tabular-nums">{row.present}</Td>
-                      <Td className="text-right font-medium tabular-nums">{row.units}</Td>
-                      <Td className="text-right tabular-nums">{row.completionRate}%</Td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </TableWrap>
+          <div className="p-5">
+            <AttendanceBar mix={mix} />
+          </div>
         </Card>
 
         <Card>
@@ -194,7 +163,7 @@ export default async function BrandStoreDetailPage({
           </p>
         </div>
         <ActivityTable
-          logs={recent}
+          logs={toActivityLogs(recent)}
           linkStores={false}
           empty="No activity has been logged at this store yet."
         />

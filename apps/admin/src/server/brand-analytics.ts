@@ -9,6 +9,8 @@ export type BrandCampaign = {
   status: string;
   start_date: string;
   end_date: string | null;
+  review_note?: string | null;
+  reviewed_at?: string | null;
 };
 
 export type BrandBa = {
@@ -48,6 +50,27 @@ export type BrandLog = {
   skus: BrandSkuUnits[];
 };
 
+export type ActivityLog = Omit<BrandLog, 'ba_id' | 'ba_name'>;
+
+/** Strips field-worker identifiers before logs cross into a client component. */
+export function toActivityLogs(logs: BrandLog[]): ActivityLog[] {
+  return logs.map((log) => ({
+    id: log.id,
+    campaign_id: log.campaign_id,
+    campaign_name: log.campaign_name,
+    store_id: log.store_id,
+    store_name: log.store_name,
+    attendance_date: log.attendance_date,
+    attendance_status: log.attendance_status,
+    status: log.status,
+    flagged: log.flagged,
+    checkin_at: log.checkin_at,
+    checkout_at: log.checkout_at,
+    units: log.units,
+    skus: log.skus,
+  }));
+}
+
 export type LogFilters = {
   campaignId?: string;
   baId?: string;
@@ -60,7 +83,6 @@ export type LogFilters = {
 const LOG_SELECT = `
   id, campaign_id, brand_ambassador_id, store_id, attendance_date,
   attendance_status, status, flagged, checkin_at, checkout_at,
-  profiles!daily_logs_brand_ambassador_id_fkey ( id, full_name ),
   stores!daily_logs_store_id_fkey ( id, name ),
   campaigns!daily_logs_campaign_id_fkey ( name ),
   sales_entries ( quantity, skus ( name ) )
@@ -77,7 +99,6 @@ function dayIndex(date: string): number {
 }
 
 function mapLog(row: Record<string, unknown>): BrandLog {
-  const profile = row.profiles as { id?: string; full_name?: string } | null;
   const store = row.stores as { id?: string; name?: string } | null;
   const campaign = row.campaigns as { name?: string } | null;
   const entries =
@@ -90,7 +111,7 @@ function mapLog(row: Record<string, unknown>): BrandLog {
     campaign_id: row.campaign_id as string,
     campaign_name: campaign?.name ?? 'Unknown campaign',
     ba_id: row.brand_ambassador_id as string,
-    ba_name: profile?.full_name ?? 'Unknown brand ambassador',
+    ba_name: 'Field member',
     store_id: row.store_id as string,
     store_name: store?.name ?? 'Unknown store',
     attendance_date: row.attendance_date as string,
@@ -110,7 +131,7 @@ function mapLog(row: Record<string, unknown>): BrandLog {
 export async function loadBrandCampaigns(client: FazooClient): Promise<BrandCampaign[]> {
   const { data, error } = await client
     .from('campaigns')
-    .select('id, name, description, status, start_date, end_date')
+    .select('id, name, description, status, start_date, end_date, review_note, reviewed_at')
     .order('start_date', { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -123,7 +144,7 @@ export async function loadBrandCampaign(
 ): Promise<BrandCampaign | null> {
   const { data, error } = await client
     .from('campaigns')
-    .select('id, name, description, status, start_date, end_date')
+    .select('id, name, description, status, start_date, end_date, review_note, reviewed_at')
     .eq('id', id)
     .maybeSingle();
 
@@ -268,6 +289,75 @@ export function trendFromLogs(logs: BrandLog[]): TrendSeriesPoint[] {
       units: value.units,
       completionPct: value.total === 0 ? 0 : Math.round((value.completed / value.total) * 100),
     }));
+}
+
+export type AttendanceMix = {
+  present: number;
+  sickLeave: number;
+  absent: number;
+  weeklyOff: number;
+  total: number;
+  presentPct: number;
+  sickLeavePct: number;
+  absentPct: number;
+  weeklyOffPct: number;
+};
+
+export function attendanceMix(logs: BrandLog[]): AttendanceMix {
+  const total = logs.length;
+  const pct = (value: number) => (total === 0 ? 0 : Math.round((value / total) * 100));
+  const present = logs.filter((log) => log.attendance_status === 'present').length;
+  const sickLeave = logs.filter((log) => log.attendance_status === 'sick_leave').length;
+  const absent = logs.filter((log) => log.attendance_status === 'absent').length;
+  const weeklyOff = logs.filter((log) => log.attendance_status === 'weekly_off').length;
+
+  return {
+    present,
+    sickLeave,
+    absent,
+    weeklyOff,
+    total,
+    presentPct: pct(present),
+    sickLeavePct: pct(sickLeave),
+    absentPct: pct(absent),
+    weeklyOffPct: pct(weeklyOff),
+  };
+}
+
+export type WeekdayPoint = { day: string; visits: number; units: number };
+
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export function weekdayActivity(logs: BrandLog[]): WeekdayPoint[] {
+  const buckets = WEEKDAY_LABELS.map((day) => ({ day, visits: 0, units: 0 }));
+  for (const log of logs) {
+    const index = (new Date(`${log.attendance_date}T00:00:00Z`).getUTCDay() + 6) % 7;
+    const bucket = buckets[index];
+    if (!bucket) continue;
+    if (log.attendance_status === 'present') bucket.visits += 1;
+    bucket.units += log.units;
+  }
+  return buckets;
+}
+
+export type StoreActivity = { id: string; name: string; visits: number; units: number };
+
+export function storeActivity(logs: BrandLog[]): StoreActivity[] {
+  const byStore = new Map<string, StoreActivity>();
+  for (const log of logs) {
+    const entry = byStore.get(log.store_id) ?? {
+      id: log.store_id,
+      name: log.store_name,
+      visits: 0,
+      units: 0,
+    };
+    if (log.attendance_status === 'present') entry.visits += 1;
+    entry.units += log.units;
+    byStore.set(log.store_id, entry);
+  }
+  return [...byStore.values()].sort(
+    (a, b) => b.visits - a.visits || b.units - a.units || a.name.localeCompare(b.name),
+  );
 }
 
 export function skuBreakdown(logs: BrandLog[]): BrandSkuUnits[] {

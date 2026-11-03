@@ -5,7 +5,11 @@ import { PageHeader, StatCard } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Label, Select } from '@/components/ui/input';
-import { ProgressBar } from '@/components/brand-analytics';
+import {
+  ProgressBar,
+  campaignStatusLabel,
+  campaignStatusTone,
+} from '@/components/brand-analytics';
 import {
   campaignPerformance,
   loadBrandCampaigns,
@@ -13,7 +17,14 @@ import {
   summarizeLogs,
 } from '@/server/brand-analytics';
 
-const STATUSES = ['active', 'completed', 'draft', 'cancelled'] as const;
+const STATUSES = [
+  'pending_approval',
+  'active',
+  'completed',
+  'rejected',
+  'draft',
+  'cancelled',
+] as const;
 
 function isStatus(value: string | undefined): value is (typeof STATUSES)[number] {
   return STATUSES.includes(value as (typeof STATUSES)[number]);
@@ -22,7 +33,7 @@ function isStatus(value: string | undefined): value is (typeof STATUSES)[number]
 export default async function BrandCampaignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; requested?: string }>;
 }) {
   const { client, profile } = await requireClient();
   if (profile.role === 'brand_ambassador') redirect('/brand');
@@ -57,10 +68,10 @@ export default async function BrandCampaignsPage({
         description="Track how every campaign is progressing in the field — time elapsed, reporting completion, coverage and sales."
       >
         <Link
-          href="/brand/bas"
-          className="inline-flex min-h-11 items-center justify-center rounded-lg border border-ink/15 bg-white px-4 text-sm font-medium text-ink hover:bg-lavender"
+          href="/brand/campaigns/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-deep"
         >
-          Team performance
+          Request a campaign
         </Link>
         <Link
           href="/brand/stores"
@@ -70,12 +81,20 @@ export default async function BrandCampaignsPage({
         </Link>
       </PageHeader>
 
+      {params.requested ? (
+        <Card className="mb-5 border-ok/30 bg-ok/5 p-4">
+          <p className="text-sm font-medium text-ok" role="status">
+            Campaign request submitted. It is now awaiting administrator approval.
+          </p>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Campaigns" value={performance.length} hint={`${active} active`} />
-        <StatCard label="BA-days" value={summary.logs} hint={`${summary.completed} completed`} />
+        <StatCard label="Field days" value={summary.logs} hint={`${summary.completed} completed`} />
         <StatCard label="Units sold" value={summary.units} />
         <StatCard label="Completion" value={`${summary.completionRate}%`} />
-        <StatCard label="Active BAs" value={bas} />
+        <StatCard label="Active field team" value={bas} />
         <StatCard label="Stores covered" value={stores} />
       </div>
 
@@ -152,18 +171,8 @@ export default async function BrandCampaignsPage({
                         {campaign.start_date} → {campaign.end_date ?? 'ongoing'}
                       </p>
                     </div>
-                    <Badge
-                      tone={
-                        campaign.status === 'active'
-                          ? 'success'
-                          : campaign.status === 'completed'
-                            ? 'purple'
-                            : campaign.status === 'cancelled'
-                              ? 'danger'
-                              : 'neutral'
-                      }
-                    >
-                      {campaign.status}
+                    <Badge tone={campaignStatusTone(campaign.status)}>
+                      {campaignStatusLabel(campaign.status)}
                     </Badge>
                   </div>
 
@@ -185,7 +194,7 @@ export default async function BrandCampaignsPage({
                   <div className="mt-4 grid grid-cols-4 gap-2 border-t border-ink/8 pt-3 text-center">
                     <div>
                       <p className="text-sm font-bold tabular-nums text-ink">{row.bas}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-muted">BAs</p>
+                      <p className="text-[10px] uppercase tracking-wide text-muted">Field</p>
                     </div>
                     <div>
                       <p className="text-sm font-bold tabular-nums text-ink">{row.stores}</p>
@@ -193,13 +202,20 @@ export default async function BrandCampaignsPage({
                     </div>
                     <div>
                       <p className="text-sm font-bold tabular-nums text-ink">{row.logs}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-muted">BA-days</p>
+                      <p className="text-[10px] uppercase tracking-wide text-muted">Field days</p>
                     </div>
                     <div>
                       <p className="text-sm font-bold tabular-nums text-ink">{row.units}</p>
                       <p className="text-[10px] uppercase tracking-wide text-muted">Units</p>
                     </div>
                   </div>
+
+                  {campaign.review_note ? (
+                    <p className="mt-3 rounded-lg bg-ink/[0.03] px-3 py-2 text-xs text-muted">
+                      <span className="font-semibold text-ink">Admin note:</span>{' '}
+                      {campaign.review_note}
+                    </p>
+                  ) : null}
 
                   {row.flagged > 0 ? (
                     <p className="mt-3 text-xs font-medium text-bad">

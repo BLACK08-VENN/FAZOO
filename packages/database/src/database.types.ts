@@ -599,6 +599,10 @@ export type Database = {
           id: string
           name: string
           organization_id: string
+          requested_by: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           start_date: string
           status: Database["public"]["Enums"]["campaign_status"]
           updated_at: string
@@ -611,6 +615,10 @@ export type Database = {
           id?: string
           name: string
           organization_id: string
+          requested_by?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["campaign_status"]
           updated_at?: string
@@ -623,6 +631,10 @@ export type Database = {
           id?: string
           name?: string
           organization_id?: string
+          requested_by?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["campaign_status"]
           updated_at?: string
@@ -1766,6 +1778,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_review_campaign: {
+        Args: {
+          p_campaign_id: string
+          p_client_request_id: string
+          p_decision: string
+          p_note?: string
+        }
+        Returns: Json
+      }
       admin_create_print_order: {
         Args: {
           p_client_request_id?: string
@@ -2278,6 +2299,16 @@ export type Database = {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
       }
+      client_create_campaign: {
+        Args: {
+          p_client_request_id: string
+          p_description?: string
+          p_end_date?: string
+          p_name: string
+          p_start_date?: string
+        }
+        Returns: Json
+      }
       complete_receipt: {
         Args: { p_client_request_id: string; p_result: Json }
         Returns: undefined
@@ -2462,7 +2493,13 @@ export type Database = {
         | "completed"
         | "on_hold"
         | "cancelled"
-      campaign_status: "draft" | "active" | "completed" | "cancelled"
+      campaign_status:
+        | "draft"
+        | "pending_approval"
+        | "active"
+        | "completed"
+        | "rejected"
+        | "cancelled"
       daily_log_status: "open" | "completed" | "cancelled"
       dispatch_means:
         | "courier"
@@ -2678,7 +2715,14 @@ export const Constants = {
         "on_hold",
         "cancelled",
       ],
-      campaign_status: ["draft", "active", "completed", "cancelled"],
+      campaign_status: [
+        "draft",
+        "pending_approval",
+        "active",
+        "completed",
+        "rejected",
+        "cancelled",
+      ],
       daily_log_status: ["open", "completed", "cancelled"],
       dispatch_means: [
         "courier",

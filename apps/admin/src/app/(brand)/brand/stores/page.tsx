@@ -45,19 +45,19 @@ export default async function BrandStoresPage({
     <>
       <PageHeader
         title="Store coverage"
-        description="See which stores are being visited, how often, and which ambassadors are covering them."
+        description="See which stores are being visited, how often, and how field coverage is distributed."
       >
         <Link
-          href="/brand/bas"
+          href="/brand/campaigns"
           className="inline-flex min-h-11 items-center justify-center rounded-lg border border-ink/15 bg-white px-4 text-sm font-medium text-ink hover:bg-lavender"
         >
-          Team performance
+          Campaign analytics
         </Link>
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Stores" value={rows.length} hint={`${visited} visited`} />
-        <StatCard label="Visits" value={summary.present} hint="present BA-days" />
+        <StatCard label="Visits" value={summary.present} hint="present field days" />
         <StatCard label="Units sold" value={summary.units} />
         <StatCard label="Completion" value={`${summary.completionRate}%`} />
         <StatCard label="Not visited" value={notVisited} />
@@ -157,7 +157,7 @@ export default async function BrandStoresPage({
                   <p className="mt-0.5 text-xl font-bold tabular-nums text-ink">{row.units}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted">BAs</p>
+                  <p className="text-[11px] uppercase tracking-wide text-muted">Field team</p>
                   <p className="mt-0.5 text-xl font-bold tabular-nums text-ink">{row.bas}</p>
                 </div>
                 <div>
@@ -182,7 +182,7 @@ export default async function BrandStoresPage({
               <Th>Store</Th>
               <Th>Status</Th>
               <Th className="text-right">Visits</Th>
-              <Th className="text-right">BAs</Th>
+              <Th className="text-right">Field team</Th>
               <Th className="text-right">Units</Th>
               <Th className="text-right">Completion</Th>
               <Th className="text-right">Flagged</Th>

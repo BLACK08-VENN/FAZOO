@@ -8,13 +8,24 @@ import { Badge } from '@/components/ui/badge';
 import { TrendsChart, type TrendPoint } from '../../(portal)/overview/trends-chart';
 import { SchoolBooklistWorkflow } from './logs/school-booklist-workflow';
 import {
-  baPerformance,
+  AttendanceBar,
+  RankedBars,
+  WeekdayBars,
+  campaignStatusLabel,
+  campaignStatusTone,
+} from '@/components/brand-analytics';
+import { ActivityTable } from '../_components/activity-table';
+import {
+  attendanceMix,
   campaignPerformance,
-  loadBrandBas,
   loadBrandCampaigns,
   loadBrandLogs,
+  skuBreakdown,
+  storeActivity,
   summarizeLogs,
+  toActivityLogs,
   trendFromLogs,
+  weekdayActivity,
 } from '@/server/brand-analytics';
 
 type BaHistoryRow = {
@@ -35,41 +46,65 @@ export default async function BrandOverviewPage() {
     return <BrandAmbassadorOverview brand={brand} profile={profile} />;
   }
 
-  const [campaigns, allLogs, bas] = await Promise.all([
+  const [campaigns, allLogs] = await Promise.all([
     loadBrandCampaigns(client),
     loadBrandLogs(client),
-    loadBrandBas(client),
   ]);
 
   const summary = summarizeLogs(allLogs);
   const trend = trendFromLogs(allLogs);
   const campaignRows = campaignPerformance(campaigns, allLogs);
-  const baRows = baPerformance(bas, allLogs).filter((row) => row.logs > 0);
   const activeCampaigns = campaigns.filter((campaign) => campaign.status === 'active').length;
-  const activeBas = new Set(allLogs.map((log) => log.ba_id)).size;
+  const pendingCampaigns = campaigns.filter(
+    (campaign) => campaign.status === 'pending_approval',
+  );
   const activeStores = new Set(
     allLogs
       .filter((log) => log.attendance_status === 'present')
       .map((log) => log.store_id),
   ).size;
+  const mix = attendanceMix(allLogs);
+  const weekdays = weekdayActivity(allLogs);
+  const stores = storeActivity(allLogs);
+  const skus = skuBreakdown(allLogs);
 
   return (
     <>
       <PageHeader
-        title="Campaign Performance"
-        description="Aggregate metrics across all campaigns."
-      />
+        title="Campaign performance"
+        description={`Live field analytics for ${brand.name}. Ambassador personal details are never shown here.`}
+      >
+        <Link
+          href="/brand/campaigns/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-deep"
+        >
+          Request a campaign
+        </Link>
+      </PageHeader>
 
       <MaintenanceDashboard client={client} requester />
+
+      {pendingCampaigns.length > 0 ? (
+        <Card className="mt-5 border-warn/30 bg-warn/5 p-4">
+          <p className="text-sm font-semibold text-ink">
+            {pendingCampaigns.length} campaign request
+            {pendingCampaigns.length === 1 ? ' is' : 's are'} awaiting administrator approval.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            You can track the decision under campaign analytics. Activation starts after approval.
+          </p>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Active campaigns" value={activeCampaigns} />
-        <StatCard label="BA-days" value={summary.logs} />
+        <StatCard label="Awaiting approval" value={pendingCampaigns.length} />
+        <StatCard label="Field days" value={summary.logs} />
         <StatCard label="Units sold" value={summary.units} />
         <StatCard label="Completion rate" value={`${summary.completionRate}%`} />
-        <StatCard label="Active BAs" value={activeBas} />
+        <StatCard label="Attendance rate" value={`${summary.attendanceRate}%`} />
         <StatCard label="Active stores" value={activeStores} />
-        <StatCard label="Completed days" value={summary.completed} />
-        <StatCard label="Open / incomplete" value={summary.open} />
+        <StatCard label="Flagged reports" value={summary.flagged} />
       </div>
 
       <Card className="mt-6">
@@ -82,12 +117,76 @@ export default async function BrandOverviewPage() {
         <TrendsChart data={trend} />
       </Card>
 
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card>
+          <div className="border-b border-ink/8 px-5 py-4">
+            <h2 className="text-sm font-semibold text-ink">Attendance mix</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              How field days are made up across present, sick, absent and weekly off.
+            </p>
+          </div>
+          <div className="p-5">
+            <AttendanceBar mix={mix} />
+          </div>
+        </Card>
+
+        <Card>
+          <div className="border-b border-ink/8 px-5 py-4">
+            <h2 className="text-sm font-semibold text-ink">Weekly rhythm</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Units recorded by weekday. Useful for planning activations and rest days.
+            </p>
+          </div>
+          <div className="p-5">
+            <WeekdayBars data={weekdays} />
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="text-sm font-semibold text-ink">Store coverage leaders</h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Stores ranked by present visits in the loaded range.
+            </p>
+          </div>
+          <RankedBars
+            unit="visits"
+            empty="No store visits recorded yet."
+            items={stores.slice(0, 8).map((store) => ({
+              id: store.id,
+              label: store.name,
+              value: store.visits,
+              href: `/brand/stores/${store.id}`,
+              hint: `${store.units} units`,
+            }))}
+          />
+        </Card>
+
+        <Card className="p-5">
+          <div className="mb-4">
+            <h2 className="text-sm font-semibold text-ink">Product leaders</h2>
+            <p className="mt-0.5 text-xs text-muted">SKUs ranked by units sold.</p>
+          </div>
+          <RankedBars
+            unit="units"
+            empty="No SKU sales recorded yet."
+            items={skus.slice(0, 8).map((sku) => ({
+              id: sku.name,
+              label: sku.name,
+              value: sku.quantity,
+            }))}
+          />
+        </Card>
+      </div>
+
       <Card className="mt-6">
         <div className="flex items-start justify-between gap-3 border-b border-ink/8 px-5 py-4">
           <div>
             <h2 className="text-sm font-semibold text-ink">Campaigns</h2>
             <p className="mt-0.5 text-xs text-muted">
-              Progress and sales across every campaign.
+              Progress, approval status and sales across every campaign.
             </p>
           </div>
           <Link href="/brand/campaigns" className="text-xs font-medium text-deep underline">
@@ -105,16 +204,21 @@ export default async function BrandOverviewPage() {
                 className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-lavender/40"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-ink">{row.campaign.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium text-ink">{row.campaign.name}</p>
+                    <Badge tone={campaignStatusTone(row.campaign.status)}>
+                      {campaignStatusLabel(row.campaign.status)}
+                    </Badge>
+                  </div>
                   <p className="truncate text-xs text-muted">
                     {row.campaign.start_date} → {row.campaign.end_date ?? 'ongoing'} · {row.bas}{' '}
-                    BA{row.bas === 1 ? '' : 's'}
+                    field member{row.bas === 1 ? '' : 's'}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-4 text-right sm:gap-6">
                   <div>
                     <p className="text-sm font-semibold text-ink">{row.logs}</p>
-                    <p className="text-xs text-muted">BA-days</p>
+                    <p className="text-xs text-muted">Field days</p>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-ink">{row.units}</p>
@@ -132,56 +236,16 @@ export default async function BrandOverviewPage() {
       </Card>
 
       <Card className="mt-6">
-        <div className="flex items-start justify-between gap-3 border-b border-ink/8 px-5 py-4">
-          <div>
-            <h2 className="text-sm font-semibold text-ink">Team performance</h2>
-            <p className="mt-0.5 text-xs text-muted">
-              Top ambassadors by units sold. Full board in Team performance.
-            </p>
-          </div>
-          <Link href="/brand/bas" className="text-xs font-medium text-deep underline">
-            View all
-          </Link>
+        <div className="border-b border-ink/8 px-5 py-4">
+          <h2 className="text-sm font-semibold text-ink">Recent field activity</h2>
+          <p className="mt-0.5 text-xs text-muted">
+            Latest logs without ambassador personal details.
+          </p>
         </div>
-        <div className="divide-y divide-ink/5">
-          {baRows.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-muted">
-              No ambassador activity has been logged yet.
-            </p>
-          ) : (
-            baRows.slice(0, 5).map((row) => (
-              <Link
-                key={row.ba.id}
-                href={`/brand/bas/${row.ba.id}`}
-                className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-lavender/40"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-ink">{row.ba.full_name}</p>
-                  <p className="truncate text-xs text-muted">
-                    {row.campaignNames.length > 0
-                      ? row.campaignNames.join(', ')
-                      : 'No campaign activity'}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-4 text-right sm:gap-6">
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{row.logs}</p>
-                    <p className="text-xs text-muted">Days</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{row.units}</p>
-                    <p className="text-xs text-muted">Units</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{row.completionRate}%</p>
-                    <p className="text-xs text-muted">Completion</p>
-                  </div>
-                  {row.flagged > 0 ? <Badge tone="danger">{row.flagged}</Badge> : null}
-                </div>
-              </Link>
-            ))
-          )}
-        </div>
+        <ActivityTable
+          logs={toActivityLogs(allLogs.slice(0, 25))}
+          empty="No field activity has been logged yet."
+        />
       </Card>
     </>
   );
