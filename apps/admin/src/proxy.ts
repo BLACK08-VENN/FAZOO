@@ -33,12 +33,15 @@ export async function proxy(request: NextRequest) {
     res.headers.set('Cache-Control', 'private, no-store');
     return res;
   };
-  let response = secure(NextResponse.next({ request: { headers: request.headers } }));
+  let response = secure(
+    NextResponse.next({ request: { headers: request.headers } }),
+  );
 
   // Redirect responses must carry any refreshed or cleared session cookies too.
   const redirectWithSession = (target: URL) => {
     const redirect = secure(NextResponse.redirect(target));
-    for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+    for (const cookie of response.cookies.getAll())
+      redirect.cookies.set(cookie);
     return redirect;
   };
   const pathname = request.nextUrl.pathname;
@@ -49,6 +52,9 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
+    // Credential-free preview root opens the combined demo hub; real portal paths stay protected.
+    if (process.env.VERCEL_ENV === 'preview' && !url && pathname === '/')
+      return response;
     // Unconfigured environment: allow public paths, block portal routes.
     if (!isPublic) {
       return secure(NextResponse.redirect(new URL('/sign-in', request.url)));
@@ -65,7 +71,9 @@ export async function proxy(request: NextRequest) {
         for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
-        response = secure(NextResponse.next({ request: { headers: request.headers } }));
+        response = secure(
+          NextResponse.next({ request: { headers: request.headers } }),
+        );
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);
         }
@@ -90,7 +98,10 @@ export async function proxy(request: NextRequest) {
       .select('role, account_status')
       .eq('id', user.id)
       .single();
-    const target = postSignInPath(profile, request.nextUrl.searchParams.get('next') ?? '');
+    const target = postSignInPath(
+      profile,
+      request.nextUrl.searchParams.get('next') ?? '',
+    );
     return redirectWithSession(new URL(target, request.url));
   }
 
