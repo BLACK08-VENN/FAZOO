@@ -203,6 +203,9 @@ export function MaintenanceWorkspace({
             <span>
               <strong>Interactive preview</strong> · Fictional data. Changes reset on refresh.
             </span>
+            <Link href="/maintenance-preview/hanan" className="font-semibold underline">
+              Hanan case study
+            </Link>
             <Link href="/maintenance-preview/style" className="font-semibold underline">
               Explore app styling
             </Link>
