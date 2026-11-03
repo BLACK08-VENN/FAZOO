@@ -156,7 +156,7 @@ export function initialWorkerSession(now = Date.now()): WorkerSession {
         title: s[0] as string,
         location: s[1] as string,
         address: tech
-          ? 'Operations district · Site ' + String.fromCharCode(66 + index)
+          ? 'Operations district · ' + String(s[1])
           : 'Retail district · Store ' + String.fromCharCode(65 + index),
         access: tech
           ? 'Check in with the site coordinator before entering the equipment area.'
@@ -167,7 +167,7 @@ export function initialWorkerSession(now = Date.now()): WorkerSession {
           : 'Complete the assigned checklist, record any stock gaps and attach a display photo before submitting the visit report.',
         priority: s[3] as Assignment['priority'],
         status: s[2] as Status,
-        assignedAt: at,
+        assignedAt: index === 0 ? at : new Date(now - 90 * 60000).toISOString(),
         dueAt: new Date(now + Number(s[4]) * 3600000).toISOString(),
         read: index !== 0,
         arrivedAt:

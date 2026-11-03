@@ -3,7 +3,7 @@ import { applyWorkerCommand, initialWorkerSession, workerSessionSchema } from '.
 describe('personal assignment workflow', () => {
 it('keeps notification reading separate from acknowledgement and enforces arrival', () => {
  const seed=initialWorkerSession(); const read=applyWorkerCommand(seed,'Technician',{action:'open',id:'tech-1'});
- expect(seed.assignments[0].read).toBe(false); expect(read.assignments[0].status).toBe('new');
+ expect(seed.assignments[0]?.read).toBe(false); expect(read.assignments[0]?.status).toBe('new');
  expect(applyWorkerCommand(read,'Technician',{action:'open',id:'tech-1'})).toBe(read);
  expect(()=>applyWorkerCommand(read,'Technician',{action:'start',id:'tech-1'})).toThrow();
  expect(()=>applyWorkerCommand(read,'Merchandiser',{action:'open',id:'tech-1'})).toThrow();
@@ -15,7 +15,7 @@ it('requires the technician checklist and preserves pending approval', () => {
  s=applyWorkerCommand(s,'Technician',{action:'resume',id:'tech-1',note:'Replacement cable received'});
  for(const taskId of ['task-0','task-1']) s=applyWorkerCommand(s,'Technician',{action:'task',id:'tech-1',taskId,done:true});
  s=applyWorkerCommand(s,'Technician',{action:'submit',id:'tech-1',note:'Connection restored and tested.'});
- expect(s.assignments[0].status).toBe('ready_for_review');
+ expect(s.assignments[0]?.status).toBe('ready_for_review');
  expect(()=>applyWorkerCommand(s,'Technician',{action:'start',id:'tech-1'})).toThrow();
 });
 it('requires retail photo evidence and prevents technician-only actions', () => {
