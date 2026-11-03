@@ -182,6 +182,56 @@ export const sessionSchema = z
   })
   .strict();
 export type Session = z.infer<typeof sessionSchema>;
+/** Illustrative prices only: not retailer observations or a live competitor feed. */
+export function competitorSamples(now = Date.now()): DemoData['observations'] {
+  const at = new Date(now - 3600000).toISOString();
+  return [
+    {
+      brand: 'Toilex',
+      prices: [350, 365, 340],
+      promotion:
+        'Illustrative 10-roll tissue pack. Sample multi-buy display; not a verified brand offer.',
+    },
+    {
+      brand: 'Celine',
+      prices: [330, 345, 325],
+      promotion:
+        'Illustrative 10-roll tissue pack. Sample shelf-price promotion; not a verified brand offer.',
+    },
+  ].flatMap(({ brand, prices, promotion }) =>
+    outlets.map((outlet, index) => ({
+      id: 'sample-competitor-' + brand.toLowerCase() + '-' + index,
+      outlet,
+      competitor: brand,
+      category: products[0],
+      price: prices[index]!,
+      promotion,
+      createdAt: at,
+    })),
+  );
+}
+/** Add missing fixtures to an older browser demo without deleting its work or queue. */
+export function withCompetitorSamples(
+  session: Session,
+  now = Date.now(),
+): Session {
+  const ids = new Set(session.data.observations.map((o) => o.id));
+  const missing = competitorSamples(now).filter((o) => !ids.has(o.id));
+  if (!missing.length) return session;
+  return {
+    ...session,
+    data: {
+      ...session.data,
+      observations: [
+        ...session.data.observations,
+        ...missing.slice(
+          0,
+          Math.max(0, 200 - session.data.observations.length),
+        ),
+      ],
+    },
+  };
+}
 export function initialSession(now = Date.now()): Session {
   const at = new Date(now - 3600000).toISOString();
   return {
@@ -216,7 +266,7 @@ export function initialSession(now = Date.now()): Session {
       ],
       orders: [],
       checks: [],
-      observations: [],
+      observations: competitorSamples(now),
       assets: [
         {
           id: 'asset-demo-a',

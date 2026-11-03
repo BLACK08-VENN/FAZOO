@@ -36,6 +36,7 @@ import {
   applyCommand,
   initialSession,
   sessionSchema,
+  withCompetitorSamples,
   products,
   outlets,
   roles,
@@ -477,9 +478,9 @@ export function HananDemo() {
     window.addEventListener('offline', online);
     try {
       const saved = localStorage.getItem(key);
-      const value = saved
-        ? sessionSchema.parse(JSON.parse(saved))
-        : initialSession();
+      const value = withCompetitorSamples(
+        saved ? sessionSchema.parse(JSON.parse(saved)) : initialSession(),
+      );
       current.current = value;
       setSession(value);
     } catch {
@@ -1202,12 +1203,23 @@ export function HananDemo() {
           ) : null}
           {tab === 'Competitor intel' ? (
             <div className="grid gap-4 lg:grid-cols-2">
+              <p className="rounded-xl border border-warn/20 bg-warn/5 p-4 text-xs leading-6 text-muted lg:col-span-2">
+                Toilex and Celine are shown with invented prices and promotions
+                for demonstration. The sample comparison uses illustrative
+                10-roll tissue packs across three fictional outlets. This is not
+                live market data.
+              </p>
               {d.observations
                 .filter((o) => relevant(o.competitor + ' ' + o.outlet))
                 .map((o) => (
                   <Card key={o.id}>
                     <CardBody>
-                      <h2 className="text-sm font-semibold">{o.competitor}</h2>
+                      <div className="flex items-center justify-between gap-3">
+                        <h2 className="text-sm font-semibold">
+                          {o.competitor}
+                        </h2>
+                        <Badge tone="warning">Sample data</Badge>
+                      </div>
                       <p className="mt-2 text-xs text-muted">
                         {o.outlet} · {o.category}
                       </p>
@@ -1216,7 +1228,8 @@ export function HananDemo() {
                       </p>
                       <p className="mt-3 text-sm">{o.promotion}</p>
                       <p className="mt-3 text-xs text-muted">
-                        Observed {time(o.createdAt)} · fictional comparison
+                        Sample timestamp: {time(o.createdAt)} · fictional
+                        comparison
                       </p>
                     </CardBody>
                   </Card>
