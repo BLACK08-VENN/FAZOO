@@ -16,6 +16,14 @@ export const metadata = {
 };
 const previews = [
   {
+    title: 'My work · Field teams',
+    description:
+      'See your assignments, respond to notifications, record arrival and submit completed jobs or store visits.',
+    href: '/maintenance-preview/my-work',
+    icon: LayoutDashboard,
+    label: 'Personal workspace',
+  },
+  {
     title: 'Sign in & request access',
     description: 'Access your account or request access for your organization.',
     href: '/sign-in',

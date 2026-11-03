@@ -53,6 +53,12 @@ export default function PreviewLayout({
         >
           Airtel maintenance
         </Link>
+        <Link
+          href="/maintenance-preview/my-work"
+          className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          My work
+        </Link>
       </nav>
       {children}
     </>
