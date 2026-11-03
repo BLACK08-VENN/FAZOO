@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { HananDemo } from '@/components/retail-demo/workspace';
 
 export const metadata = {
-  title: 'Hanan retail case study — Fazoo demo',
+  title: 'Hanan retail operations — Fazoo',
   robots: { index: false, follow: false },
 };
 export default function HananPreviewPage() {

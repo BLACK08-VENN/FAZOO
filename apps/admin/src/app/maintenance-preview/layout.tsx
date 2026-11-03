@@ -14,26 +14,26 @@ export default function PreviewLayout({
   return (
     <>
       <nav
-        aria-label="Expansion preview navigation"
+        aria-label="Workspace navigation"
         className="no-print flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-white/10 bg-[#15223e] px-4 py-3 text-[11px] text-[#e8e4f3] sm:px-8"
       >
         <Link
           href="/maintenance-preview/expansion"
           className="inline-flex min-h-9 items-center font-semibold text-[#d5c4ee] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          All previews
+          Workspaces
         </Link>
         <Link
           href="/sign-in"
           className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          Sign-in
+          Sign in
         </Link>
         <Link
           href="/maintenance-preview/style"
           className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          App styling
+          Operations
         </Link>
         <Link
           href="/maintenance-preview"
@@ -45,7 +45,7 @@ export default function PreviewLayout({
           href="/maintenance-preview/hanan"
           className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
         >
-          Hanan case study
+          Hanan retail
         </Link>
         <Link
           href="/maintenance-preview/airtel"

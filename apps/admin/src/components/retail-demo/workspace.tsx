@@ -9,6 +9,7 @@ import {
   type InputHTMLAttributes,
 } from 'react';
 import Link from 'next/link';
+import { workspaceLabel } from '@/lib/retail-demo/copy';
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -85,7 +86,9 @@ function Field({
           defaultValue={props.defaultValue}
         >
           {options.map((v) => (
-            <option key={v}>{v}</option>
+            <option key={v} value={v}>
+              {workspaceLabel(v)}
+            </option>
           ))}
         </Select>
       ) : (
@@ -116,9 +119,7 @@ async function photoData(file: File): Promise<string> {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const result = canvas.toDataURL('image/jpeg', 0.55);
     if (result.length > 180000)
-      throw new Error(
-        'Image is too detailed for browser demo storage. Choose a smaller image.',
-      );
+      throw new Error('Image is too large to save. Choose a smaller image.');
     return result;
   } finally {
     URL.revokeObjectURL(url);
@@ -206,7 +207,7 @@ function CaptureForm({
             ? 'equipment record'
             : tab.toLowerCase().replace(/s$/, ''))
         }
-        description="Fictional case-study entry · Saved only in this browser"
+        description="Enter the details below."
         actions={
           <Button
             type="button"
@@ -223,16 +224,14 @@ function CaptureForm({
           {retail ? (
             <>
               <Field
-                label="Demo outlet"
+                label="Outlet"
                 name="outlet"
                 options={outlets}
                 defaultValue={prefill?.outlet}
               />
               <Field
                 label={
-                  tab === 'Competitor intel'
-                    ? 'Product category'
-                    : 'Case-study product'
+                  tab === 'Competitor intel' ? 'Product category' : 'Product'
                 }
                 name="product"
                 options={products}
@@ -293,9 +292,7 @@ function CaptureForm({
                 options={['Meets standard', 'Needs attention']}
               />
               <div>
-                <Label htmlFor="retail-photo">
-                  Shelf photo · optional, demo images only
-                </Label>
+                <Label htmlFor="retail-photo">Shelf photo · optional</Label>
                 <Input
                   id="retail-photo"
                   type="file"
@@ -324,7 +321,7 @@ function CaptureForm({
               {photo ? (
                 <img
                   src={photo}
-                  alt="Selected demo shelf evidence"
+                  alt="Shelf photo"
                   className="h-32 w-40 rounded-lg object-cover"
                 />
               ) : null}
@@ -350,7 +347,7 @@ function CaptureForm({
           {tab === 'Competitor intel' ? (
             <>
               <Field
-                label="Fictional competitor label"
+                label="Competitor name"
                 name="competitor"
                 minLength={3}
                 maxLength={100}
@@ -391,7 +388,7 @@ function CaptureForm({
           ) : null}
           <div className="flex gap-3 sm:col-span-2">
             <Button type="submit" disabled={busy}>
-              {busy ? 'Preparing photo…' : 'Save demo entry'}
+              {busy ? 'Preparing photo…' : 'Save entry'}
             </Button>
             <Button type="button" variant="outline" onClick={close}>
               Cancel
@@ -488,7 +485,7 @@ export function HananDemo() {
       current.current = value;
       setSession(value);
       setError(
-        'Saved demo data could not be read. Fresh sample data is shown; use Reset demo to replace it.',
+        'Saved workspace data could not be read. Restore sample data to start again.',
       );
     }
     return () => {
@@ -505,7 +502,7 @@ export function HananDemo() {
       return true;
     } catch {
       setError(
-        'Browser storage could not save this change. Nothing was submitted. Free browser storage or reset the demo.',
+        'Your changes could not be saved. Free browser storage or restore the workspace and try again.',
       );
       return false;
     }
@@ -524,22 +521,18 @@ export function HananDemo() {
       if (simulate || !connected) {
         if (prev.queue.length >= 20)
           throw new Error(
-            'Demo queue is full. Sync or discard queued entries first.',
+            'The pending queue is full. Sync or discard updates first.',
           );
         if (!persist({ ...prev, queue: [...prev.queue, env] })) return false;
         setMessage(
-          'Saved to the browser demo queue. Reconnect and choose Sync demo queue to apply it.',
+          'Saved offline. Reconnect and select Sync updates to apply your changes.',
         );
       } else {
         if (prev.queue.length)
-          throw new Error(
-            'Sync pending demo entries before making new online changes.',
-          );
+          throw new Error('Sync pending updates before making more changes.');
         if (!persist({ ...prev, data: applyCommand(prev.data, env) }))
           return false;
-        setMessage(
-          'Demo entry saved locally. No company system was contacted.',
-        );
+        setMessage('Entry saved.');
       }
       return true;
     } catch (err) {
@@ -570,22 +563,19 @@ export function HananDemo() {
       }
     }
     if (persist({ ...prev, data, queue: prev.queue.slice(done) }))
-      setMessage(
-        done +
-          ' queued demo entries applied locally. Nothing was uploaded to a server.',
-      );
+      setMessage(done + ' updates applied to this workspace.');
   }
   const offline = simulate || !connected;
   if (!session)
     return (
       <main id="main-content" className="p-8">
-        <p role="status">Loading case-study demo…</p>
+        <p role="status">Opening your workspace…</p>
       </main>
     );
   const d = session.data;
   const gaps = d.gaps.filter((g) => g.status !== 'Resolved');
   const relevant = (s: string) =>
-    s.toLowerCase().includes(search.toLowerCase());
+    workspaceLabel(s).toLowerCase().includes(search.toLowerCase());
   const switchTab = (next: Tab) => {
     setTab(next);
     setCreating(false);
@@ -606,16 +596,14 @@ export function HananDemo() {
     <div className="fazoo-shell flex min-h-screen">
       <aside
         className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r px-3 py-5 xl:flex"
-        aria-label="Case-study navigation"
+        aria-label="Workspace navigation"
       >
         <WorkspaceBrand />
         <div className="mx-2 mb-5 rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-[10px] uppercase tracking-widest text-white/60">
-            Case study
+            Organization
           </p>
-          <p className="mt-2 text-sm font-semibold text-white">
-            Hanan · Demo workspace
-          </p>
+          <p className="mt-2 text-sm font-semibold text-white">Hanan</p>
         </div>
         <p className="fazoo-nav-caption">Retail execution</p>
         <nav className="flex-1 space-y-1">
@@ -639,18 +627,18 @@ export function HananDemo() {
         </nav>
         <Link href="/maintenance-preview" className="fazoo-nav-link mt-6">
           <Wrench size={17} />
-          Maintenance demo
+          Service desk
           <ArrowUpRight size={14} />
         </Link>
         <Link href="/maintenance-preview/style" className="fazoo-nav-link">
-          App styling preview
+          Operations overview
           <ArrowUpRight size={14} />
         </Link>
       </aside>
       <div className="flex w-full min-w-0 flex-col">
         <header className="fazoo-glass-dark flex items-center justify-between px-4 py-3 xl:hidden">
           <WorkspaceBrand />
-          <span className="text-xs text-white/75">Hanan case study</span>
+          <span className="text-xs text-white/75">Hanan retail</span>
         </header>
         <main
           id="main-content"
@@ -658,8 +646,7 @@ export function HananDemo() {
         >
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 text-xs text-deep">
             <span>
-              <strong>Interactive case-study demo</strong> · Fictional data. Not
-              a Hanan partnership or live company system.
+              <strong>Retail operations</strong>
             </span>
             <Button
               type="button"
@@ -667,15 +654,15 @@ export function HananDemo() {
               size="sm"
               onClick={() => setConfirmReset(true)}
             >
-              Reset demo
+              Restore sample data
             </Button>
           </div>
           {confirmReset ? (
             <Card className="mb-5">
               <CardBody>
                 <p className="mb-3 text-sm">
-                  Replace this browser’s demo records and pending queue with the
-                  original samples?
+                  Restore the starting records and clear pending updates in this
+                  workspace?
                 </p>
                 <div className="flex gap-3">
                   <Button
@@ -683,19 +670,19 @@ export function HananDemo() {
                     onClick={() => {
                       if (persist(initialSession())) {
                         setConfirmReset(false);
-                        setMessage('Demo reset.');
+                        setMessage('Starting data restored.');
                         setError('');
                       }
                     }}
                   >
-                    Reset fictional data
+                    Restore starting data
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setConfirmReset(false)}
                   >
-                    Keep my demo
+                    Keep my workspace
                   </Button>
                 </div>
               </CardBody>
@@ -703,9 +690,9 @@ export function HananDemo() {
           ) : null}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
             <label className="flex items-center gap-2">
-              Preview as
+              Workspace role
               <Select
-                aria-label="Demo role"
+                aria-label="Workspace role"
                 className="w-auto"
                 value={role}
                 onChange={(e) => setRole(e.target.value as Role)}
@@ -720,7 +707,7 @@ export function HananDemo() {
                 {!connected
                   ? 'Browser offline'
                   : simulate
-                    ? 'Offline simulation'
+                    ? 'Working offline'
                     : 'Browser online'}
               </Badge>
               <label className="flex min-h-11 items-center gap-2">
@@ -730,7 +717,7 @@ export function HananDemo() {
                   onChange={(e) => setSimulate(e.target.checked)}
                   className="size-4 accent-primary"
                 />
-                Simulate offline
+                Work offline
               </label>
               <Button
                 type="button"
@@ -739,12 +726,12 @@ export function HananDemo() {
                 disabled={offline || !session.queue.length}
                 onClick={sync}
               >
-                Sync demo queue ({session.queue.length})
+                Sync updates ({session.queue.length})
               </Button>
             </div>
           </div>
           <nav
-            aria-label="Mobile case-study sections"
+            aria-label="Workspace sections"
             className="mb-6 flex gap-2 overflow-x-auto pb-2 xl:hidden"
           >
             {tabs.map(({ name }) => (
@@ -765,11 +752,11 @@ export function HananDemo() {
             ))}
           </nav>
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-[.18em] text-muted">
-            Hanan case study / {tab}
+            Hanan / {tab}
           </p>
           <PageHeader
             title={tab === 'Overview' ? 'From shelf insight to action.' : tab}
-            description="Explore the complete retail workflow with sample products, outlets and equipment. Times shown in Lagos time."
+            description="Manage retail visits, product availability, replenishment and equipment. Times shown in Lagos time."
           >
             {!['Overview', 'Offline queue'].includes(tab) ? (
               <Button
@@ -828,12 +815,12 @@ export function HananDemo() {
                 <StatCard
                   label="Pending orders"
                   value={d.orders.filter((o) => o.status !== 'Received').length}
-                  hint="Internal demo requests"
+                  hint="Awaiting fulfilment"
                 />
                 <StatCard
                   label="Shelf checks"
                   value={d.checks.length}
-                  hint="Browser demo records"
+                  hint="Recorded visits"
                 />
                 <StatCard
                   label="Equipment due"
@@ -869,7 +856,7 @@ export function HananDemo() {
                 <Card>
                   <CardHeader
                     title="Action centre"
-                    description="Sample alerts, generated from this demo’s records"
+                    description="Items that need your attention"
                   />
                   <CardBody>
                     <div className="grid gap-3">
@@ -907,7 +894,7 @@ export function HananDemo() {
               <Card>
                 <CardHeader
                   title="Activity history"
-                  description="Local demo events · no email, supplier or company notifications are sent"
+                  description="Recent updates from your team"
                 />
                 <CardBody>
                   <ul className="divide-y divide-ink/8">
@@ -917,7 +904,7 @@ export function HananDemo() {
                         className="flex flex-wrap justify-between gap-3 py-3 text-xs"
                       >
                         <span>
-                          <strong>{e.role}</strong> · {e.note}
+                          <strong>{e.role}</strong> · {workspaceLabel(e.note)}
                         </span>
                         <span className="text-muted">{time(e.at)}</span>
                       </li>
@@ -937,7 +924,7 @@ export function HananDemo() {
             <div className="mb-4 flex flex-wrap gap-3">
               <Input
                 className="max-w-sm"
-                aria-label="Search demo records"
+                aria-label="Search records"
                 placeholder="Search this section"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -998,10 +985,12 @@ export function HananDemo() {
                         </Badge>
                       </div>
                       <h2 className="mt-4 text-sm font-semibold">
-                        {g.product}
+                        {workspaceLabel(g.product)}
                       </h2>
-                      <p className="mt-1 text-xs text-muted">{g.outlet}</p>
-                      <p className="mt-3 text-sm">{g.note}</p>
+                      <p className="mt-1 text-xs text-muted">
+                        {workspaceLabel(g.outlet)}
+                      </p>
+                      <p className="mt-3 text-sm">{workspaceLabel(g.note)}</p>
                       {g.dueAt ? (
                         <p
                           className={
@@ -1012,12 +1001,12 @@ export function HananDemo() {
                               : 'text-muted')
                           }
                         >
-                          Deadline: {time(g.dueAt)} · Demo field worker
+                          Deadline: {time(g.dueAt)} · Field representative
                         </p>
                       ) : null}
                       {g.resolution ? (
                         <p className="mt-3 text-xs text-muted">
-                          Follow-up: {g.resolution}
+                          Follow-up: {workspaceLabel(g.resolution)}
                         </p>
                       ) : null}
                       {['Open', 'Assigned'].includes(g.status) ? (
@@ -1121,7 +1110,9 @@ export function HananDemo() {
                     <Card key={o.id}>
                       <CardBody>
                         <div className="flex justify-between gap-3">
-                          <h2 className="text-sm font-semibold">{o.product}</h2>
+                          <h2 className="text-sm font-semibold">
+                            {workspaceLabel(o.product)}
+                          </h2>
                           <Badge
                             tone={
                               o.status === 'Received' ? 'success' : 'purple'
@@ -1131,10 +1122,10 @@ export function HananDemo() {
                           </Badge>
                         </div>
                         <p className="mt-2 text-xs text-muted">
-                          {o.outlet} · {o.quantity} units ·{' '}
+                          {workspaceLabel(o.outlet)} · {o.quantity} units ·{' '}
                           {o.gapId ? 'Linked stock gap' : 'Standalone request'}
                         </p>
-                        <p className="mt-3 text-sm">{o.note}</p>
+                        <p className="mt-3 text-sm">{workspaceLabel(o.note)}</p>
                         {o.status !== 'Received' ? (
                           <StepForm
                             label={orderStep(o.status)}
@@ -1174,19 +1165,22 @@ export function HananDemo() {
                   <Card key={c.id}>
                     <CardBody>
                       <div className="flex justify-between gap-3">
-                        <h2 className="text-sm font-semibold">{c.product}</h2>
+                        <h2 className="text-sm font-semibold">
+                          {workspaceLabel(c.product)}
+                        </h2>
                         <Badge tone={c.stock === 0 ? 'danger' : 'success'}>
                           {c.stock} units
                         </Badge>
                       </div>
                       <p className="mt-2 text-xs text-muted">
-                        {c.outlet} · KES {c.price.toFixed(2)} · {c.display}
+                        {workspaceLabel(c.outlet)} · KES {c.price.toFixed(2)} ·{' '}
+                        {c.display}
                       </p>
-                      <p className="mt-3 text-sm">{c.note}</p>
+                      <p className="mt-3 text-sm">{workspaceLabel(c.note)}</p>
                       {c.photo ? (
                         <img
                           src={c.photo}
-                          alt={'Demo shelf evidence for ' + c.product}
+                          alt={'Shelf evidence for ' + c.product}
                           className="mt-4 h-44 w-full rounded-xl object-contain"
                         />
                       ) : null}
@@ -1204,10 +1198,8 @@ export function HananDemo() {
           {tab === 'Competitor intel' ? (
             <div className="grid gap-4 lg:grid-cols-2">
               <p className="rounded-xl border border-warn/20 bg-warn/5 p-4 text-xs leading-6 text-muted lg:col-span-2">
-                Toilex and Celine are shown with invented prices and promotions
-                for demonstration. The sample comparison uses illustrative
-                10-roll tissue packs across three fictional outlets. This is not
-                live market data.
+                Illustrative competitor prices for 10-roll tissue packs across
+                three sample outlets.
               </p>
               {d.observations
                 .filter((o) => relevant(o.competitor + ' ' + o.outlet))
@@ -1216,20 +1208,22 @@ export function HananDemo() {
                     <CardBody>
                       <div className="flex items-center justify-between gap-3">
                         <h2 className="text-sm font-semibold">
-                          {o.competitor}
+                          {workspaceLabel(o.competitor)}
                         </h2>
                         <Badge tone="warning">Sample data</Badge>
                       </div>
                       <p className="mt-2 text-xs text-muted">
-                        {o.outlet} · {o.category}
+                        {workspaceLabel(o.outlet)} ·{' '}
+                        {workspaceLabel(o.category)}
                       </p>
                       <p className="mt-4 text-xl font-semibold">
                         KES {o.price.toFixed(2)}
                       </p>
-                      <p className="mt-3 text-sm">{o.promotion}</p>
+                      <p className="mt-3 text-sm">
+                        {workspaceLabel(o.promotion)}
+                      </p>
                       <p className="mt-3 text-xs text-muted">
-                        Sample timestamp: {time(o.createdAt)} · fictional
-                        comparison
+                        Updated {time(o.createdAt)} · Illustrative prices
                       </p>
                     </CardBody>
                   </Card>
@@ -1237,7 +1231,7 @@ export function HananDemo() {
               {!d.observations.some((o) =>
                 relevant(o.competitor + ' ' + o.outlet),
               ) ? (
-                <Empty text="No competitor observations. Add a fictional price or promotion." />
+                <Empty text="No competitor observations yet. Add a price or promotion." />
               ) : null}
             </div>
           ) : null}
@@ -1258,7 +1252,9 @@ export function HananDemo() {
                     <Card key={a.id}>
                       <CardBody>
                         <div className="flex flex-wrap justify-between gap-2">
-                          <h2 className="text-sm font-semibold">{a.name}</h2>
+                          <h2 className="text-sm font-semibold">
+                            {workspaceLabel(a.name)}
+                          </h2>
                           <Badge
                             tone={
                               Date.parse(a.nextDue) < Date.now()
@@ -1270,7 +1266,8 @@ export function HananDemo() {
                           </Badge>
                         </div>
                         <p className="mt-2 text-xs text-muted">
-                          {a.location} · Every {a.intervalDays} days
+                          {workspaceLabel(a.location)} · Every {a.intervalDays}{' '}
+                          days
                         </p>
                         <p className="mt-3 text-xs">
                           Next service: {time(a.nextDue)}
@@ -1301,7 +1298,7 @@ export function HananDemo() {
                                 key={h.at + i}
                                 className="text-xs leading-6 text-muted"
                               >
-                                {time(h.at)} · {h.note}
+                                {time(h.at)} · {workspaceLabel(h.note)}
                               </li>
                             ))}
                           </ul>
@@ -1319,23 +1316,21 @@ export function HananDemo() {
           {tab === 'Offline queue' ? (
             <Card>
               <CardHeader
-                title={'Pending demo submissions · ' + session.queue.length}
-                description="Simulate offline, save an entry, reconnect and sync. This demonstrates a local queue, not a production offline rollout."
+                title={'Pending updates · ' + session.queue.length}
+                description="Review saved updates and apply them when you reconnect."
               />
               <CardBody>
                 <p className="mb-5 text-xs leading-6 text-muted">
-                  Drafts and compressed photos stay in this browser. Sync
-                  applies them to the local demo with duplicate-submission
-                  protection. The page must already be open; cold-start offline
-                  loading and real server synchronization are not implemented
-                  here.
+                  Saved updates and photos remain available while you work
+                  offline. Reconnect and apply pending changes to this
+                  workspace.
                 </p>
                 <Button
                   type="button"
                   disabled={offline || !session.queue.length}
                   onClick={sync}
                 >
-                  Sync demo queue
+                  Sync updates
                 </Button>
                 <ul className="mt-5 divide-y divide-ink/8">
                   {session.queue.map((q, i) => (
@@ -1360,22 +1355,20 @@ export function HananDemo() {
                             });
                         }}
                       >
-                        Discard demo entry
+                        Discard update
                       </Button>
                     </li>
                   ))}
                 </ul>
                 {!session.queue.length ? (
-                  <Empty text="The demo queue is clear." />
+                  <Empty text="All updates are up to date." />
                 ) : null}
               </CardBody>
             </Card>
           ) : null}
           <footer className="mt-8 flex flex-wrap justify-between gap-3 border-t border-ink/10 pt-5 text-[10px] leading-5 text-muted">
-            <span>FAZOO · Hanan case-study demo · Not affiliated</span>
-            <span>
-              Local browser data only · Role switching is a simulation
-            </span>
+            <span>FAZOO · Hanan · Sample workspace · Not affiliated</span>
+            <span>Sample data · Changes stay in this browser</span>
           </footer>
         </main>
       </div>

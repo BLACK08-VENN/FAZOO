@@ -3,7 +3,7 @@ import { MaintenanceWorkspace } from '@/components/maintenance/workspace';
 import { initialAirtelDemo } from '@/lib/maintenance/airtel-demo';
 
 export const metadata = {
-  title: 'Airtel maintenance case study — Fazoo demo',
+  title: 'Airtel maintenance — Fazoo',
   robots: { index: false, follow: false },
 };
 export default function AirtelPreviewPage() {

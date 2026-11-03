@@ -165,9 +165,7 @@ export function MaintenanceWorkspace({
       setNow(Date.now());
       setFeedback({
         error: false,
-        text: demo
-          ? 'Demo updated in this tab. No company records changed.'
-          : 'Your update has been saved.',
+        text: demo ? 'Workspace updated.' : 'Your update has been saved.',
       });
       return true;
     } catch (error) {
@@ -223,26 +221,21 @@ export function MaintenanceWorkspace({
             <span>
               <strong>
                 {demoCompany
-                  ? demoCompany + ' case-study demo'
-                  : 'Interactive preview'}
-              </strong>{' '}
-              · Fictional data.{' '}
-              {demoCompany
-                ? 'Not affiliated. No live network or customer data. '
-                : ''}
-              Changes reset on refresh.
+                  ? demoCompany + ' workspace'
+                  : 'Service operations'}
+              </strong>
             </span>
             <Link
               href="/maintenance-preview/hanan"
               className="font-semibold underline"
             >
-              Hanan case study
+              Hanan retail
             </Link>
             <Link
               href="/maintenance-preview/style"
               className="font-semibold underline"
             >
-              Explore app styling
+              Operations overview
             </Link>
             <button
               type="button"
@@ -260,7 +253,7 @@ export function MaintenanceWorkspace({
               }}
               disabled={pending}
             >
-              Reset demo
+              Restore sample data
             </button>
           </div>
         ) : null}
@@ -278,7 +271,7 @@ export function MaintenanceWorkspace({
             </h1>
             <p>
               {demoCompany
-                ? 'Track simulated network faults, technician visits and service completion.'
+                ? 'Track network faults, technician visits and service completion.'
                 : 'Report an issue. Coordinate the work. Close the loop.'}
             </p>
           </div>
@@ -300,9 +293,9 @@ export function MaintenanceWorkspace({
           </span>
           {demo ? (
             <label>
-              Preview as{' '}
+              Workspace role{' '}
               <select
-                aria-label="Preview role"
+                aria-label="Workspace role"
                 value={workspace.viewer.id}
                 disabled={pending}
                 onChange={(e) => {
@@ -334,7 +327,7 @@ export function MaintenanceWorkspace({
           <div
             className={styles.previewNavigation}
             role="group"
-            aria-label="Preview dashboard navigation"
+            aria-label="Workspace navigation"
           >
             <button
               type="button"
@@ -411,7 +404,7 @@ export function MaintenanceWorkspace({
                 <h2>Service activity</h2>
                 <p>
                   {demo
-                    ? 'Try the full request-to-approval workflow.'
+                    ? 'Track requests, technician progress and completion approvals.'
                     : 'Your most recent 250 visible jobs. Times shown in Lagos time.'}
                 </p>
               </div>
@@ -543,7 +536,13 @@ export function MaintenanceWorkspace({
           </>
         )}
         <footer className={styles.footer}>
-          <span>FAZOO · Service operations</span>
+          <span>
+            {demo
+              ? demoCompany
+                ? demoCompany + ' · Sample workspace · Not affiliated'
+                : 'FAZOO · Sample workspace'
+              : 'FAZOO · Service operations'}
+          </span>
           <span>Reported → Assigned → In progress → Reviewed</span>
         </footer>
       </main>

@@ -10,17 +10,17 @@ import {
 
 export const DEMO_MANAGER = {
   id: '10000000-0000-4000-8000-000000000001',
-  name: 'Demo administrator',
+  name: 'Service manager',
   can_manage: true,
 };
 export const DEMO_TECH = {
   id: '10000000-0000-4000-8000-000000000002',
-  name: 'Demo technician',
+  name: 'Service technician',
   can_manage: false,
 };
 export const DEMO_REPORTER = {
   id: '10000000-0000-4000-8000-000000000003',
-  name: 'Demo requester',
+  name: 'Site coordinator',
   can_manage: false,
 };
 export function initialDemo(now = Date.now()): Workspace {
@@ -37,10 +37,11 @@ export function initialDemo(now = Date.now()): Workspace {
     location,
     status,
     priority,
-    address: 'Fictional service campus · Demo City',
+    address: 'Service campus · Operations district',
     location_details: location.split('·')[1]?.trim() ?? '',
     pin: null,
-    description: 'Fictional service request for testing the maintenance workflow.',
+    description:
+      'Equipment inspection requested. Record the fault, work completed and test results.',
     reported_by: DEMO_REPORTER.id,
     assigned_to: status === 'requested' ? null : DEMO_TECH.id,
     technician_name: status === 'requested' ? null : DEMO_TECH.name,
@@ -73,28 +74,44 @@ export function initialDemo(now = Date.now()): Workspace {
     viewer: DEMO_MANAGER,
     technicians: [DEMO_TECH],
     jobs: [
-      make(1, 'Cooling unit needs inspection', 'Demo site · Meeting room', 'requested', 'high'),
+      make(
+        1,
+        'Cooling unit needs inspection',
+        'Service campus · Meeting room',
+        'requested',
+        'high',
+      ),
       make(
         2,
         'Water pump pressure is low',
-        'Demo site · Utility room',
+        'Service campus · Utility room',
         'in_progress',
         'urgent',
       ),
       make(
         3,
         'Replace corridor light fitting',
-        'Demo site · First floor',
+        'Service campus · First floor',
         'ready_for_review',
         'normal',
       ),
-      make(4, 'Inspect entry door closer', 'Demo site · Main entrance', 'assigned', 'low'),
+      make(
+        4,
+        'Inspect entry door closer',
+        'Service campus · Main entrance',
+        'assigned',
+        'low',
+      ),
     ],
   };
 }
 
 /** Browser-only simulation; never a source of authorization for real data. */
-export function applyDemo(workspace: Workspace, raw: Command, now = Date.now()): Workspace {
+export function applyDemo(
+  workspace: Workspace,
+  raw: Command,
+  now = Date.now(),
+): Workspace {
   const command = commandSchema.parse(raw);
   const time = new Date(now).toISOString();
   const viewer = workspace.viewer;
@@ -135,7 +152,9 @@ export function applyDemo(workspace: Workspace, raw: Command, now = Date.now()):
   if (command.action === 'assign') {
     if (!viewer.can_manage || !['requested', 'assigned'].includes(job.status))
       throw new Error('Assignment is not allowed.');
-    const tech = workspace.technicians.find((t) => t.id === command.technician_id);
+    const tech = workspace.technicians.find(
+      (t) => t.id === command.technician_id,
+    );
     if (!tech || Date.parse(command.due_at) <= now)
       throw new Error('Choose a technician and a future deadline.');
     next = {
@@ -151,7 +170,8 @@ export function applyDemo(workspace: Workspace, raw: Command, now = Date.now()):
     if (!canUpdate(job, viewer) || !allowedUpdate(job.status, command.status))
       throw new Error('This update is not allowed.');
     next.status = command.status;
-    if (command.status === 'ready_for_review') next.completion_note = command.note;
+    if (command.status === 'ready_for_review')
+      next.completion_note = command.note;
     note = command.note;
   } else {
     if (!canReview(job, viewer))
@@ -170,5 +190,8 @@ export function applyDemo(workspace: Workspace, raw: Command, now = Date.now()):
       created_at: time,
     },
   ];
-  return { ...workspace, jobs: workspace.jobs.map((j) => (j.id === next.id ? next : j)) };
+  return {
+    ...workspace,
+    jobs: workspace.jobs.map((j) => (j.id === next.id ? next : j)),
+  };
 }

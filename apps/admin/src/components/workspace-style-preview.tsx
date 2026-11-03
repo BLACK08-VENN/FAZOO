@@ -33,9 +33,19 @@ const sections = [
 ] as const;
 type Section = (typeof sections)[number]['label'];
 const sampleCampaigns = [
-  { name: 'Demo retail activation', team: 'Demo field team', status: 'Active', sites: 8 },
-  { name: 'Demo product showcase', team: 'Demo support team', status: 'Active', sites: 4 },
-  { name: 'Demo seasonal campaign', team: 'Demo field team', status: 'Completed', sites: 6 },
+  { name: 'Retail activation', team: 'Field team', status: 'Active', sites: 8 },
+  {
+    name: 'Product showcase',
+    team: 'Support team',
+    status: 'Active',
+    sites: 4,
+  },
+  {
+    name: 'Seasonal campaign',
+    team: 'Field team',
+    status: 'Completed',
+    sites: 6,
+  },
 ];
 
 /** Uses the real shared primitives; every number here is fictional preview content. */
@@ -54,17 +64,19 @@ export function WorkspaceStylePreview() {
     <div className="fazoo-shell flex min-h-screen">
       <aside
         className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex"
-        aria-label="Style preview navigation"
+        aria-label="Workspace navigation"
       >
         <WorkspaceBrand />
         <div className="mx-2 mb-6 rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-[10px] uppercase tracking-widest text-white/50">
-            Preview workspace
+            Your workspace
           </p>
-          <p className="mt-2 text-sm font-medium text-white">Demo organization</p>
+          <p className="mt-2 text-sm font-medium text-white">
+            Operations workspace
+          </p>
         </div>
         <p className="fazoo-nav-caption">Workspace</p>
-        <nav className="flex-1 space-y-1" aria-label="Preview sections">
+        <nav className="flex-1 space-y-1" aria-label="Workspace sections">
           {sections.map(({ label, icon: Icon }) => (
             <button
               type="button"
@@ -88,7 +100,7 @@ export function WorkspaceStylePreview() {
         </nav>
         <div className="mt-6 border-t border-white/10 pt-4">
           <ThemeToggle />
-          <p className="mt-4 px-3 text-xs text-white/60">Fictional data · Design preview</p>
+          <p className="mt-4 px-3 text-xs text-white/60">Sample workspace</p>
         </div>
       </aside>
       <div className="flex w-full min-w-0 flex-col">
@@ -98,17 +110,23 @@ export function WorkspaceStylePreview() {
             <ThemeToggle />
           </div>
         </header>
-        <main id="main-content" className="min-w-0 flex-1 px-4 py-6 sm:p-6 xl:p-8">
+        <main
+          id="main-content"
+          className="min-w-0 flex-1 px-4 py-6 sm:p-6 xl:p-8"
+        >
           <div className="mb-7 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 text-xs text-deep">
             <span>
-              <strong>App-wide style preview</strong> · All data on this page is fictional.
+              <strong>Operations workspace</strong>
             </span>
-            <Link className="font-semibold underline" href="/maintenance-preview">
-              Try maintenance
+            <Link
+              className="font-semibold underline"
+              href="/maintenance-preview"
+            >
+              Open service desk
             </Link>
           </div>
           <nav
-            aria-label="Preview mobile sections"
+            aria-label="Workspace sections"
             className="mb-6 flex gap-2 overflow-x-auto pb-2 xl:hidden"
           >
             {sections.map(({ label }) => (
@@ -131,7 +149,7 @@ export function WorkspaceStylePreview() {
             description={
               section === 'Overview'
                 ? 'Your people, field activity and services. Together in one workspace.'
-                : `A preview of the shared ${section.toLowerCase()} styling.`
+                : `Manage your ${section.toLowerCase()} in one place.`
             }
           >
             {section === 'Campaigns' ? (
@@ -140,7 +158,11 @@ export function WorkspaceStylePreview() {
                 New campaign
               </Button>
             ) : (
-              <Button type="button" variant="outline" onClick={() => setSection('Reports')}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSection('Reports')}
+              >
                 <BarChart3 size={16} aria-hidden="true" />
                 View reports
               </Button>
@@ -157,10 +179,22 @@ export function WorkspaceStylePreview() {
           {section === 'Overview' || section === 'Reports' ? (
             <>
               <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <StatCard label="Active campaigns" value="2" hint="Sample activity" />
-                <StatCard label="Field team" value="12" hint="Demo team members" />
-                <StatCard label="Visits completed" value="36" hint="Of 42 planned visits" />
-                <StatCard label="Reports to review" value="4" hint="Awaiting your review" />
+                <StatCard
+                  label="Active campaigns"
+                  value="2"
+                  hint="Current campaigns"
+                />
+                <StatCard label="Field team" value="12" hint="Assigned staff" />
+                <StatCard
+                  label="Visits completed"
+                  value="36"
+                  hint="Of 42 planned visits"
+                />
+                <StatCard
+                  label="Reports to review"
+                  value="4"
+                  hint="Awaiting your review"
+                />
               </div>
               {section === 'Overview' ? (
                 <div className="mb-6 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
@@ -172,8 +206,8 @@ export function WorkspaceStylePreview() {
                       Focus on what needs you.
                     </h2>
                     <p className="mt-3 max-w-md text-xs leading-6 text-[#cec8dd]">
-                      Review your team’s activity, keep service work moving and follow each task
-                      through to completion.
+                      Review your team’s activity, keep service work moving and
+                      follow each task through to completion.
                     </p>
                     <Link
                       href="/maintenance-preview"
@@ -186,7 +220,7 @@ export function WorkspaceStylePreview() {
                   <Card>
                     <CardHeader
                       title="Needs attention"
-                      description="Sample items for your next review"
+                      description="Items for your next review"
                     />
                     <CardBody>
                       <ul className="divide-y divide-ink/8">
@@ -215,7 +249,9 @@ export function WorkspaceStylePreview() {
                                 type="button"
                                 aria-label={`Review ${text}`}
                                 onClick={() =>
-                                  setSection(index === 1 ? 'Reports' : 'Campaigns')
+                                  setSection(
+                                    index === 1 ? 'Reports' : 'Campaigns',
+                                  )
                                 }
                               >
                                 <ArrowUpRight size={16} aria-hidden="true" />
@@ -231,7 +267,7 @@ export function WorkspaceStylePreview() {
                 <Card className="mb-6">
                   <CardHeader
                     title="Visit completion"
-                    description="Fictional summary, for visual review only"
+                    description="Visit progress across your team"
                   />
                   <CardBody>
                     <div className="flex items-center justify-between text-sm">
@@ -239,24 +275,28 @@ export function WorkspaceStylePreview() {
                       <strong>36 / 42</strong>
                     </div>
                     <progress
-                      aria-label="Sample visits completed"
+                      aria-label="Visits completed"
                       className="mt-4 h-2 w-full accent-primary"
                       value={36}
                       max={42}
                     />
                     <p className="mt-3 text-xs text-muted">
-                      6 visits remain in this sample plan.
+                      6 visits remain in the current plan.
                     </p>
                   </CardBody>
                 </Card>
               )}
             </>
           ) : null}
-          {section === 'Overview' || section === 'Campaigns' || section === 'Reports' ? (
+          {section === 'Overview' ||
+          section === 'Campaigns' ||
+          section === 'Reports' ? (
             <>
               <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <h2 className="text-sm font-semibold text-ink">
-                  {section === 'Reports' ? 'Campaign summary' : 'Campaign activity'}
+                  {section === 'Reports'
+                    ? 'Campaign summary'
+                    : 'Campaign activity'}
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   <div className="relative min-w-0 flex-1 sm:w-56">
@@ -266,7 +306,7 @@ export function WorkspaceStylePreview() {
                       aria-hidden="true"
                     />
                     <Input
-                      aria-label="Search sample campaigns"
+                      aria-label="Search campaigns"
                       className="pl-9"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
@@ -274,7 +314,7 @@ export function WorkspaceStylePreview() {
                     />
                   </div>
                   <Select
-                    aria-label="Filter sample campaign status"
+                    aria-label="Filter campaign status"
                     className="w-auto"
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
@@ -306,7 +346,11 @@ export function WorkspaceStylePreview() {
                           <Td className="text-muted">{row.team}</Td>
                           <Td>{row.sites}</Td>
                           <Td>
-                            <Badge tone={row.status === 'Active' ? 'success' : 'purple'}>
+                            <Badge
+                              tone={
+                                row.status === 'Active' ? 'success' : 'purple'
+                              }
+                            >
                               {row.status}
                             </Badge>
                           </Td>
@@ -318,7 +362,7 @@ export function WorkspaceStylePreview() {
                               aria-label={`View ${row.name}`}
                               onClick={() =>
                                 setNotice(
-                                  `${row.name}: fictional preview record. No company data was loaded.`,
+                                  `${row.name}: activity details are available in your signed-in workspace.`,
                                 )
                               }
                             >
@@ -328,7 +372,9 @@ export function WorkspaceStylePreview() {
                         </tr>
                       ))
                     ) : (
-                      <EmptyRow colSpan={5}>No sample campaigns match your filters.</EmptyRow>
+                      <EmptyRow colSpan={5}>
+                        No campaigns match your filters.
+                      </EmptyRow>
                     )}
                   </tbody>
                 </Table>
@@ -337,26 +383,30 @@ export function WorkspaceStylePreview() {
                 <Card className="mt-6">
                   <CardHeader
                     title="New campaign"
-                    description="Preview form · Nothing is sent or saved"
+                    description="Review the campaign details below"
                   />
                   <CardBody>
                     <form
                       className="grid gap-4 sm:grid-cols-2"
                       onSubmit={(e) => {
                         e.preventDefault();
-                        setNotice('Preview form checked. No campaign was created.');
+                        setNotice('Campaign details reviewed.');
                       }}
                     >
                       <div>
                         <Label htmlFor="sample-name">Campaign name</Label>
-                        <Input id="sample-name" required placeholder="Enter campaign name" />
+                        <Input
+                          id="sample-name"
+                          required
+                          placeholder="Enter campaign name"
+                        />
                       </div>
                       <div>
                         <Label htmlFor="sample-date">Start date</Label>
                         <Input id="sample-date" required type="date" />
                       </div>
                       <div className="flex gap-2 sm:col-span-2">
-                        <Button type="submit">Check preview form</Button>
+                        <Button type="submit">Review campaign</Button>
                         <Button
                           type="button"
                           variant="outline"
@@ -374,7 +424,10 @@ export function WorkspaceStylePreview() {
           {section === 'Field workspace' ? (
             <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
               <Card>
-                <CardHeader title="Today’s work" description="Sample field-worker dashboard" />
+                <CardHeader
+                  title="Today’s work"
+                  description="Your assigned visits and tasks"
+                />
                 <CardBody>
                   <div className="mb-4 flex items-center gap-3">
                     <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -382,18 +435,21 @@ export function WorkspaceStylePreview() {
                     </span>
                     <div>
                       <h2 className="text-sm font-semibold">Your next visit</h2>
-                      <p className="mt-1 text-xs text-muted">Demo site · Fictional location</p>
+                      <p className="mt-1 text-xs text-muted">
+                        Assigned site · Visit scheduled
+                      </p>
                     </div>
                     <Badge tone="purple">Scheduled</Badge>
                   </div>
                   <p className="mb-5 text-xs leading-6 text-muted">
-                    Store details, visit tasks and updates stay in one focused workspace.
+                    Store details, visit tasks and updates stay in one focused
+                    workspace.
                   </p>
                   <Button
                     type="button"
                     onClick={() =>
                       setNotice(
-                        'This is a style preview. Real check-in remains in your authenticated field workspace.',
+                        'Sign in to your field account to record a visit.',
                       )
                     }
                   >
@@ -433,19 +489,23 @@ export function WorkspaceStylePreview() {
             <Card className="max-w-2xl">
               <CardHeader
                 title="Workspace preferences"
-                description="Preview the form and control styling"
+                description="Manage your workspace preferences"
               />
               <CardBody>
                 <form
                   className="space-y-5"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    setNotice('Preview preferences checked. No account settings were changed.');
+                    setNotice('Preferences reviewed.');
                   }}
                 >
                   <div>
                     <Label htmlFor="demo-workspace-name">Workspace name</Label>
-                    <Input id="demo-workspace-name" defaultValue="Demo organization" required />
+                    <Input
+                      id="demo-workspace-name"
+                      defaultValue="Operations workspace"
+                      required
+                    />
                   </div>
                   <div>
                     <Label htmlFor="demo-digest">Activity summary</Label>
@@ -455,13 +515,17 @@ export function WorkspaceStylePreview() {
                     </Select>
                   </div>
                   <label className="flex min-h-11 items-center gap-3 text-sm">
-                    <input type="checkbox" defaultChecked className="size-4 accent-primary" />
-                    Show task reminders in this preview
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="size-4 accent-primary"
+                    />
+                    Show task reminders
                   </label>
                   <div className="flex flex-wrap gap-3">
                     <Button type="submit">
                       <Check size={16} aria-hidden="true" />
-                      Check preview settings
+                      Review preferences
                     </Button>
                     <Button
                       type="button"
@@ -480,7 +544,7 @@ export function WorkspaceStylePreview() {
           ) : null}
           <footer className="mt-8 flex justify-between gap-4 border-t border-ink/10 pt-5 text-[10px] text-muted">
             <span>FAZOO · Field & service operations</span>
-            <span>Design preview · No live data</span>
+            <span>Sample workspace · No live systems connected</span>
           </footer>
         </main>
       </div>

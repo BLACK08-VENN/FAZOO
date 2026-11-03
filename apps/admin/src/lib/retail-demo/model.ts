@@ -244,7 +244,7 @@ export function initialSession(now = Date.now()): Session {
           outlet: outlets[0],
           product: products[0],
           priority: 'Urgent',
-          note: 'Fictional shelf gap reported during the demo visit.',
+          note: 'Shelf availability requires a replenishment follow-up.',
           status: 'Open',
           assigned: false,
           dueAt: null,
@@ -256,7 +256,7 @@ export function initialSession(now = Date.now()): Session {
           outlet: outlets[1],
           product: products[1],
           priority: 'High',
-          note: 'Fictional display needs replenishment.',
+          note: 'The display needs replenishment before the next store visit.',
           status: 'Assigned',
           assigned: true,
           dueAt: new Date(now - 86400000).toISOString(),
@@ -270,8 +270,8 @@ export function initialSession(now = Date.now()): Session {
       assets: [
         {
           id: 'asset-demo-a',
-          name: 'Demo packing unit',
-          location: 'Fictional service area',
+          name: 'Packing unit 01',
+          location: 'Packing area',
           intervalDays: 30,
           nextDue: new Date(now - 86400000).toISOString(),
           status: 'Scheduled',
@@ -283,7 +283,7 @@ export function initialSession(now = Date.now()): Session {
         {
           id: 'event-seed',
           role: 'Manager',
-          note: 'Fictional case-study workspace initialized.',
+          note: 'Workspace opened.',
           at,
         },
       ],
@@ -294,14 +294,14 @@ export function initialSession(now = Date.now()): Session {
 function requireRole(role: Role, permitted: Role[]) {
   if (!permitted.includes(role))
     throw new Error(
-      'Switch the preview role to ' +
+      'Select the workspace role ' +
         permitted.join(' or ') +
         ' for this action.',
     );
 }
 function get<T extends { id: string }>(rows: T[], id: string): T {
   const row = rows.find((v) => v.id === id);
-  if (!row) throw new Error('Demo record no longer exists.');
+  if (!row) throw new Error('This record no longer exists.');
   return row;
 }
 export function applyCommand(
@@ -313,7 +313,7 @@ export function applyCommand(
   const fingerprint = JSON.stringify({ role: env.role, command: env.command });
   if (input.receipts[env.id]) {
     if (input.receipts[env.id] !== fingerprint)
-      throw new Error('This demo operation ID belongs to another submission.');
+      throw new Error('This request identifier belongs to another submission.');
     return input;
   }
   const data: DemoData = structuredClone(input);
@@ -386,7 +386,7 @@ export function applyCommand(
       g.status = 'Assigned';
       g.assigned = true;
       g.dueAt = c.dueAt;
-      note = 'Follow-up assigned to Demo field worker.';
+      note = 'Follow-up assigned to the field representative.';
       break;
     }
     case 'resolve': {
@@ -451,7 +451,7 @@ export function applyCommand(
       } else if (o.status === 'Dispatched') {
         requireRole(env.role, ['Field worker']);
         o.status = 'Received';
-      } else throw new Error('This demo order is already received.');
+      } else throw new Error('This order has already been received.');
       o.note = c.note;
       note =
         'Order ' +
@@ -473,7 +473,7 @@ export function applyCommand(
         note: '',
         history: [],
       });
-      note = 'Demo asset registered with recurring service interval.';
+      note = 'Equipment registered with a recurring service interval.';
       break;
     case 'service': {
       const a = get(data.assets, c.target);
