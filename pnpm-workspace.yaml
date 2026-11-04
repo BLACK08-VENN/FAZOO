@@ -36,7 +36,7 @@ minimumReleaseAgeExclude:
   - expo-updates@57.0.22
 
 overrides:
-  'sharp@<0.35.4': '0.35.4'
+  'sharp@<0.35.5': '0.35.5'
   'uuid@<11.1.1': '11.1.1'
   'decode-uri-component@<0.4.3': '0.5.0'
   'js-yaml@>=4.0.0 <4.3.2': '4.3.2'
@@ -44,7 +44,7 @@ overrides:
   'brace-expansion@>=1.0.0 <2.0.0': '1.1.21'
   'brace-expansion@>=2.0.0 <3.0.0': '2.1.7'
   'brace-expansion@>=3.0.0 <4.0.0': '3.0.9'
-  'next@<16.3.8': '16.3.8'
+  'next@<16.4.1': '16.4.1'
 
 patchedDependencies:
   node-forge@1.4.0: patches/node-forge@1.4.0.patch

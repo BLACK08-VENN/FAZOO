@@ -39,6 +39,13 @@ export type Database = {
   }
   public: {
     Tables: {
+      partner_visit_logs: {
+        Row: { id: string; organization_id: string; partner_id: string; collected_by: string; collector_name: string; visit_date: string; reporting_month: string; payload: Json; total_pcs: number | null; lenovo_units: number | null; correction_of: string | null; created_at: string }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+
       audit_logs: {
         Row: {
           action: string
@@ -599,6 +606,10 @@ export type Database = {
           id: string
           name: string
           organization_id: string
+          requested_by: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           start_date: string
           status: Database["public"]["Enums"]["campaign_status"]
           updated_at: string
@@ -611,6 +622,10 @@ export type Database = {
           id?: string
           name: string
           organization_id: string
+          requested_by?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["campaign_status"]
           updated_at?: string
@@ -623,6 +638,10 @@ export type Database = {
           id?: string
           name?: string
           organization_id?: string
+          requested_by?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["campaign_status"]
           updated_at?: string
@@ -1709,6 +1728,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      partner_context: { Args: Record<PropertyKey, never>; Returns: Json }
+      partner_submit_log: { Args: { p_client_request_id: string; p_payload: Json }; Returns: Json }
+      partner_set_thresholds: { Args: { p_client_request_id: string; p_high: number; p_medium: number }; Returns: Json }
+      partner_directory: { Args: { p_search?: string }; Returns: Json }
+      partner_workspace: { Args: { p_month: string; p_state?: string; p_collector?: string | null; p_search?: string; p_page?: number }; Returns: Json }
+      maintenance_workspace: { Args: Record<PropertyKey, never>; Returns: Json }
+      maintenance_mutate: { Args: { p_client_request_id: string; p_command: Json }; Returns: Json }
+
       submit_access_request: {
         Args: {
           p_client_request_id: string
@@ -1760,6 +1787,15 @@ export type Database = {
           p_organization_id: string
           p_start_date?: string
           p_status?: string
+        }
+        Returns: Json
+      }
+      admin_review_campaign: {
+        Args: {
+          p_campaign_id: string
+          p_client_request_id: string
+          p_decision: string
+          p_note?: string
         }
         Returns: Json
       }
@@ -2275,6 +2311,16 @@ export type Database = {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
       }
+      client_create_campaign: {
+        Args: {
+          p_client_request_id: string
+          p_description?: string
+          p_end_date?: string
+          p_name: string
+          p_start_date?: string
+        }
+        Returns: Json
+      }
       complete_receipt: {
         Args: { p_client_request_id: string; p_result: Json }
         Returns: undefined
@@ -2459,7 +2505,13 @@ export type Database = {
         | "completed"
         | "on_hold"
         | "cancelled"
-      campaign_status: "draft" | "active" | "completed" | "cancelled"
+      campaign_status:
+        | "draft"
+        | "pending_approval"
+        | "active"
+        | "completed"
+        | "rejected"
+        | "cancelled"
       daily_log_status: "open" | "completed" | "cancelled"
       dispatch_means:
         | "courier"
@@ -2675,7 +2727,14 @@ export const Constants = {
         "on_hold",
         "cancelled",
       ],
-      campaign_status: ["draft", "active", "completed", "cancelled"],
+      campaign_status: [
+        "draft",
+        "pending_approval",
+        "active",
+        "completed",
+        "rejected",
+        "cancelled",
+      ],
       daily_log_status: ["open", "completed", "cancelled"],
       dispatch_means: [
         "courier",

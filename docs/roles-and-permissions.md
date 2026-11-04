@@ -8,6 +8,7 @@
 | `organization_admin` | Client staff | Full control inside their organization: approve/suspend BAs, manage campaigns/stores/SKUs/assignments, view all logs, export CSV, read audit trail. |
 | `supervisor` | Field managers | Same as org admin but only for stores/campaigns in `supervisor_scopes`. |
 | `brand_ambassador` | Field users | Check in/out, upload photos, record sales, sick leave — exclusively through RPCs, and only for themselves. |
+| `client` | Brand stakeholders | Analytics-only brand workspace. Can request a campaign (goes to an admin approval queue) and raise/track maintenance service requests. Cannot read ambassador profiles, names, phones, photos or mutate field data. |
 
 Role lives on `profiles.role` and is **never accepted from the client**; every
 server path re-derives it from the JWT via `current_profile()`.
@@ -38,6 +39,18 @@ pending ──approve──▶ approved ──suspend──▶ suspended
 4. **RPC guards** — mutations verify role, status, assignment, date and
    distance server-side regardless of what the client sent.
 5. **Storage policies** — private buckets, own-folder writes, signed reads.
+
+## Brand workspace (`client`)
+
+- Sees aggregate campaign, store, SKU, attendance and trend analytics for their
+  own organization only.
+- The only campaign action is **Request a campaign**; it is created as
+  `pending_approval`. An organization/super administrator approves (→ `active`)
+  or rejects (→ `rejected`) it from the staff campaign approval queue.
+- Ambassador profile rows are not readable by clients (RLS); analytics never
+  joins or displays ambassador identities.
+- Maintenance/service requests remain available through the Service desk, where
+  clients can create requests and track administrator/technician progress.
 
 ## Admin UI visibility
 

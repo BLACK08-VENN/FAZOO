@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   '/forgot-password',
   '/not-authorized',
   '/how-it-works',
+  '/maintenance-preview',
   '/api/ocr/assets',
 ];
 

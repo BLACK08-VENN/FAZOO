@@ -2,7 +2,7 @@
   "name": "fazoo",
   "version": "0.1.0",
   "private": true,
-  "description": "Fazoo \u2014 field-force management and sales-reporting platform",
+  "description": "Fazoo — field-force management and sales-reporting platform",
   "packageManager": "pnpm@11.22.0",
   "engines": {
     "node": ">=22.13.0"
@@ -25,6 +25,7 @@
     "security:check": "node --import tsx --test scripts/security.test.ts && node --test scripts/forge-regression.test.mjs && node scripts/security-audit.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.14",
     "@eslint/js": "^9.36.0",
     "@fazoo/typescript-config": "workspace:*",
     "@supabase/supabase-js": "2.112.3",

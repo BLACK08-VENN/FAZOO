@@ -1,4 +1,6 @@
-import Link from 'next/link';
+import { MaintenanceEntry } from '@/components/maintenance/entry';
+import { WorkspaceLink } from '@/components/workspace-link';
+import { WorkspaceBrand } from '@/components/workspace-brand';
 import Image from 'next/image';
 import {
   BarChart3,
@@ -6,20 +8,20 @@ import {
   ClipboardList,
   FilePlus2,
   LogOut,
+  Plus,
   Store,
-  Users,
 } from 'lucide-react';
 import { requireClient } from '@/lib/client-auth';
-import { FazooMark } from '@/components/fazoo-mark';
 import { signOutAction } from '../(portal)/actions';
 
 const NAV = [
   { href: '/brand', label: 'Overview', icon: BarChart3, exact: true },
+  { href: '/brand/partners', label: 'Partner collection', icon: ClipboardList },
+  { href: '/brand/campaigns', label: 'Campaign analytics', icon: ClipboardList },
+  { href: '/brand/stores', label: 'Store coverage', icon: Store },
+  { href: '/brand/campaigns/new', label: 'Request campaign', icon: Plus },
   { href: '/brand/logs', label: 'Create Log', icon: FilePlus2 },
   { href: '/brand/leave', label: 'Apply for Leave', icon: CalendarOff },
-  { href: '/brand/campaigns', label: 'Campaigns', icon: ClipboardList },
-  { href: '/brand/stores', label: 'Stores', icon: Store },
-  { href: '/brand/bas', label: 'Brand Ambassadors', icon: Users },
 ] as const;
 
 const ROLE_LABEL = { client: 'Client', brand_ambassador: 'Brand Ambassador' } as const;
@@ -27,9 +29,16 @@ const ROLE_LABEL = { client: 'Client', brand_ambassador: 'Brand Ambassador' } as
 export default async function BrandLayout({ children }: { children: React.ReactNode }) {
   const { profile, brand } = await requireClient();
   const roleLabel = ROLE_LABEL[profile.role as keyof typeof ROLE_LABEL] ?? 'Brand workspace';
-  const nav = NAV.filter((item) =>
+  const nav = NAV.filter(
+    (item) =>
+      item.href !== '/brand/partners' ||
+      (brand.slug === 'lenovo-nigeria' && profile.role === 'brand_ambassador'),
+  ).filter((item) =>
     profile.role === 'brand_ambassador'
-      ? item.href === '/brand' || item.href === '/brand/logs' || item.href === '/brand/leave'
+      ? item.href === '/brand' ||
+        item.href === '/brand/logs' ||
+        item.href === '/brand/partners' ||
+        item.href === '/brand/leave'
       : item.href !== '/brand/logs' && item.href !== '/brand/leave',
   );
 
@@ -39,7 +48,8 @@ export default async function BrandLayout({ children }: { children: React.ReactN
         className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex"
         aria-label="Brand dashboard navigation"
       >
-        <div className="mb-8 px-3">
+        <WorkspaceBrand />
+        <div className="mb-5 px-3">
           {brand.logo_url ? (
             <div className="relative mb-3 h-14 overflow-hidden rounded-xl border border-white/10 bg-white">
               <Image
@@ -51,27 +61,20 @@ export default async function BrandLayout({ children }: { children: React.ReactN
                 priority
               />
             </div>
-          ) : (
-            <>
-              <FazooMark className="mb-3 size-12" />
-              <span className="sr-only">Fazoo</span>
-            </>
-          )}
+          ) : null}
           <p className="truncate text-xs font-medium text-white/70">{brand.name}</p>
           <p className="mt-0.5 text-[10px] uppercase tracking-wider text-white/55">
             Powered by Fazoo
           </p>
         </div>
+        <MaintenanceEntry />
+        <p className="fazoo-nav-caption">Workspace</p>
         <nav aria-label="Brand navigation" className="flex-1 space-y-1">
           {nav.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
-            >
+            <WorkspaceLink key={href} href={href}>
               <Icon size={16} aria-hidden="true" />
               {label}
-            </Link>
+            </WorkspaceLink>
           ))}
         </nav>
         <div className="border-t border-white/10 pt-4">
@@ -90,7 +93,7 @@ export default async function BrandLayout({ children }: { children: React.ReactN
       </aside>
 
       <div className="flex min-w-0 w-full flex-col">
-        <header className="fazoo-glass-dark sticky top-0 z-20 flex items-center justify-between border-b px-3 py-2 xl:hidden">
+        <header className="fazoo-glass-dark sticky top-0 z-20 flex min-h-[60px] items-center justify-between border-b px-3 py-2 xl:hidden">
           <div>
             <span className="text-sm font-bold text-white">{brand.name}</span>
             <span className="ml-2 text-xs text-white/40">via Fazoo</span>
@@ -106,17 +109,14 @@ export default async function BrandLayout({ children }: { children: React.ReactN
         </header>
         <nav
           aria-label="Brand mobile"
-          className="fazoo-glass-dark sticky top-[44px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-1 xl:hidden"
+          className="fazoo-glass-dark sticky top-[60px] z-20 flex gap-1 overflow-x-auto border-b px-2 py-1 xl:hidden"
           role="navigation"
         >
+          <MaintenanceEntry />
           {nav.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium text-white/75 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
-            >
+            <WorkspaceLink key={href} href={href} className="shrink-0 whitespace-nowrap">
               {label}
-            </Link>
+            </WorkspaceLink>
           ))}
         </nav>
         <main className="min-w-0 flex-1 p-4 sm:p-6 xl:p-8" id="main-content">

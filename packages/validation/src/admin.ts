@@ -10,7 +10,14 @@ export const campaignInputSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .nullable()
       .optional(),
-    status: z.enum(['draft', 'active', 'completed', 'cancelled']),
+    status: z.enum([
+      'draft',
+      'pending_approval',
+      'active',
+      'completed',
+      'rejected',
+      'cancelled',
+    ]),
     /** When true the campaign runs on BOD/EOD stock counts (sold = opening − closing)
      *  instead of manual sale entries. */
     stock_count_model: z.boolean().optional().default(false),
@@ -19,6 +26,21 @@ export const campaignInputSchema = z
     (v) => !v.end_date || v.start_date <= v.end_date,
     { message: 'End date must be on or after start date.' },
   );
+
+export const campaignRequestSchema = z
+  .object({
+    name: z.string().trim().min(2).max(120),
+    description: z.string().trim().max(2000).nullable().optional(),
+    start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    end_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .optional(),
+  })
+  .refine((v) => !v.end_date || v.start_date <= v.end_date, {
+    message: 'End date must be on or after start date.',
+  });
 
 export const storeInputSchema = z.object({
   name: z.string().trim().min(2).max(160),

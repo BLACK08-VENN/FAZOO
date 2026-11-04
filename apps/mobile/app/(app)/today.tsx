@@ -13,6 +13,7 @@ import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { Card, MetricTile, Page } from '@/components/ui';
 import SchoolsToday from '@/components/schools-today';
+import { PartnerEntry } from '@/components/partner-entry';
 
 /**
  * Today dashboard — routes between two flows based on the active
@@ -48,7 +49,6 @@ function RetailToday() {
   const { data, loading, error, refresh } = useToday();
   const { profile } = useSessionProfile();
   const [counts, setCounts] = useState({ pending: 0, failed: 0 });
-  const [online, setOnline] = useState<boolean | null>(null);
 
   async function refreshCounts() {
     setCounts(await operationCounts());
@@ -58,7 +58,6 @@ function RetailToday() {
     void refreshCounts();
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       const connected = state.isConnected === true && state.isInternetReachable !== false;
-      setOnline(connected);
       if (connected) void flushQueue().then(refreshCounts);
     });
     const subscription = AppState.addEventListener('change', (state) => {
@@ -90,6 +89,7 @@ function RetailToday() {
 
   return (
     <Page bottomInset={true}>
+      <PartnerEntry />
       <View className="mb-5 items-center pt-2">
         <Text className="font-sans text-3xl font-black tracking-[2px] text-ink">FAZOO</Text>
         <Text className="font-sans text-[10px] font-bold tracking-[2.5px] text-primary">FIELD ACTIVATIONS</Text>

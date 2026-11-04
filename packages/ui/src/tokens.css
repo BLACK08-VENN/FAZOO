@@ -1,17 +1,17 @@
-/* Fazoo identity tokens — purple & black.
+/* Fazoo web identity tokens — navy & lavender.
    Client branding (e.g. Lenovo logo) is configured per organization in the
    database; these are platform defaults, never hard-code tenant identity. */
 :root {
-  --fz-primary: #7b2fbe;
-  --fz-deep-purple: #5a1e82;
-  --fz-bright-purple: #8b2fd1;
-  --fz-near-black: #0b0b0f;
-  --fz-charcoal: #17171c;
-  --fz-soft-bg: #f6f2fa;
+  --fz-primary: #64469a;
+  --fz-deep-purple: #513580;
+  --fz-bright-purple: #8a72ac;
+  --fz-near-black: #17233e;
+  --fz-charcoal: #24304a;
+  --fz-soft-bg: #f6f6fa;
   --fz-white: #ffffff;
-  --fz-muted: #6b6472;
-  --fz-success: #22c55e;
-  --fz-warning: #f97316;
+  --fz-muted: #626b80;
+  --fz-success: #16815d;
+  --fz-warning: #a85c0a;
   --fz-error: #dc2626;
 }
 

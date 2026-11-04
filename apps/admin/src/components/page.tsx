@@ -22,13 +22,13 @@ export function StatCard({
   return (
     <Card className="min-w-0 p-3.5 sm:p-5">
       <p
-        className="break-words text-[11px] font-medium uppercase tracking-wide text-muted sm:text-xs"
+        className="break-words text-[11px] font-medium text-muted sm:text-xs"
         id={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {label}
       </p>
       <p
-        className="mt-2 break-words text-lg font-bold tabular-nums text-ink sm:text-2xl"
+        className="mt-3 break-words text-2xl font-semibold tabular-nums tracking-tight text-ink sm:text-3xl"
         aria-labelledby={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}
       >
         {value}
@@ -62,9 +62,11 @@ export function PageHeader({
   return (
     <div className="mb-5 flex flex-col items-stretch justify-between gap-4 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-end">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.045em] text-ink sm:text-3xl">
+          {title}
+        </h1>
         {description ? (
-          <p className="mt-1 text-sm leading-5 text-muted">{description}</p>
+          <p className="mt-2 text-xs leading-6 text-muted sm:text-sm">{description}</p>
         ) : null}
       </div>
       {children ? (
