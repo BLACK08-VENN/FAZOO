@@ -6,7 +6,6 @@ import { fetchLogs, parseLogFilters, resolveRange, type LogRow } from '@/lib/log
 import { resolveOrgKind } from '@/lib/nav';
 import { LogFiltersForm } from '@/components/filters';
 import { PageHeader, StatCard } from '@/components/page';
-import { SectionCards } from '@/components/section-cards';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { TrendsChart, type TrendPoint } from '../overview/trends-chart';
@@ -294,12 +293,6 @@ export default async function OverviewPage({
               : 'Track attendance, campaigns and field activity across the selected range.'
           }
         />
-      </div>
-      <div className="mt-6">
-        <Card className="mb-5 p-4 sm:mb-6 sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
-          <SectionCards orgKind="retail" />
-        </Card>
       </div>
       <MaintenanceDashboard client={client} />
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
