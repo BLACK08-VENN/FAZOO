@@ -10,12 +10,20 @@ import { DEFAULT_GEOFENCE_RADIUS_METRES } from '@fazoo/config';
 import { storeInputSchema } from '@fazoo/validation';
 
 export default async function StoresPage() {
-  const { client } = await requireStaff();
-  const { data: stores } = await client.from('stores').select('*').order('name');
+  const { client, profile } = await requireStaff();
+  const { data: stores, error } = await client
+    .from('stores')
+    .select('*')
+    .eq('organization_id', profile.organization_id)
+    .order('name');
+  if (error) throw new Error(`Stores could not load: ${error.message}`);
 
   return (
     <>
-      <PageHeader title="Store management" description="Locations and their geofence radii. Add or remove store locations." />
+      <PageHeader
+        title="Store management"
+        description="Locations and their geofence radii. Add or remove store locations."
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <TableWrap>
@@ -33,7 +41,9 @@ export default async function StoresPage() {
               {(stores ?? []).map((s) => (
                 <tr key={s.id} className="hover:bg-lavender/60">
                   <Td className="font-medium">
-                    <Link href={`/stores/${s.id}`} className="text-deep underline">{s.name}</Link>
+                    <Link href={`/stores/${s.id}`} className="text-deep underline">
+                      {s.name}
+                    </Link>
                   </Td>
                   <Td className="text-muted">{s.address ?? '—'}</Td>
                   <Td className="text-right tabular-nums">{s.geofence_radius_metres} m</Td>
@@ -43,7 +53,10 @@ export default async function StoresPage() {
                       action={async () => {
                         'use server';
                         const { client: c } = await requireStaff();
-                        await c.rpc('admin_delete_store' as never, { p_store_id: s.id } as never);
+                        await c.rpc(
+                          'admin_delete_store' as never,
+                          { p_store_id: s.id } as never,
+                        );
                         revalidatePath('/stores');
                       }}
                     >
@@ -59,7 +72,10 @@ export default async function StoresPage() {
         </TableWrap>
 
         <Card>
-          <CardHeader title="Add a store" description="Coordinates come from your map tool of choice." />
+          <CardHeader
+            title="Add a store"
+            description="Coordinates come from your map tool of choice."
+          />
           <CardBody>
             <form
               action={async (formData: FormData) => {
@@ -75,7 +91,9 @@ export default async function StoresPage() {
                 });
                 if (!parsed.success) return;
                 const { client: c, profile } = await requireStaff();
-                await c.from('stores').insert({ ...parsed.data, organization_id: profile.organization_id });
+                await c
+                  .from('stores')
+                  .insert({ ...parsed.data, organization_id: profile.organization_id });
                 revalidatePath('/stores');
               }}
               className="space-y-3"
@@ -109,7 +127,9 @@ export default async function StoresPage() {
                   defaultValue={DEFAULT_GEOFENCE_RADIUS_METRES}
                 />
               </div>
-              <Button type="submit" className="w-full">Create store</Button>
+              <Button type="submit" className="w-full">
+                Create store
+              </Button>
             </form>
           </CardBody>
         </Card>

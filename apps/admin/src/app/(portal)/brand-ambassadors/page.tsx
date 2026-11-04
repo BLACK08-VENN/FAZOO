@@ -12,23 +12,30 @@ export default async function BrandAmbassadorsPage() {
   const { client, profile } = await requireStaff();
   const elevated = isElevated(profile.role);
 
-  const [{ data: bas }, { data: pendingRaw }, { data: regionRows }] = await Promise.all([
-    client
-      .from('profiles')
-      .select('id, full_name, phone, role, account_status, organization_id')
-      .eq('role', 'brand_ambassador')
-      .order('full_name'),
-    client.rpc('admin_list_pending_memberships'),
-    client
-      .from('veda_schools')
-      .select('region')
-      .eq('status', 'active'),
-  ]);
+  const [{ data: bas, error: basError }, { data: pendingRaw }, { data: regionRows }] =
+    await Promise.all([
+      client
+        .from('profiles')
+        .select('id, full_name, phone, role, account_status, organization_id')
+        .eq('role', 'brand_ambassador')
+        .eq('organization_id', profile.organization_id)
+        .order('full_name'),
+      client.rpc('admin_list_pending_memberships'),
+      client.from('veda_schools').select('region').eq('status', 'active'),
+    ]);
+
+  if (basError) throw new Error(`Brand ambassadors could not load: ${basError.message}`);
 
   const pending = (pendingRaw as PendingMembership[] | null) ?? [];
   const regions: RegionOption[] = Array.from(
-    new Set(((regionRows ?? []) as Array<{ region: string | null }>).map((s) => s.region ?? '').filter(Boolean)),
-  ).sort().map((region) => ({ region }));
+    new Set(
+      ((regionRows ?? []) as Array<{ region: string | null }>)
+        .map((s) => s.region ?? '')
+        .filter(Boolean),
+    ),
+  )
+    .sort()
+    .map((region) => ({ region }));
 
   return (
     <>
@@ -68,7 +75,7 @@ export default async function BrandAmbassadorsPage() {
                       {elevated ? (
                         <Td>
                           <div className="flex justify-end gap-2">
-                             <ApproveButtons profileId={p.user_id} regions={regions} />
+                            <ApproveButtons profileId={p.user_id} regions={regions} />
                           </div>
                         </Td>
                       ) : null}
@@ -135,7 +142,13 @@ interface RegionOption {
   region: string;
 }
 
-function ApproveButtons({ profileId, regions }: { profileId: string; regions: RegionOption[] }) {
+function ApproveButtons({
+  profileId,
+  regions,
+}: {
+  profileId: string;
+  regions: RegionOption[];
+}) {
   async function act(formData: FormData) {
     'use server';
     const action = String(formData.get('action'));

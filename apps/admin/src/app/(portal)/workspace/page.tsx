@@ -295,6 +295,12 @@ export default async function OverviewPage({
           }
         />
       </div>
+      <div className="mt-6">
+        <Card className="mb-5 p-4 sm:mb-6 sm:p-5">
+          <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
+          <SectionCards orgKind="retail" />
+        </Card>
+      </div>
       <MaintenanceDashboard client={client} />
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
@@ -417,12 +423,6 @@ export default async function OverviewPage({
               ))}
             </ul>
           )}
-        </Card>
-      </div>
-      <div className="mt-6">
-        <Card className="mb-5 p-4 sm:mb-6 sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold text-ink">Sections</h2>
-          <SectionCards orgKind="retail" />
         </Card>
       </div>
       <Card>

@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, LayoutDashboard, ArrowLeft, ArrowUpRight, LogOut } from 'lucide-react';
+import {
+  Building2,
+  LayoutDashboard,
+  ArrowLeft,
+  ArrowUpRight,
+  LogOut,
+  Menu,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { WorkspaceBrand } from './workspace-brand';
 import { FazooMark } from './fazoo-mark';
@@ -132,6 +139,37 @@ export function AdminPortalShell({
               </p>
             </div>
           </div>
+          {!global ? (
+            <details key={path} className="relative shrink-0">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-3 text-xs font-semibold text-white">
+                <Menu size={20} aria-hidden="true" />
+                Menu
+              </summary>
+              <nav
+                aria-label="Workspace menu"
+                className="absolute right-0 top-full mt-2 max-h-[70dvh] w-64 overflow-y-auto rounded-xl border border-white/15 bg-[#0A1A3A] p-2 shadow-xl"
+              >
+                {brandNav.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active(href) ? 'page' : undefined}
+                    className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm text-white hover:bg-white/10"
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                    {label}
+                  </Link>
+                ))}
+                <Link
+                  href="/overview"
+                  className="flex min-h-11 items-center gap-3 rounded-lg border-t border-white/10 px-3 py-2 text-sm text-white"
+                >
+                  <Building2 size={18} aria-hidden="true" />
+                  All brands
+                </Link>
+              </nav>
+            </details>
+          ) : null}
           {!global ? (
             <Link
               href="/overview"

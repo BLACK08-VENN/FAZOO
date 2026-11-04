@@ -66,6 +66,11 @@ describe('Neutral administration and explicit brand entry', () => {
     });
     expect(markup).toContain('Partner collection');
     expect(markup).toContain('Store management');
+    const mobileMenu = markup.split('aria-label="Workspace menu"')[1]?.split('</nav>')[0];
+    expect(mobileMenu).toBeDefined();
+    for (const destination of ['/brand-ambassadors', '/stores', '/skus']) {
+      expect(mobileMenu).toContain(`href="${destination}"`);
+    }
     expect(markup).not.toContain('Booklist pipeline');
   });
   it('never treats an unrelated path as a neutral hub path', () => {

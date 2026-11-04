@@ -30,10 +30,7 @@ export default async function SkusPage({
 
   const [{ data: orgs }, { data: campaigns }] = await Promise.all([
     client.from('organizations').select('id, name, slug').eq('status', 'active').order('name'),
-    client
-      .from('campaigns')
-      .select('id, name, organization_id, status')
-      .order('name'),
+    client.from('campaigns').select('id, name, organization_id, status').order('name'),
   ]);
 
   const readable = (orgs ?? []).filter(
@@ -44,15 +41,15 @@ export default async function SkusPage({
   // current workspace (the brand shown in the portal header).
   const allBrands = requestedBrand === 'all';
   const picked = readable.find((o) => o.id === requestedBrand) ?? null;
-  const active =
-    readable.find((o) => o.id === profile.organization_id) ?? readable[0] ?? null;
-  const scopeBrand = allBrands ? null : picked ?? active;
+  const active = readable.find((o) => o.id === profile.organization_id) ?? readable[0] ?? null;
+  const scopeBrand = allBrands ? null : (picked ?? active);
   const brandId = scopeBrand?.id ?? null;
 
-  const scopedCampaigns: CampaignOption[] = ((brandId
-    ? (campaigns ?? []).filter((c) => c.organization_id === brandId)
-    : (campaigns ?? [])
-  ) as CampaignOption[]).filter((c) => {
+  const scopedCampaigns: CampaignOption[] = (
+    (brandId
+      ? (campaigns ?? []).filter((c) => c.organization_id === brandId)
+      : (campaigns ?? [])) as CampaignOption[]
+  ).filter((c) => {
     // Non-super-admins only ever see campaigns of brands they can read.
     return profile.role === 'super_admin' || c.organization_id === profile.organization_id;
   });
@@ -66,7 +63,8 @@ export default async function SkusPage({
     .order('name');
   if (brandId) skuQuery.eq('organization_id', brandId);
   if (pickedCampaign) skuQuery.eq('campaign_id', pickedCampaign.id);
-  const { data: skus } = await skuQuery;
+  const { data: skus, error } = await skuQuery;
+  if (error) throw new Error(`SKUs could not load: ${error.message}`);
 
   // Group SKUs by campaign so each brand's products stay in their own
   // campaign — a Lenovo SKU never renders under a Veda campaign and vice versa.
@@ -123,7 +121,9 @@ export default async function SkusPage({
               ))}
             </Select>
           </div>
-          <Button type="submit" variant="outline">View</Button>
+          <Button type="submit" variant="outline">
+            View
+          </Button>
         </form>
         <p className="text-sm text-muted">
           Showing {(skus ?? []).length} SKU{(skus ?? []).length === 1 ? '' : 's'} in{' '}
@@ -215,7 +215,9 @@ export default async function SkusPage({
                 <Label htmlFor="k-campaign">Campaign</Label>
                 <Select id="k-campaign" name="campaign_id" required>
                   {activeScopedCampaigns.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </Select>
                 {activeScopedCampaigns.length === 0 ? (
@@ -230,9 +232,17 @@ export default async function SkusPage({
               </div>
               <div>
                 <Label htmlFor="k-code">Code</Label>
-                <Input id="k-code" name="code" required placeholder="e.g. TP-E14-G6" pattern="[A-Za-z0-9._-]{2,40}" />
+                <Input
+                  id="k-code"
+                  name="code"
+                  required
+                  placeholder="e.g. TP-E14-G6"
+                  pattern="[A-Za-z0-9._-]{2,40}"
+                />
               </div>
-              <Button type="submit" className="w-full">Create SKU</Button>
+              <Button type="submit" className="w-full">
+                Create SKU
+              </Button>
             </form>
           </CardBody>
         </Card>
@@ -270,7 +280,11 @@ async function EditSkuRow({
     ? ownCampaigns
     : [
         ...ownCampaigns,
-        { id: sku.campaign_id, name: sku.campaigns?.name ?? 'Current campaign', organization_id: sku.organization_id },
+        {
+          id: sku.campaign_id,
+          name: sku.campaigns?.name ?? 'Current campaign',
+          organization_id: sku.organization_id,
+        },
       ];
   return (
     <tr>
@@ -291,13 +305,16 @@ async function EditSkuRow({
             // Moving between campaigns stays inside the SKU's brand; org
             // never changes here, so products can't cross brands.
             if (p.role !== 'super_admin' && sku.organization_id !== p.organization_id) return;
-            await c.from('skus').update({
-              campaign_id: parsed.data.campaign_id,
-              name: parsed.data.name,
-              code: parsed.data.code,
-              description: parsed.data.description,
-              status: parsed.data.status,
-            }).eq('id', sku.id);
+            await c
+              .from('skus')
+              .update({
+                campaign_id: parsed.data.campaign_id,
+                name: parsed.data.name,
+                code: parsed.data.code,
+                description: parsed.data.description,
+                status: parsed.data.status,
+              })
+              .eq('id', sku.id);
             revalidatePath('/skus');
           }}
           className="flex flex-wrap items-end gap-3"
@@ -317,7 +334,9 @@ async function EditSkuRow({
                 defaultValue={sku.campaign_id}
               >
                 {campaignOptions.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </Select>
             </div>
@@ -329,7 +348,14 @@ async function EditSkuRow({
           </div>
           <div className="min-w-28">
             <Label htmlFor={`s-code-${sku.id}`}>Code</Label>
-            <Input id={`s-code-${sku.id}`} name="code" defaultValue={sku.code} required pattern="[A-Za-z0-9._-]{2,40}" className="font-mono text-xs" />
+            <Input
+              id={`s-code-${sku.id}`}
+              name="code"
+              defaultValue={sku.code}
+              required
+              pattern="[A-Za-z0-9._-]{2,40}"
+              className="font-mono text-xs"
+            />
           </div>
           <div>
             <Label htmlFor={`s-status-${sku.id}`}>Status</Label>
@@ -342,7 +368,9 @@ async function EditSkuRow({
       </Td>
       <Td className="text-right">
         <div className="flex flex-col items-end gap-1">
-          <Button type="submit" form={`sku-edit-${sku.id}`} className="h-8 px-3 text-xs">Update</Button>
+          <Button type="submit" form={`sku-edit-${sku.id}`} className="h-8 px-3 text-xs">
+            Update
+          </Button>
           <form
             action={async () => {
               'use server';
@@ -351,7 +379,9 @@ async function EditSkuRow({
               revalidatePath('/skus');
             }}
           >
-            <Button type="submit" variant="destructive" className="h-8 px-3 text-xs">Delete</Button>
+            <Button type="submit" variant="destructive" className="h-8 px-3 text-xs">
+              Delete
+            </Button>
           </form>
         </div>
       </Td>
