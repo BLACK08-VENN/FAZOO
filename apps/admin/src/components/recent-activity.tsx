@@ -19,12 +19,22 @@ function humanize(action: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export async function RecentActivity({ client, limit = 8 }: { client: FazooClient; limit?: number }) {
-  const { data: logs } = await client
+export async function RecentActivity({
+  client,
+  limit = 8,
+  organizationId,
+}: {
+  client: FazooClient;
+  limit?: number;
+  organizationId?: string;
+}) {
+  let query = client
     .from('audit_logs')
     .select('id, action, entity_type, created_at, profiles ( full_name )')
     .order('created_at', { ascending: false })
     .limit(limit);
+  if (organizationId) query = query.eq('organization_id', organizationId);
+  const { data: logs } = await query;
 
   if ((logs ?? []).length === 0) return null;
 

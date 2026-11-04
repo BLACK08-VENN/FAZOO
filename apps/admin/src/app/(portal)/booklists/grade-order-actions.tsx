@@ -12,8 +12,6 @@ export function GradeOrderActions({
 }: {
   gradeRequestId: string;
   jobId: string;
-  conversionStatus: string;
-  conversionProvider: string | null;
   hasWord: boolean;
   canAct: boolean;
 }) {
@@ -104,8 +102,7 @@ export function GradeOrderActions({
         </div>
       ) : null}
       <p className="text-xs text-muted">
-        OCR is temporarily disabled. Download the original and upload a prepared Word or PDF
-        document (maximum 4 MB).
+        Download the original and upload a prepared Word or PDF document (maximum 4 MB).
       </p>
       {hasWord ? (
         <Link className="text-sm text-primary underline" href={`/booklists/${jobId}`}>

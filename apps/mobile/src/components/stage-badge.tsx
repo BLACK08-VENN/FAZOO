@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import type { BooklistStage, OcrStatus, PrintOrderStatus } from '@fazoo/types';
+import type { BooklistStage, PrintOrderStatus } from '@fazoo/types';
 import {
   PRINT_ORDER_STATUS_LABELS,
   booklistStageLabel,
@@ -35,28 +35,6 @@ export function StageBadge({ stage, className = '' }: { stage: BooklistStage | n
       <Text className={`font-sans text-xs font-bold uppercase tracking-wide ${INK[tone]}`}>
         {booklistStageLabel(stage)}
       </Text>
-    </View>
-  );
-}
-
-const OCR_COPY: Record<OcrStatus, { label: string; tone: StatusTone }> = {
-  not_required: { label: 'No conversion needed', tone: 'neutral' },
-  queued: { label: 'Queued for conversion', tone: 'warning' },
-  processing: { label: 'Converting now', tone: 'warning' },
-  succeeded: { label: 'Converted to Word', tone: 'success' },
-  failed: { label: 'Conversion failed', tone: 'danger' },
-  manual_required: { label: 'Needs an admin to format it', tone: 'warning' },
-};
-
-export function OcrBadge({ status }: { status: OcrStatus }) {
-  const { label, tone } = OCR_COPY[status] ?? OCR_COPY.not_required;
-  return (
-    <View
-      className={`self-start rounded-full border px-3 py-1.5 ${SHELL[tone]}`}
-      accessibilityRole="text"
-      accessibilityLabel={label}
-    >
-      <Text className={`font-sans text-xs font-bold uppercase tracking-wide ${INK[tone]}`}>{label}</Text>
     </View>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import type { OcrStatus } from '@fazoo/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Input, Label } from '@/components/ui/input';
@@ -17,7 +16,6 @@ export function DocumentWorkspace({
   canAct,
 }: {
   jobId: string;
-  ocrStatus: OcrStatus;
   hasRawDocument: boolean;
   formattedPublishedAt: string | null;
   canAct: boolean;
@@ -93,7 +91,7 @@ export function DocumentWorkspace({
       <Card>
         <CardHeader
           title="1. Prepare the school booklist"
-          description="OCR is temporarily disabled. Download the original document and prepare a corrected Word or PDF file."
+          description="Download the original document and prepare a corrected Word or PDF file."
         />
         <CardBody>
           <p className="text-sm text-muted">

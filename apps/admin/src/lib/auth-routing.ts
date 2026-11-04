@@ -5,6 +5,8 @@ export type RoutingProfile = { role: string; account_status: string };
 
 const STAFF_ROUTES = [
   '/overview',
+  '/workspace',
+  '/partners',
   '/service-desk',
   '/brand-ambassadors',
   '/campaigns',

@@ -52,10 +52,10 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
           Open the pipeline
         </Link>
         <Link
-          href="/booklists/conversion"
+          href="/booklists/preparation"
           className="inline-flex min-h-11 items-center justify-center rounded-lg border border-ink/15 px-4 text-sm font-semibold text-ink hover:bg-ink/5"
         >
-          Conversion queue{waitingOnAdmin > 0 ? ` (${waitingOnAdmin})` : ''}
+          Document preparation{waitingOnAdmin > 0 ? ` (${waitingOnAdmin})` : ''}
         </Link>
       </PageHeader>
 

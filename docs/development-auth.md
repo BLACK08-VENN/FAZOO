@@ -19,8 +19,7 @@ Run `pnpm --filter @fazoo/admin test` for the 62 mocked authentication, routing,
 and session-proxy checks. Run `pnpm --filter @fazoo/admin typecheck` as well.
 The auth tests have no real Supabase connection and never use production accounts.
 
-At implementation, changed-file lint and TypeScript checks pass. Whole-admin lint
-has four existing explicit-any errors in OCR files. The dependency audit also
+At implementation, changed-file lint and TypeScript checks pass. The former four explicit-any lint errors were in recognition modules that have since been removed. The dependency audit also
 fails on the unchanged baseline lockfile (including Next.js advisories). These
 are release blockers to review separately, not evidence of a production-ready build.
 

@@ -7,7 +7,6 @@ import type {
   DailyLogStatus,
   DispatchMeans,
   GeofenceOutcome,
-  OcrStatus,
   PrintOrderStatus,
   VisitOutcome,
 } from './enums';
@@ -318,9 +317,6 @@ export interface JobDetailDocument {
   page_count: number | null;
   source_format: string | null;
   is_current: boolean;
-  ocr_status: OcrStatus;
-  ocr_confidence: number | null;
-  ocr_error: string | null;
   created_at: IsoTimestamp;
   uploaded_by_name: string | null;
 }
@@ -379,12 +375,10 @@ export interface BaVisitStatsResult {
 
 // ── Admin / supervisor booklist RPCs ────────────────────────────────────────
 
-/** One row of `admin_booklist_queue`. The raw document is left-joined, so a
- *  job can appear in the conversion queue before its upload has landed. */
+/** One row in the manual document preparation queue. */
 export interface AdminQueueJob {
   job_id: Uuid;
   stage: BooklistStage;
-  ocr_status: OcrStatus;
   school_id: Uuid;
   school_name: string;
   school_region: string | null;
@@ -396,18 +390,13 @@ export interface AdminQueueJob {
   file_size_bytes: number | null;
   page_count: number | null;
   source_format: string | null;
-  ocr_confidence: number | null;
-  ocr_error: string | null;
-  ocr_provider: string | null;
   ba_name: string | null;
   ba_agency: BaAgency | null;
 }
 
 export interface AdminQueueCounts {
-  awaiting_conversion: number;
-  converting: number;
-  ocr_failed: number;
-  manual_required: number;
+  awaiting_preparation: number;
+  missing_original: number;
   formatted_ready: number;
 }
 
@@ -432,7 +421,6 @@ export interface AdminPipelineJob {
   copies_to_print: number | null;
   due_date: IsoDate | null;
   is_per_grade: boolean;
-  ocr_status: OcrStatus;
   document_received_at: IsoTimestamp | null;
   formatted_at: IsoTimestamp | null;
   approved_by_school_at: IsoTimestamp | null;

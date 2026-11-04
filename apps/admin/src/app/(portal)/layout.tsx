@@ -1,213 +1,30 @@
-import Link from 'next/link';
-import { WorkspaceBrand } from '@/components/workspace-brand';
+import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { AdminPortalShell } from '@/components/admin-portal-shell';
 import { MaintenanceEntry } from '@/components/maintenance/entry';
-import { SidebarNav } from '@/components/sidebar-nav';
-import { requireStaff } from '@/lib/auth';
-import { resolveOrgKind } from '@/lib/nav';
-import { MobileNav } from '@/components/mobile-nav';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { CommandPalette } from '@/components/command-palette';
-import { Toaster } from '@/components/toast';
-import { FazooMark } from '@/components/fazoo-mark';
-import { signOutAction, switchAdminBrandAction } from './actions';
+import { loadAdminBrandHub } from '@/lib/admin-workspace-server';
+import {
+  ADMIN_WORKSPACE_COOKIE,
+  isAdminHubPath,
+  workspaceSelectionMatches,
+} from '@/lib/admin-workspace';
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
-  const { client, profile } = await requireStaff();
-  const orgKind = await resolveOrgKind(client);
-  const { data: partnerContext } = await client.rpc('partner_context');
-
-  const { data: organizations } = await client
-    .from('organizations')
-    .select('id, name, slug, logo_url, status, kind')
-    .eq('status', 'active')
-    .order('name');
-
-  const activeBrands = organizations ?? [];
-  const activeBrand =
-    activeBrands.find((brand) => brand.id === profile.organization_id) ??
-    activeBrands[0] ??
-    null;
-  const canSwitchBrand = profile.role === 'super_admin' && activeBrands.length > 1;
-
+  const { profile, hub } = await loadAdminBrandHub();
+  const cookie = (await cookies()).get(ADMIN_WORKSPACE_COOKIE)?.value;
+  const selected = workspaceSelectionMatches(cookie, profile.id, profile.organization_id)
+    ? (hub.brands.find((b) => b.id === profile.organization_id) ?? null)
+    : null;
+  const path = (await headers()).get('x-fazoo-pathname') ?? '/overview';
+  if (!isAdminHubPath(path) && !selected) redirect('/overview');
   return (
-    <div className="fazoo-shell flex min-h-screen">
-      <aside
-        className="fazoo-glass-dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r px-3 py-5 xl:flex"
-        aria-label="Sidebar navigation"
-      >
-        <WorkspaceBrand />
-
-        {activeBrand ? (
-          <div className="mx-1 mb-5 rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
-              Active brand
-            </p>
-            <div className="flex items-center gap-2.5">
-              {activeBrand.logo_url ? (
-                <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1">
-                  <img
-                    src={activeBrand.logo_url}
-                    alt={`${activeBrand.name} logo`}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-              ) : (
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm font-bold text-white">
-                  {activeBrand.name.slice(0, 1).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">{activeBrand.name}</p>
-                <p className="truncate text-[11px] capitalize text-white/50">
-                  {activeBrand.kind} workspace
-                </p>
-              </div>
-            </div>
-
-            {canSwitchBrand ? (
-              <form action={switchAdminBrandAction} className="mt-3 space-y-2">
-                <label htmlFor="admin-active-brand" className="sr-only">
-                  Change active brand
-                </label>
-                <select
-                  id="admin-active-brand"
-                  name="organization_id"
-                  defaultValue={activeBrand.id}
-                  className="h-9 w-full rounded-lg border border-white/15 bg-[#19243f] px-2 text-xs text-white outline-none focus:border-white/40"
-                >
-                  {activeBrands.map((brand) => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  className="w-full rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/85 hover:bg-white/10"
-                >
-                  Switch brand
-                </button>
-              </form>
-            ) : null}
-          </div>
-        ) : null}
-
-        {partnerContext ? (
-          <Link
-            href="/partners"
-            className="mb-3 rounded-lg bg-primary px-3 py-3 text-sm font-semibold text-white"
-          >
-            Partner collection
-          </Link>
-        ) : null}
-        <MaintenanceEntry />
-        <p className="fazoo-nav-caption">Workspace</p>
-        <SidebarNav orgKind={orgKind} />
-        <div className="border-t border-white/10 pt-4">
-          <CommandPalette orgKind={orgKind} />
-          <div className="mt-3">
-            <ThemeToggle />
-          </div>
-          <div className="mt-3">
-            <p className="truncate px-3 text-sm font-medium text-white">{profile.full_name}</p>
-            <p className="truncate px-3 text-xs text-white/50">
-              {profile.role.replace('_', ' ')}
-            </p>
-          </div>
-          <form action={signOutAction} className="mt-3">
-            <button
-              type="submit"
-              className="w-full rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 w-full flex-col">
-        <header className="fazoo-glass-dark no-print sticky top-0 z-20 flex min-h-[60px] items-center justify-between border-b px-4 xl:hidden">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <FazooMark className="size-9" />
-            {activeBrand?.logo_url ? (
-              <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1">
-                <img
-                  src={activeBrand.logo_url}
-                  alt={`${activeBrand.name} logo`}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-            ) : null}
-            <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-white">
-                {activeBrand?.name ?? 'Fazoo'}
-              </p>
-              <p className="truncate text-[10px] capitalize text-white/55">
-                {profile.role.replace('_', ' ')}
-              </p>
-            </div>
-          </div>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
-            >
-              Sign out
-            </button>
-          </form>
-        </header>
-
-        {canSwitchBrand && activeBrand ? (
-          <div className="no-print border-b border-ink/10 bg-white/90 px-4 py-2 xl:hidden">
-            <form action={switchAdminBrandAction} className="flex items-center gap-2">
-              <label
-                htmlFor="mobile-admin-active-brand"
-                className="shrink-0 text-xs font-semibold text-muted"
-              >
-                Brand
-              </label>
-              <select
-                id="mobile-admin-active-brand"
-                name="organization_id"
-                defaultValue={activeBrand.id}
-                className="h-9 min-w-0 flex-1 rounded-lg border border-ink/15 bg-white px-2 text-xs text-ink"
-              >
-                {activeBrands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="h-9 rounded-lg bg-primary px-3 text-xs font-semibold text-white"
-              >
-                Switch
-              </button>
-            </form>
-          </div>
-        ) : null}
-
-        <main
-          className="min-w-0 flex-1 px-4 pb-28 pt-5 sm:p-6 sm:pb-28 xl:p-8"
-          id="main-content"
-        >
-          {partnerContext ? (
-            <Link
-              href="/partners"
-              className="mb-4 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white xl:hidden"
-            >
-              Partner collection
-            </Link>
-          ) : null}
-          {children}
-        </main>
-        <div className="fixed bottom-24 right-4 z-30 rounded-lg bg-[#0A1A3A] px-2 xl:hidden">
-          <MaintenanceEntry />
-        </div>
-        <MobileNav orgKind={orgKind} />
-        <Toaster />
-      </div>
-    </div>
+    <AdminPortalShell
+      brand={selected}
+      fullName={profile.full_name}
+      role={profile.role}
+      maintenanceEntry={<MaintenanceEntry />}
+    >
+      {children}
+    </AdminPortalShell>
   );
 }

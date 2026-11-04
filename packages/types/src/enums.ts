@@ -148,23 +148,13 @@ export type BooklistStage = (typeof BooklistStage)[keyof typeof BooklistStage];
 
 export const BooklistDocumentKind = {
   RawUpload: 'raw_upload',
-  OcrDraft: 'ocr_draft',
+  SavedDraft: 'ocr_draft',
   Formatted: 'formatted',
   PrintedProof: 'printed_proof',
   StampedCopy: 'stamped_copy',
 } as const;
 export type BooklistDocumentKind =
   (typeof BooklistDocumentKind)[keyof typeof BooklistDocumentKind];
-
-export const OcrStatus = {
-  NotRequired: 'not_required',
-  Queued: 'queued',
-  Processing: 'processing',
-  Succeeded: 'succeeded',
-  Failed: 'failed',
-  ManualRequired: 'manual_required',
-} as const;
-export type OcrStatus = (typeof OcrStatus)[keyof typeof OcrStatus];
 
 export const PrintOrderStatus = {
   Draft: 'draft',

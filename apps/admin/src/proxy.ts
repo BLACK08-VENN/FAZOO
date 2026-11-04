@@ -8,7 +8,6 @@ const PUBLIC_PATHS = [
   '/not-authorized',
   '/how-it-works',
   '/maintenance-preview',
-  '/api/ocr/assets',
 ];
 
 export async function proxy(request: NextRequest) {
@@ -27,6 +26,7 @@ export async function proxy(request: NextRequest) {
     "form-action 'self'",
   ].join('; ');
   request.headers.set('x-nonce', nonce);
+  request.headers.set('x-fazoo-pathname', request.nextUrl.pathname);
   request.headers.set('Content-Security-Policy', csp);
   const secure = (res: NextResponse) => {
     res.headers.set('Content-Security-Policy', csp);
@@ -42,9 +42,7 @@ export async function proxy(request: NextRequest) {
     return redirect;
   };
   const pathname = request.nextUrl.pathname;
-  const isPublic =
-    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
-    /^\/api\/booklists\/(?:grades\/)?[^/]+\/convert$/.test(pathname);
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

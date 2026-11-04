@@ -5,7 +5,6 @@ import type {
   BooklistStage,
   DispatchMeans,
   GeofenceOutcome,
-  OcrStatus,
   PrintOrderStatus,
   VisitOutcome,
 } from './enums';
@@ -58,7 +57,6 @@ export interface BooklistJob {
   copies_confirmed_by: Uuid | null;
   school_acknowledged_by: string | null;
   approved_by_school_at: IsoTimestamp | null;
-  ocr_status: OcrStatus;
   converted_at: IsoTimestamp | null;
   converted_by: Uuid | null;
   document_received_at: IsoTimestamp | null;
@@ -77,7 +75,7 @@ export interface BooklistJob {
   updated_at: IsoTimestamp;
 }
 
-/** Any artefact attached to a job — raw upload, OCR draft, formatted, stamped. */
+/** Any artefact attached to a job — original, saved draft, prepared document, stamped. */
 export interface BooklistDocument {
   id: Uuid;
   organization_id: Uuid;
@@ -94,12 +92,6 @@ export interface BooklistDocument {
   captured_on_site: boolean;
   uploaded_by: Uuid | null;
   is_current: boolean;
-  ocr_status: OcrStatus;
-  ocr_provider: string | null;
-  ocr_confidence: number | null;
-  ocr_error: string | null;
-  ocr_started_at: IsoTimestamp | null;
-  ocr_finished_at: IsoTimestamp | null;
   client_request_id: Uuid | null;
   created_at: IsoTimestamp;
   updated_at: IsoTimestamp;

@@ -9,7 +9,6 @@ import type {
   AdminSchoolDossierResult,
   BaAgency,
   BooklistStage,
-  OcrStatus,
 } from '@fazoo/types';
 
 /**
@@ -25,11 +24,7 @@ import type {
  * real fields instead of reaching into `Record<string, unknown>`.
  */
 
-async function call<T>(
-  client: FazooClient,
-  fn: string,
-  params?: object,
-): Promise<T> {
+async function call<T>(client: FazooClient, fn: string, params?: object): Promise<T> {
   const { data, error } = await client.rpc(fn as never, (params ?? {}) as never);
   if (error) throw new Error(error.message);
   return data as unknown as T;
@@ -76,17 +71,16 @@ export async function pipelineBoard(
   );
 }
 
-/** Jobs waiting on the admin: raw upload received, conversion not yet published. */
-export async function conversionQueue(
+/** Jobs waiting on the admin: original received, prepared document not yet published. */
+export async function documentPreparationQueue(
   client: FazooClient,
-  options: { ocrStatus?: OcrStatus | null; limit?: number } = {},
+  options: { limit?: number } = {},
 ): Promise<AdminBooklistQueueResult> {
   return unwrap(
-    await call<AdminBooklistQueueResult>(client, 'admin_booklist_queue', {
-      p_ocr_status: options.ocrStatus ?? null,
+    await call<AdminBooklistQueueResult>(client, 'admin_document_preparation_queue', {
       p_limit: options.limit ?? 100,
     }),
-    'admin_booklist_queue',
+    'admin_document_preparation_queue',
   );
 }
 

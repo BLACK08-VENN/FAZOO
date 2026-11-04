@@ -24,7 +24,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Never cache authenticated API responses, signed file responses or OCR assets.
+  // Never cache authenticated API responses or signed file responses.
   // These must always come from the current production deployment.
   if (url.pathname.startsWith('/api/')) return;
 

@@ -60,10 +60,7 @@ type GradePrintOrder = {
   source_format: string | null;
   raw_storage_path: string;
   raw_mime_type: string | null;
-  conversion_status: string;
-  conversion_provider: string | null;
   conversion_confidence: number | null;
-  conversion_error: string | null;
   word_storage_path: string | null;
   word_mime_type: string | null;
   word_published_at: string | null;
@@ -292,10 +289,10 @@ export default async function BooklistPipelinePage({
         description="Every logged school and the exact point it has reached — from the gate selfie to the stamped +1 copy."
       >
         <Link
-          href="/booklists/conversion"
+          href="/booklists/preparation"
           className="inline-flex h-10 items-center rounded-lg border border-primary/30 bg-white px-4 text-sm font-medium text-primary hover:bg-lavender"
         >
-          Conversion queue
+          Document preparation
           {awaitingConversion > 0 ? ` (${awaitingConversion})` : ''}
         </Link>
         <Link
@@ -426,8 +423,8 @@ export default async function BooklistPipelinePage({
             Separate grade print orders
           </h2>
           <p className="mt-1 text-xs text-muted">
-            OCR is temporarily disabled. Download the original and attach a prepared Word or PDF
-            document for school approval.
+            Download the original and attach a prepared Word or PDF document for school
+            approval.
           </p>
         </div>
         <TableWrap>
@@ -478,8 +475,6 @@ export default async function BooklistPipelinePage({
                       <GradeOrderActions
                         gradeRequestId={order.grade_request_id}
                         jobId={order.job_id}
-                        conversionStatus={order.conversion_status}
-                        conversionProvider={order.conversion_provider}
                         hasWord={Boolean(order.word_storage_path)}
                         canAct={canAct}
                       />

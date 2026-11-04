@@ -22,7 +22,7 @@ import {
 } from '@fazoo/config';
 import { requireStaff, isElevated } from '@/lib/auth';
 import { PageHeader, StatCard } from '@/components/page';
-import { AgencyBadge, OcrBadge, PrintOrderBadge, StageBadge } from '@/components/stage-badge';
+import { AgencyBadge, PrintOrderBadge, StageBadge } from '@/components/stage-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
@@ -34,7 +34,7 @@ import { DocumentWorkspace } from './document-workspace';
 
 const DOCUMENT_KIND_LABELS: Record<BooklistDocument['kind'], string> = {
   raw_upload: 'What the school gave us',
-  ocr_draft: 'Auto-converted draft',
+  ocr_draft: 'Saved draft',
   formatted: 'Formatted Word document',
   printed_proof: 'Printed proof',
   stamped_copy: 'Stamped +1 copy',
@@ -109,34 +109,40 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
   const job = jobRow as unknown as BooklistJob | null;
   if (!job) notFound();
 
-  const [documentsResult, ordersResult, eventsResult, visitsResult, schoolResult, gradesResult] =
-    await Promise.all([
-      client
-        .from('booklist_documents')
-        .select('*')
-        .eq('job_id', jobId)
-        .order('created_at', { ascending: false }),
-      client
-        .from('print_orders')
-        .select('*')
-        .eq('job_id', jobId)
-        .order('created_at', { ascending: false }),
-      client
-        .from('booklist_stage_events')
-        .select('*')
-        .eq('job_id', jobId)
-        .order('created_at', { ascending: true }),
-      client
-        .from('school_visits')
-        .select('*')
-        .eq('school_id', job.school_id)
-        .order('arrived_at', { ascending: false }),
-      client.from('veda_schools').select('*').eq('id', job.school_id).maybeSingle(),
-      client
-        .from('booklist_grade_requests' as never)
-        .select('id, grade_label, copies_requested, copies_to_print, due_date, word_storage_path')
-        .eq('job_id', jobId),
-    ]);
+  const [
+    documentsResult,
+    ordersResult,
+    eventsResult,
+    visitsResult,
+    schoolResult,
+    gradesResult,
+  ] = await Promise.all([
+    client
+      .from('booklist_documents')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('created_at', { ascending: false }),
+    client
+      .from('print_orders')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('created_at', { ascending: false }),
+    client
+      .from('booklist_stage_events')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('created_at', { ascending: true }),
+    client
+      .from('school_visits')
+      .select('*')
+      .eq('school_id', job.school_id)
+      .order('arrived_at', { ascending: false }),
+    client.from('veda_schools').select('*').eq('id', job.school_id).maybeSingle(),
+    client
+      .from('booklist_grade_requests' as never)
+      .select('id, grade_label, copies_requested, copies_to_print, due_date, word_storage_path')
+      .eq('job_id', jobId),
+  ]);
 
   const documents = (documentsResult.data ?? []) as unknown as BooklistDocument[];
   const printOrders = (ordersResult.data ?? []) as unknown as PrintOrder[];
@@ -160,8 +166,8 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
     due_date: string | null;
     word_storage_path: string | null;
   }>;
-  const correctedGradeDocumentCount = gradeDocuments.filter(
-    (grade) => Boolean(grade.word_storage_path),
+  const correctedGradeDocumentCount = gradeDocuments.filter((grade) =>
+    Boolean(grade.word_storage_path),
   ).length;
   const allGradeDocumentsPublished =
     gradeDocuments.length > 0 && correctedGradeDocumentCount === gradeDocuments.length;
@@ -173,7 +179,8 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
     (total, grade) => total + grade.copies_to_print,
     0,
   );
-  const copiesRequested = gradeDocuments.length > 0 ? gradeCopiesRequested : job.copies_requested;
+  const copiesRequested =
+    gradeDocuments.length > 0 ? gradeCopiesRequested : job.copies_requested;
   const copiesToPrint = gradeDocuments.length > 0 ? gradeCopiesToPrint : job.copies_to_print;
 
   // Actor names are resolved in one pass rather than embedded, because
@@ -326,7 +333,6 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <StageBadge stage={job.stage} />
-        <OcrBadge status={job.ocr_status} />
         {job.is_per_grade ? <Badge tone="neutral">Per grade</Badge> : null}
         {stamped ? <Badge tone="success">Stamped +1 copy on file</Badge> : null}
         {job.on_hold_reason ? (
@@ -377,7 +383,6 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
           ) : (
             <DocumentWorkspace
               jobId={jobId}
-              ocrStatus={job.ocr_status}
               hasRawDocument={job.raw_document_id !== null}
               formattedPublishedAt={job.formatted_at}
               canAct={canAct}
@@ -468,7 +473,9 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
                       <div>
                         <p className="font-semibold text-ink">{grade.grade_label}</p>
                         {grade.due_date ? (
-                          <p className="text-xs text-muted">Due {nairobiDate(grade.due_date)}</p>
+                          <p className="text-xs text-muted">
+                            Due {nairobiDate(grade.due_date)}
+                          </p>
                         ) : null}
                       </div>
                       <span className="min-w-16 text-right tabular-nums text-ink">
@@ -693,10 +700,12 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
                     value={`In-house printing started for ${copiesToPrint ?? 0} copies`}
                   />
                   <p className="mb-3 text-sm text-ink">
-                    Ready to print <strong>{copiesToPrint?.toLocaleString() ?? 0} copies</strong>
+                    Ready to print{' '}
+                    <strong>{copiesToPrint?.toLocaleString() ?? 0} copies</strong>
                     {gradeDocuments.length > 0
                       ? ` across ${gradeDocuments.length} grade order${gradeDocuments.length === 1 ? '' : 's'}`
-                      : ''}.
+                      : ''}
+                    .
                   </p>
                   <Button type="submit" disabled={!copiesToPrint || copiesToPrint < 1}>
                     Start in-house printing
@@ -725,7 +734,6 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
                     <Th>Source</Th>
                     <Th>Size</Th>
                     <Th>Uploaded</Th>
-                    <Th>Conversion</Th>
                     <Th>
                       <span className="sr-only">Open</span>
                     </Th>
@@ -733,7 +741,7 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
                 </thead>
                 <tbody>
                   {documents.length === 0 ? (
-                    <EmptyRow colSpan={6}>
+                    <EmptyRow colSpan={5}>
                       Nothing has been uploaded for this school yet.
                     </EmptyRow>
                   ) : (
@@ -757,14 +765,6 @@ export default async function BooklistJobPage({ params }: { params: Promise<{ id
                         <Td className="whitespace-nowrap text-xs">
                           {nairobiTime(doc.created_at)}
                           <p className="text-muted">{nameOf(doc.uploaded_by)}</p>
-                        </Td>
-                        <Td>
-                          <OcrBadge status={doc.ocr_status} />
-                          {doc.ocr_confidence !== null ? (
-                            <p className="mt-1 text-xs text-muted">
-                              Confidence {(doc.ocr_confidence * 100).toFixed(0)}%
-                            </p>
-                          ) : null}
                         </Td>
                         <Td>
                           <a

@@ -29,7 +29,7 @@ import { flushQueue } from '@/lib/offline/sync';
 import { PrimaryButton } from '@/components/primary-button';
 import { StatusPill } from '@/components/status-pill';
 import { CaptureBox } from '@/components/capture-box';
-import { OcrBadge, PrintOrderBadge, StageBadge } from '@/components/stage-badge';
+import { PrintOrderBadge, StageBadge } from '@/components/stage-badge';
 import {
   Card,
   EmptyState,
@@ -57,7 +57,7 @@ const OUTCOME_LABEL: Record<VisitOutcome, string> = {
 
 const DOCUMENT_KIND_LABEL: Record<BooklistDocumentKind, string> = {
   raw_upload: 'What the school gave you',
-  ocr_draft: 'Auto-converted draft',
+  ocr_draft: 'Saved draft',
   formatted: 'Formatted Word document',
   printed_proof: 'Printed proof',
   stamped_copy: 'Stamped +1 copy',
@@ -575,9 +575,6 @@ export default function SchoolJob() {
               <Text className="font-sans text-base font-bold text-ink">
                 {DOCUMENT_KIND_LABEL[document.kind] ?? document.kind}
               </Text>
-              <View className="mt-2">
-                <OcrBadge status={document.ocr_status} />
-              </View>
               <Text className="font-sans mt-2 text-sm leading-6 text-muted">
                 {sourceFormatLabel(document.source_format)}
                 {document.file_size_bytes
@@ -590,9 +587,6 @@ export default function SchoolJob() {
                 {document.uploaded_by_name ? ` · ${document.uploaded_by_name}` : ''}
                 {document.is_current ? '' : ' · superseded'}
               </Text>
-              {document.ocr_error ? (
-                <Text className="font-sans mt-2 text-sm text-bad">{document.ocr_error}</Text>
-              ) : null}
               <PrimaryButton
                 label="Open"
                 variant="secondary"

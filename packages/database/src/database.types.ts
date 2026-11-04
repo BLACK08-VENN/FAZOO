@@ -1728,6 +1728,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_brand_hub: { Args: Record<PropertyKey, never>; Returns: Json }
+      admin_open_brand: { Args: { p_organization_id: string; p_client_request_id: string }; Returns: Json }
+      admin_document_preparation_queue: { Args: { p_limit?: number }; Returns: Json }
+
       partner_context: { Args: Record<PropertyKey, never>; Returns: Json }
       partner_submit_log: { Args: { p_client_request_id: string; p_payload: Json }; Returns: Json }
       partner_set_thresholds: { Args: { p_client_request_id: string; p_high: number; p_medium: number }; Returns: Json }
@@ -1760,13 +1764,6 @@ export type Database = {
           p_agency?: Database["public"]["Enums"]["ba_agency"]
           p_period_end?: string
           p_period_start?: string
-        }
-        Returns: Json
-      }
-      admin_booklist_queue: {
-        Args: {
-          p_limit?: number
-          p_ocr_status?: Database["public"]["Enums"]["ocr_status"]
         }
         Returns: Json
       }
@@ -1854,21 +1851,6 @@ export type Database = {
           p_note?: string
           p_page_count?: number
           p_storage_path: string
-        }
-        Returns: Json
-      }
-      admin_record_ocr_result: {
-        Args: {
-          p_actor_id?: string
-          p_confidence?: number
-          p_draft_mime_type?: string
-          p_draft_size_bytes?: number
-          p_draft_storage_path?: string
-          p_error?: string
-          p_job_id: string
-          p_page_count?: number
-          p_provider?: string
-          p_status: Database["public"]["Enums"]["ocr_status"]
         }
         Returns: Json
       }

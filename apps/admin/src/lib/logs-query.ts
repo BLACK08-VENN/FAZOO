@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { lagosDate } from '@fazoo/config';
 import { logFiltersSchema, type LogFilters } from '@fazoo/validation';
 import type { FazooClient } from '@fazoo/database';
@@ -15,12 +16,12 @@ export function resolveRange(filters: LogFilters): { from: string; to: string } 
   };
 }
 
-export function parseLogFilters(params: URLSearchParams | Record<string, string | undefined>): LogFilters {
+export function parseLogFilters(
+  params: URLSearchParams | Record<string, string | undefined>,
+): LogFilters {
   const raw =
     params instanceof URLSearchParams
-      ? Object.fromEntries(
-          [...params.entries()].filter(([, v]) => v !== ''),
-        )
+      ? Object.fromEntries([...params.entries()].filter(([, v]) => v !== ''))
       : params;
   const parsed = logFiltersSchema.safeParse(raw);
   if (parsed.success) return parsed.data;
@@ -104,16 +105,26 @@ function mapRow(r: RawRow): LogRow {
   };
 }
 
+const currentLogOrganization = cache(async (client: FazooClient) => {
+  const { data, error } = await client.rpc('current_profile');
+  if (error) throw error;
+  const id = data?.[0]?.organization_id;
+  if (!id) throw new Error('Choose an active brand to view field activity.');
+  return id;
+});
+
 export async function fetchLogs(
   client: FazooClient,
   filters: LogFilters,
   limit = 500,
 ): Promise<LogRow[]> {
   const { from, to } = resolveRange(filters);
+  const organizationId = await currentLogOrganization(client);
 
   let query = client
     .from('daily_logs')
     .select(SELECT)
+    .eq('organization_id', organizationId)
     .gte('attendance_date', from)
     .lte('attendance_date', to)
     .order('attendance_date', { ascending: false })
@@ -123,7 +134,8 @@ export async function fetchLogs(
   if (filters.campaign_id) query = query.eq('campaign_id', filters.campaign_id);
   if (filters.ba_id) query = query.eq('brand_ambassador_id', filters.ba_id);
   if (filters.store_id) query = query.eq('store_id', filters.store_id);
-  if (filters.attendance_status) query = query.eq('attendance_status', filters.attendance_status);
+  if (filters.attendance_status)
+    query = query.eq('attendance_status', filters.attendance_status);
   if (filters.completion_status) query = query.eq('status', filters.completion_status);
 
   const { data, error } = await query;

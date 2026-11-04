@@ -211,7 +211,7 @@ export function nextActionFor(stage: BooklistStage, formattedReady: boolean): st
     case 'document_received':
     case 'awaiting_conversion':
     case 'converting':
-      return 'With our admin — being converted to an editable Word document.';
+      return 'With our admin — a prepared document will be uploaded for school approval.';
     case 'formatted':
       return formattedReady
         ? 'Download the formatted document, print it, and take it back for approval.'
