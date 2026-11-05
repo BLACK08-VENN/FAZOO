@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ADMIN_OWNED_STAGES, BOOKLIST_STAGE_ORDER } from '@fazoo/config';
 import type { BooklistStage } from '@fazoo/types';
@@ -13,7 +14,7 @@ import { pipelineBoard, baDailyTargets } from '@/server/booklists';
  * sits in the booklist journey, and which of them are waiting on us rather
  * than on the BA or the school.
  */
-export async function SchoolsOverview({ client }: { client: FazooClient }) {
+export async function SchoolsOverview({ client, team }: { client: FazooClient; team?: ReactNode }) {
   // `admin_pipeline_board` clamps p_limit to a minimum of 1, so ask for a
   // single row purely to read the organization-wide `stage_counts` it returns
   // alongside — those deliberately ignore every filter.
@@ -58,6 +59,8 @@ export async function SchoolsOverview({ client }: { client: FazooClient }) {
           Document preparation{waitingOnAdmin > 0 ? ` (${waitingOnAdmin})` : ''}
         </Link>
       </PageHeader>
+
+      {team}
 
       {daily ? (
         <Card className="mb-5 p-3 sm:mb-6 sm:p-4">

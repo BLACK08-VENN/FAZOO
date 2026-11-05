@@ -13,7 +13,7 @@
     "build:admin": "pnpm --filter @fazoo/admin build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "test": "pnpm -r test",
+    "test": "node --experimental-strip-types --test scripts/campaign-team.test.mjs && pnpm -r test",
     "test:e2e": "pnpm --filter @fazoo/admin test:e2e",
     "db:reset": "cd supabase && supabase db reset",
     "db:push": "cd supabase && supabase db push",

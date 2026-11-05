@@ -1,3 +1,4 @@
+import { CampaignTeam } from '@/components/campaign-team';
 import { MaintenanceDashboard } from '@/components/maintenance/dashboard';
 import { ActivityChart } from '../overview/activity-chart';
 import Link from 'next/link';
@@ -249,16 +250,18 @@ export default async function OverviewPage({
   // A schools org has no stores, campaigns or daily logs, so the retail
   // aggregate below would render an all-zero landing page. Hand those admins
   // the booklist pipeline view instead.
+  const params = await searchParams;
   const orgKind = await resolveOrgKind(client);
   if (orgKind === 'schools')
     return (
       <>
         <MaintenanceDashboard client={client} />
-        <SchoolsOverview client={client} />
+        <SchoolsOverview client={client} team={
+          <CampaignTeam client={client} organizationId={profile.organization_id} campaignId={params.campaign_id} />
+        } />
       </>
     );
 
-  const params = await searchParams;
   const filters = parseLogFilters(params);
   const options = await loadFilterOptions(client, profile.organization_id);
 
@@ -297,7 +300,7 @@ export default async function OverviewPage({
       <MaintenanceDashboard client={client} />
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Active BAs"
+          label="BAs with activity"
           value={stats.activeBas}
           hint="BAs with logs in this range"
         />
@@ -315,6 +318,12 @@ export default async function OverviewPage({
         rows={stripRows}
         current={filters.campaign_id}
         filters={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, v as string]))}
+      />
+
+      <CampaignTeam
+        client={client}
+        organizationId={profile.organization_id}
+        campaignId={filters.campaign_id}
       />
 
       <Card className="mb-5 p-3 sm:mb-6 sm:p-4">
