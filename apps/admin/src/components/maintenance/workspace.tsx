@@ -24,11 +24,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
-import {
-  formatLagosDisplay,
-  lagosDateTime,
-  lagosDateTimeToUtc,
-} from '@fazoo/config';
+import { formatLagosDisplay, lagosDateTime, lagosDateTimeToUtc } from '@fazoo/config';
 import { FazooMark } from '@/components/fazoo-mark';
 import { mutateMaintenance } from '@/app/service-desk/actions';
 import {
@@ -59,16 +55,16 @@ export function MaintenanceWorkspace({
   demo = false,
   startNew = false,
   demoCompany,
+  operationsEnabled = false,
 }: {
   initial: Workspace;
   demo?: boolean;
   startNew?: boolean;
   demoCompany?: 'Airtel';
+  operationsEnabled?: boolean;
 }) {
   const [workspace, setWorkspace] = useState(initial);
-  const [selectedId, setSelectedId] = useState(
-    [...initial.jobs].sort(byPriority)[0]?.id ?? '',
-  );
+  const [selectedId, setSelectedId] = useState([...initial.jobs].sort(byPriority)[0]?.id ?? '');
   const [filter, setFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -81,9 +77,7 @@ export function MaintenanceWorkspace({
   } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const attempt = useRef<{ key: string; id: string } | null>(null);
-  const visible = workspace.jobs.filter((job) =>
-    canRead(job, workspace.viewer),
-  );
+  const visible = workspace.jobs.filter((job) => canRead(job, workspace.viewer));
   const jobs = visible
     .filter(
       (job) =>
@@ -145,8 +139,7 @@ export function MaintenanceWorkspace({
         if (command.action === 'create') setSelectedId(next.jobs[0]?.id ?? '');
       } else {
         const key = JSON.stringify(command);
-        if (attempt.current?.key !== key)
-          attempt.current = { key, id: crypto.randomUUID() };
+        if (attempt.current?.key !== key) attempt.current = { key, id: crypto.randomUUID() };
         const result = await mutateMaintenance({
           client_request_id: attempt.current.id,
           command,
@@ -155,11 +148,9 @@ export function MaintenanceWorkspace({
           if ('saved' in result) attempt.current = null;
           throw new Error(result.error);
         }
-        if (!result.workspace)
-          throw new Error('Refresh to check the latest job.');
+        if (!result.workspace) throw new Error('Refresh to check the latest job.');
         setWorkspace(result.workspace);
-        if (command.action === 'create')
-          setSelectedId(result.workspace.jobs[0]?.id ?? '');
+        if (command.action === 'create') setSelectedId(result.workspace.jobs[0]?.id ?? '');
       }
       attempt.current = null;
       setNow(Date.now());
@@ -171,10 +162,7 @@ export function MaintenanceWorkspace({
     } catch (error) {
       setFeedback({
         error: true,
-        text:
-          error instanceof Error
-            ? error.message
-            : 'The update could not be saved.',
+        text: error instanceof Error ? error.message : 'The update could not be saved.',
       });
       return false;
     } finally {
@@ -207,6 +195,14 @@ export function MaintenanceWorkspace({
         >
           <Wrench size={17} aria-hidden="true" /> Service desk
         </button>
+        {demo || operationsEnabled ? (
+          <Link
+            href={demo ? '/maintenance-preview/operations' : '/operations'}
+            className={styles.back}
+          >
+            Daily operations
+          </Link>
+        ) : null}
         <div className={styles.sidebarNote}>
           <span className={styles.smallDot} /> One shared picture
           <p>From the first report to the final sign-off.</p>
@@ -219,32 +215,18 @@ export function MaintenanceWorkspace({
         {demo ? (
           <div className={styles.demoBanner}>
             <span>
-              <strong>
-                {demoCompany
-                  ? demoCompany + ' workspace'
-                  : 'Service operations'}
-              </strong>
+              <strong>{demoCompany ? demoCompany + ' workspace' : 'Service operations'}</strong>
             </span>
-            <Link
-              href="/maintenance-preview/hanan"
-              className="font-semibold underline"
-            >
+            <Link href="/maintenance-preview/hanan" className="font-semibold underline">
               Hanan retail
             </Link>
-            <Link
-              href="/maintenance-preview/style"
-              className="font-semibold underline"
-            >
+            <Link href="/maintenance-preview/style" className="font-semibold underline">
               Operations overview
             </Link>
             <button
               type="button"
               onClick={() => {
-                setWorkspace(
-                  demoCompany === 'Airtel'
-                    ? initialAirtelDemo()
-                    : initialDemo(),
-                );
+                setWorkspace(demoCompany === 'Airtel' ? initialAirtelDemo() : initialDemo());
                 setFeedback(null);
                 setCreating(false);
                 setFilter('all');
@@ -260,14 +242,10 @@ export function MaintenanceWorkspace({
         <header className={styles.header}>
           <div>
             <p className={styles.eyebrow}>
-              {demoCompany
-                ? 'AIRTEL · INTERNET SERVICE OPERATIONS'
-                : 'MAINTENANCE & SERVICES'}
+              {demoCompany ? 'AIRTEL · INTERNET SERVICE OPERATIONS' : 'MAINTENANCE & SERVICES'}
             </p>
             <h1>
-              {demoCompany
-                ? 'Keep every connection running.'
-                : 'Keep every service moving.'}
+              {demoCompany ? 'Keep every connection running.' : 'Keep every service moving.'}
             </h1>
             <p>
               {demoCompany
@@ -383,21 +361,14 @@ export function MaintenanceWorkspace({
                 )}
                 {feedback.text}
                 {feedback.error && !demo ? (
-                  <button
-                    type="button"
-                    onClick={() => window.location.reload()}
-                  >
+                  <button type="button" onClick={() => window.location.reload()}>
                     Refresh workspace
                   </button>
                 ) : null}
               </p>
             ) : null}
             {creating ? (
-              <RequestForm
-                submit={submit}
-                pending={pending}
-                close={() => setCreating(false)}
-              />
+              <RequestForm submit={submit} pending={pending} close={() => setCreating(false)} />
             ) : null}
             <div className={styles.sectionHeading}>
               <div>
@@ -411,11 +382,7 @@ export function MaintenanceWorkspace({
               <span className={styles.count}>{visible.length} jobs</span>
             </div>
             <div className={styles.toolbar}>
-              <div
-                className={styles.filters}
-                role="group"
-                aria-label="Filter jobs"
-              >
+              <div className={styles.filters} role="group" aria-label="Filter jobs">
                 {[
                   ['all', 'All jobs'],
                   ['requested', 'Requests'],
@@ -458,10 +425,7 @@ export function MaintenanceWorkspace({
               </label>
             </div>
             <div className={styles.board}>
-              <section
-                className={styles.jobList}
-                aria-label="Service requests and work orders"
-              >
+              <section className={styles.jobList} aria-label="Service requests and work orders">
                 {jobs.length ? (
                   jobs.map((job) => (
                     <button
@@ -481,20 +445,14 @@ export function MaintenanceWorkspace({
                         <MapPin size={13} aria-hidden="true" />
                         {job.location}
                       </p>
-                      {job.address ? (
-                        <p className={styles.jobAddress}>{job.address}</p>
-                      ) : null}
+                      {job.address ? <p className={styles.jobAddress}>{job.address}</p> : null}
                       {job.pin ? (
                         <span className={styles.pinTag}>
-                          <MapPin size={11} aria-hidden="true" /> Map pin
-                          attached
+                          <MapPin size={11} aria-hidden="true" /> Map pin attached
                         </span>
                       ) : null}
                       <div className={styles.jobBottom}>
-                        <span
-                          className={styles.status}
-                          data-status={job.status}
-                        >
+                        <span className={styles.status} data-status={job.status}>
                           {statusLabels[job.status]}
                         </span>
                         <ArrowUpRight size={16} aria-hidden="true" />
@@ -526,10 +484,7 @@ export function MaintenanceWorkspace({
               ) : (
                 <section className={styles.detail}>
                   <h3>Your job details will appear here</h3>
-                  <p>
-                    Choose a request to see its instructions, updates and review
-                    history.
-                  </p>
+                  <p>Choose a request to see its instructions, updates and review history.</p>
                 </section>
               )}
             </div>
@@ -782,18 +737,10 @@ function JobDetail({
                 : ''}
             </p>
             <div className={styles.mapActions}>
-              <a
-                href={locationMapUrl(job.pin)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={locationMapUrl(job.pin)} target="_blank" rel="noopener noreferrer">
                 View map pin ↗
               </a>
-              <a
-                href={locationMapUrl(job.pin, true)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={locationMapUrl(job.pin, true)} target="_blank" rel="noopener noreferrer">
                 Get directions ↗
               </a>
             </div>
@@ -812,9 +759,7 @@ function JobDetail({
         </div>
         <div>
           <dt>Deadline · Lagos time</dt>
-          <dd>
-            {job.due_at ? formatLagosDisplay(job.due_at) : 'Set when assigning'}
-          </dd>
+          <dd>{job.due_at ? formatLagosDisplay(job.due_at) : 'Set when assigning'}</dd>
         </div>
       </dl>
       {job.instructions ? (
@@ -832,21 +777,12 @@ function JobDetail({
           </div>
         </div>
       ) : null}
-      {workspace.viewer.can_manage &&
-      ['requested', 'assigned'].includes(job.status) ? (
+      {workspace.viewer.can_manage && ['requested', 'assigned'].includes(job.status) ? (
         <form onSubmit={assign} className={styles.form} aria-busy={pending}>
-          <h3>
-            {job.status === 'requested'
-              ? 'Create work order'
-              : 'Update assignment'}
-          </h3>
+          <h3>{job.status === 'requested' ? 'Create work order' : 'Update assignment'}</h3>
           <label>
             Assign technician
-            <select
-              name="technician"
-              defaultValue={job.assigned_to ?? ''}
-              required
-            >
+            <select name="technician" defaultValue={job.assigned_to ?? ''} required>
               <option value="" disabled>
                 Select a team member
               </option>
@@ -862,9 +798,7 @@ function JobDetail({
             <input
               type="datetime-local"
               name="deadline"
-              defaultValue={
-                job.due_at ? lagosDateTime(job.due_at).replace(' ', 'T') : ''
-              }
+              defaultValue={job.due_at ? lagosDateTime(job.due_at).replace(' ', 'T') : ''}
               required
             />
           </label>
@@ -952,16 +886,12 @@ function JobDetail({
           </button>
         </form>
       ) : null}
-      {job.status === 'ready_for_review' &&
-      !canReview(job, workspace.viewer) ? (
-        <p className={styles.note}>
-          Awaiting an independent administrator’s review.
-        </p>
+      {job.status === 'ready_for_review' && !canReview(job, workspace.viewer) ? (
+        <p className={styles.note}>Awaiting an independent administrator’s review.</p>
       ) : null}
       {job.status === 'completed' ? (
         <p className={styles.closed}>
-          <CheckCircle2 size={17} aria-hidden="true" /> Work completed and
-          approved.
+          <CheckCircle2 size={17} aria-hidden="true" /> Work completed and approved.
         </p>
       ) : null}
       <section className={styles.timeline} aria-label="Job history">
@@ -986,9 +916,7 @@ function JobDetail({
                   </span>
                 </p>
                 <p className={styles.eventNote}>{event.note}</p>
-                <time dateTime={event.created_at}>
-                  {formatLagosDisplay(event.created_at)}
-                </time>
+                <time dateTime={event.created_at}>{formatLagosDisplay(event.created_at)}</time>
               </div>
             </li>
           ))}
