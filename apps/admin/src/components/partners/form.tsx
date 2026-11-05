@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import type { PartnerLog, PartnerOutlet } from '@/lib/partners';
 
+type FieldIssue = { id: string; label: string; message: string };
+
 type Draft = { values: Record<string, string>; requestId: string; frozen: boolean };
 export function PartnerForm({
   userId,
@@ -47,6 +49,25 @@ export function PartnerForm({
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [notice, setNotice] = useState('');
+  const [fieldIssues, setFieldIssues] = useState<FieldIssue[]>([]);
+  const [validationOpen, setValidationOpen] = useState(false);
+  const validationDialog = useRef<HTMLDialogElement>(null);
+  const focusAfterDialog = useRef('');
+  useEffect(() => {
+    if (validationOpen && !validationDialog.current?.open) {
+      validationDialog.current?.showModal();
+    }
+  }, [validationOpen]);
+  function goToField(id: string) {
+    focusAfterDialog.current = id;
+    validationDialog.current?.close();
+  }
+  function focusInvalidField() {
+    setValidationOpen(false);
+    const field = document.getElementById(focusAfterDialog.current);
+    field?.focus({ preventScroll: true });
+    field?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
   const [outlets, setOutlets] = useState<PartnerOutlet[]>([]);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
@@ -97,6 +118,7 @@ export function PartnerForm({
   }, [query]);
   function update(key: string, value: string) {
     setValues((old) => ({ ...old, [key]: value }));
+    setFieldIssues((issues) => issues.filter((issue) => issue.id !== `partner-${key}`));
     setNotice('');
   }
   function saveDraft(message = 'Draft saved on this device.') {
@@ -123,6 +145,10 @@ export function PartnerForm({
         {options ? (
           <Select
             id={`partner-${key}`}
+            data-validation-label={label}
+            aria-invalid={
+              fieldIssues.some((issue) => issue.id === `partner-${key}`) || undefined
+            }
             value={values[key] ?? ''}
             onChange={(e) => update(key, e.target.value)}
             required={required}
@@ -135,6 +161,10 @@ export function PartnerForm({
         ) : (
           <Input
             id={`partner-${key}`}
+            data-validation-label={label}
+            aria-invalid={
+              fieldIssues.some((issue) => issue.id === `partner-${key}`) || undefined
+            }
             type={type}
             maxLength={key === 'email' ? 254 : 200}
             value={values[key] ?? ''}
@@ -159,6 +189,8 @@ export function PartnerForm({
         <Label htmlFor={`partner-${key}`}>{label} *</Label>
         <Input
           id={`partner-${key}`}
+          data-validation-label={label}
+          aria-invalid={fieldIssues.some((issue) => issue.id === `partner-${key}`) || undefined}
           type="number"
           inputMode="numeric"
           min={0}
@@ -192,6 +224,36 @@ export function PartnerForm({
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busyRef.current) return;
+    const fields = Array.from(
+      e.currentTarget.querySelectorAll<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >('input, select, textarea'),
+    );
+    const issues = fields
+      .filter(
+        (field) =>
+          field.willValidate &&
+          (!field.validity.valid || (field.required && !field.value.trim())),
+      )
+      .map((field) => ({
+        id: field.id,
+        label:
+          field.dataset.validationLabel ||
+          field.labels?.[0]?.textContent?.replace(/\s*\*$/, '').trim() ||
+          'Field',
+        message:
+          field.validity.valueMissing || (field.required && !field.value.trim())
+            ? 'Please fill in this field.'
+            : field.validationMessage,
+      }));
+    if (issues.length) {
+      focusAfterDialog.current = issues[0]!.id;
+      setFieldIssues(issues);
+      setValidationOpen(true);
+      setNotice('');
+      return;
+    }
+    setFieldIssues([]);
     busyRef.current = true;
     setBusy(true);
     setNotice('');
@@ -300,7 +362,7 @@ export function PartnerForm({
           </div>
         </div>
       ) : null}
-      <form onSubmit={submit} className="mt-5 space-y-6">
+      <form onSubmit={submit} noValidate className="mt-5 space-y-6">
         <fieldset disabled={busy || frozen} className="space-y-6 disabled:opacity-75">
           <section>
             <h3 className="mb-3 font-semibold">Company and visit</h3>
@@ -475,6 +537,43 @@ export function PartnerForm({
           </p>
         ) : null}
       </form>
+      <dialog
+        ref={validationDialog}
+        aria-labelledby="partner-validation-title"
+        aria-describedby="partner-validation-description"
+        onClose={focusInvalidField}
+        className="fixed inset-0 m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border border-primary/20 bg-white p-5 text-ink shadow-xl backdrop:bg-ink/35 dark:bg-charcoal sm:p-6"
+      >
+        <h2 id="partner-validation-title" className="text-lg font-semibold">
+          Just a few details to check
+        </h2>
+        <p id="partner-validation-description" className="mt-2 text-sm text-muted">
+          Please complete or check the fields below before submitting. Your answers have been
+          kept.
+        </p>
+        <ul className="my-4 max-h-64 space-y-2 overflow-y-auto">
+          {fieldIssues.map((issue) => (
+            <li key={issue.id}>
+              <button
+                type="button"
+                onClick={() => goToField(issue.id)}
+                className="min-h-11 w-full rounded-lg border border-primary/15 p-3 text-left hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                <span className="block text-sm font-semibold">{issue.label}</span>
+                <span className="mt-1 block text-xs text-muted">{issue.message}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <Button
+          type="button"
+          autoFocus
+          onClick={() => goToField(fieldIssues[0]?.id || '')}
+          className="w-full"
+        >
+          Go to first field
+        </Button>
+      </dialog>
     </Card>
   );
 }
