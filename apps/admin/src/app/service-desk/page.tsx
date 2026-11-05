@@ -1,3 +1,4 @@
+import { NotificationBell } from '@/components/notification-bell';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireApprovedProfile } from '@/lib/auth';
@@ -12,7 +13,7 @@ export default async function ServiceDeskPage({
 }) {
   if (process.env.MAINTENANCE_ENABLED !== 'true') notFound();
   // Authentication redirects must propagate outside the data-loading error boundary.
-  const { client } = await requireApprovedProfile();
+  const { client, profile } = await requireApprovedProfile();
   let workspace;
   try {
     workspace = await loadMaintenanceWorkspace(client);
@@ -31,5 +32,12 @@ export default async function ServiceDeskPage({
     );
   }
   const params = await searchParams;
-  return <MaintenanceWorkspace initial={workspace} startNew={params.new === '1'} />;
+  return (
+    <>
+      <div className="flex justify-end p-3">
+        <NotificationBell key={profile.id} userId={profile.id} />
+      </div>
+      <MaintenanceWorkspace initial={workspace} startNew={params.new === '1'} />
+    </>
+  );
 }

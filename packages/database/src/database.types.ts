@@ -39,6 +39,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      user_notifications: {
+        Row: { id: string; recipient_id: string; recipient_role: string; organization_id: string; event_key: string; kind: string; title: string; body: string; web_path: string; created_at: string; read_at: string | null }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       partner_visit_logs: {
         Row: { id: string; organization_id: string; partner_id: string; collected_by: string; collector_name: string; visit_date: string; reporting_month: string; payload: Json; total_pcs: number | null; lenovo_units: number | null; correction_of: string | null; created_at: string }
         Insert: never
@@ -1728,6 +1734,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      notification_inbox: { Args: { p_before?: string | null; p_before_id?: string | null }; Returns: Json }
+      notification_mark_read: { Args: { p_client_request_id: string; p_notification_ids?: string[] | null }; Returns: Json }
+      notification_open: { Args: { p_notification_id: string; p_client_request_id: string }; Returns: Json }
       admin_brand_hub: { Args: Record<PropertyKey, never>; Returns: Json }
       admin_open_brand: { Args: { p_organization_id: string; p_client_request_id: string }; Returns: Json }
       admin_document_preparation_queue: { Args: { p_limit?: number }; Returns: Json }

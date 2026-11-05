@@ -9,6 +9,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => route.pathname,
   useRouter: () => ({ push: vi.fn() }),
 }));
+vi.mock('@/components/notification-bell', () => ({ NotificationBell: () => null }));
 vi.mock('@/app/(portal)/actions', () => ({ signOutAction: vi.fn() }));
 import { AdminPortalShell } from '@/components/admin-portal-shell';
 
@@ -26,6 +27,7 @@ function shell(brand: AdminBrand | null = school) {
   return renderToStaticMarkup(
     createElement(AdminPortalShell, {
       brand,
+      userId: 'test-administrator',
       fullName: 'Test administrator',
       role: 'super_admin',
       maintenanceEntry: createElement('span', null, 'Service operations'),

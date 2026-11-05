@@ -1,3 +1,4 @@
+import { NotificationBell } from '@/components/notification-bell';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { serverSupabase } from '@fazoo/database';
@@ -53,7 +54,10 @@ export default async function AccountStatusPage() {
       className={`${styles.surface} flex min-h-screen items-center justify-center px-5 py-10`}
     >
       <section className="w-full max-w-md rounded-[2rem] border border-white/15 bg-[#0A1A3A]/90 p-8 shadow-xl">
-        <FazooMark />
+        <div className="flex items-center justify-between gap-3">
+          <FazooMark />
+          <NotificationBell key={user.id} userId={user.id} />
+        </div>
         <h1 className="mt-6 text-2xl font-semibold text-ink">
           {message?.title ?? 'Your workspace is not available yet'}
         </h1>

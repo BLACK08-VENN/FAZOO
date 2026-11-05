@@ -19,6 +19,7 @@ export default async function PortalLayout({ children }: { children: React.React
   if (!isAdminHubPath(path) && !selected) redirect('/overview');
   return (
     <AdminPortalShell
+      userId={profile.id}
       brand={selected}
       fullName={profile.full_name}
       role={profile.role}

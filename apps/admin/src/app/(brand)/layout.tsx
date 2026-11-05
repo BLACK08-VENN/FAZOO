@@ -1,3 +1,4 @@
+import { NotificationBell } from '@/components/notification-bell';
 import { MaintenanceEntry } from '@/components/maintenance/entry';
 import { WorkspaceLink } from '@/components/workspace-link';
 import { WorkspaceBrand } from '@/components/workspace-brand';
@@ -119,6 +120,9 @@ export default async function BrandLayout({ children }: { children: React.ReactN
             </WorkspaceLink>
           ))}
         </nav>
+        <div className="flex justify-end border-b border-ink/8 px-4 py-2 sm:px-6 xl:px-8">
+          <NotificationBell key={profile.id} userId={profile.id} />
+        </div>
         <main className="min-w-0 flex-1 p-4 sm:p-6 xl:p-8" id="main-content">
           {children}
         </main>

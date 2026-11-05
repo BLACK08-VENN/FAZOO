@@ -15,6 +15,7 @@ import { WorkspaceBrand } from './workspace-brand';
 import { FazooMark } from './fazoo-mark';
 import { ThemeToggle } from './theme-toggle';
 import { CommandPalette } from './command-palette';
+import { NotificationBell } from './notification-bell';
 import { Toaster } from './toast';
 import { navFor } from '@/lib/nav';
 import { isAdminHubPath, type AdminBrand } from '@/lib/admin-workspace';
@@ -22,12 +23,14 @@ import { signOutAction } from '@/app/(portal)/actions';
 
 export function AdminPortalShell({
   brand,
+  userId,
   fullName,
   role,
   maintenanceEntry,
   children,
 }: {
   brand: AdminBrand | null;
+  userId: string;
   fullName: string;
   role: string;
   maintenanceEntry: ReactNode;
@@ -188,20 +191,23 @@ export function AdminPortalShell({
         </header>
         <div className="flex items-center justify-between gap-3 border-b border-ink/8 px-4 py-3 text-xs text-muted sm:px-6 xl:px-8">
           <span>{global ? 'Administration' : `${brand.name} workspace`}</span>
-          {global ? (
-            <span className="flex items-center gap-1">
-              <Building2 size={13} />
-              All brands
-            </span>
-          ) : (
-            <Link
-              className="flex min-h-8 items-center gap-1 font-semibold text-primary"
-              href="/overview"
-            >
-              Switch brand
-              <ArrowUpRight size={13} />
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            {global ? (
+              <span className="flex items-center gap-1">
+                <Building2 size={13} />
+                All brands
+              </span>
+            ) : (
+              <Link
+                className="flex min-h-8 items-center gap-1 font-semibold text-primary"
+                href="/overview"
+              >
+                Switch brand
+                <ArrowUpRight size={13} />
+              </Link>
+            )}
+            <NotificationBell key={userId} userId={userId} />
+          </div>
         </div>
         <main
           id="main-content"
