@@ -53,10 +53,12 @@ export function MaintenanceWorkspace({
   initial,
   demo = false,
   startNew = false,
+  operationsEnabled = false,
 }: {
   initial: Workspace;
   demo?: boolean;
   startNew?: boolean;
+  operationsEnabled?: boolean;
 }) {
   const [workspace, setWorkspace] = useState(initial);
   const [selectedId, setSelectedId] = useState([...initial.jobs].sort(byPriority)[0]?.id ?? '');
@@ -189,6 +191,14 @@ export function MaintenanceWorkspace({
         >
           <Wrench size={17} aria-hidden="true" /> Service desk
         </button>
+        {demo || operationsEnabled ? (
+          <Link
+            href={demo ? '/maintenance-preview/operations' : '/operations'}
+            className={styles.back}
+          >
+            Daily operations
+          </Link>
+        ) : null}
         <div className={styles.sidebarNote}>
           <span className={styles.smallDot} /> One shared picture
           <p>From the first report to the final sign-off.</p>

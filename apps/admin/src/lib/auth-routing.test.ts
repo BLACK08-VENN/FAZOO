@@ -60,6 +60,15 @@ describe('verified profile routing', () => {
       '/overview',
     );
   });
+  it('restores operations deep links for workers and staff, but not clients', () => {
+    for (const role of ['brand_ambassador', 'organization_admin', 'supervisor'])
+      expect(postSignInPath({ role, account_status: 'approved' }, '/operations')).toBe(
+        '/operations',
+      );
+    expect(postSignInPath({ role: 'client', account_status: 'approved' }, '/operations')).toBe(
+      '/brand',
+    );
+  });
   it.each([
     'https://evil.example',
     '//evil.example',
