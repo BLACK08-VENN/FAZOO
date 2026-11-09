@@ -19,11 +19,33 @@ import {
   type Task,
   type Workspace,
 } from '@/lib/operations/model';
-import { applyOperations, manager, worker } from '@/lib/operations/preview';
+import { applyOperations } from '@/lib/operations/preview';
+
+const furnitureKinds: Record<Task['kind'], string> = {
+  task: 'After-sales service',
+  delivery: 'Delivery',
+  collection: 'Return collection',
+  setup: 'Installation',
+};
 
 type Item = { name: string; quantity: number };
 type Submit = (command: Command) => Promise<boolean>;
-const dateInput = (time: string) => lagosDateTime(time).replace(' ', 'T');
+const lagosClock = {
+  name: 'Lagos',
+  day: lagosDate,
+  display: lagosDateTime,
+  toUtc: lagosDateTimeToUtc,
+};
+const nairobiClock: typeof lagosClock = {
+  name: 'Nairobi',
+  day: (time = new Date()) => nairobiClock.display(time).slice(0, 10),
+  display: (time) =>
+    new Date(new Date(time).getTime() + 3 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 16)
+      .replace('T', ' '),
+  toUtc: (value) => new Date(`${value}:00+03:00`).toISOString(),
+};
 function Items({
   value,
   onChange,
@@ -99,12 +121,16 @@ function Items({
 export function OperationsWorkspace({
   initial,
   preview = false,
+  furniture = false,
 }: {
   initial: Workspace;
   preview?: boolean;
+  furniture?: boolean;
 }) {
   const [workspace, setWorkspace] = useState(initial);
-  const [date, setDate] = useState(() => lagosDate());
+  const title = furniture ? 'Furniture Rama · Deliveries & service' : 'Daily operations';
+  const clock = furniture ? nairobiClock : lagosClock;
+  const [date, setDate] = useState(() => (furniture ? '' : clock.day()));
   const [campaign, setCampaign] = useState('');
   const [status, setStatus] = useState('');
   const [selected, setSelected] = useState('');
@@ -115,7 +141,9 @@ export function OperationsWorkspace({
   const visible = workspace.tasks.filter(
     (task) => workspace.viewer.can_manage || task.assigned_to === workspace.viewer.id,
   );
-  const daily = dailyTasks(visible, date, campaign);
+  const daily = dailyTasks(visible, furniture ? '' : date, campaign).filter(
+    (task) => !furniture || !date || clock.day(task.due_at) === date,
+  );
   const tasks = daily
     .filter((task) => !status || task.status === status)
     .sort((a, b) => Date.parse(a.due_at) - Date.parse(b.due_at));
@@ -172,12 +200,12 @@ export function OperationsWorkspace({
           <Link href={preview ? '/maintenance-preview/expansion' : '/service-desk'}>
             {preview ? 'FAZOO · Workspaces' : 'FAZOO · Service desk'}
           </Link>
-          <span className="font-semibold">Daily operations</span>
+          <span className="font-semibold">{title}</span>
           {!preview ? (
             <Link href="/brand" className="ml-auto">
               My workspace
             </Link>
-          ) : (
+          ) : furniture ? null : (
             <Link href="/maintenance-preview/hanan" className="ml-auto">
               Retail workspace
             </Link>
@@ -186,8 +214,12 @@ export function OperationsWorkspace({
       </div>
       <div className="mx-auto max-w-7xl p-4 sm:p-7">
         <PageHeader
-          title="Daily operations"
-          description="Coordinate tasks, deliveries and collections across your campaign teams."
+          title={title}
+          description={
+            furniture
+              ? 'Assign deliveries, installations and return visits. Track missing parts, damage and work awaiting approval.'
+              : 'Coordinate tasks, deliveries and collections across your campaign teams.'
+          }
         >
           {workspace.viewer.can_manage ? (
             <Button onClick={() => setCreating(!creating)}>
@@ -212,7 +244,14 @@ export function OperationsWorkspace({
                 onChange={(event) => {
                   setWorkspace({
                     ...workspace,
-                    viewer: event.target.value === 'manager' ? manager : worker,
+                    viewer:
+                      event.target.value === 'manager'
+                        ? initial.viewer
+                        : {
+                            ...initial.workers[0]!,
+                            organization_id: initial.viewer.organization_id,
+                            can_manage: false,
+                          },
                   });
                   setCreating(false);
                   setSelected('');
@@ -220,7 +259,9 @@ export function OperationsWorkspace({
                 }}
               >
                 <option value="manager">Operations manager</option>
-                <option value="worker">Field staff</option>
+                <option value="worker">
+                  {furniture ? 'Delivery & installation crew' : 'Field staff'}
+                </option>
               </Select>
             </>
           ) : (
@@ -240,6 +281,8 @@ export function OperationsWorkspace({
         {creating && workspace.viewer.can_manage ? (
           <CreateTask
             workspace={workspace}
+            furniture={furniture}
+            clock={clock}
             pending={pending}
             submit={submit}
             onClose={() => {
@@ -251,14 +294,14 @@ export function OperationsWorkspace({
         ) : null}
         <Card className="mb-5 grid gap-3 p-4 sm:grid-cols-3">
           <div>
-            <Label htmlFor="ops-date">Due date (Lagos time)</Label>
+            <Label htmlFor="ops-date">Due date ({clock.name} time)</Label>
             <Input
               id="ops-date"
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
             />
-            <Button variant="ghost" size="sm" onClick={() => setDate(date ? '' : lagosDate())}>
+            <Button variant="ghost" size="sm" onClick={() => setDate(date ? '' : clock.day())}>
               {date ? 'Show all dates' : 'Show today'}
             </Button>
           </div>
@@ -329,14 +372,14 @@ export function OperationsWorkspace({
                   aria-pressed={task?.id === item.id}
                 >
                   <span className="block text-xs text-muted">
-                    {item.campaign_name} · {item.kind}
+                    {item.campaign_name} · {furniture ? furnitureKinds[item.kind] : item.kind}
                   </span>
                   <strong className="my-1 block text-sm">{item.title}</strong>
                   <span className="block text-xs">
                     {labels[item.status]} · {item.priority}
                   </span>
                   <span className="mt-1 block text-xs text-muted">
-                    Due {lagosDateTime(item.due_at)}
+                    Due {clock.display(item.due_at)}
                   </span>
                 </button>
               ))
@@ -346,14 +389,14 @@ export function OperationsWorkspace({
             <Card className="space-y-5 p-4 sm:p-6">
               <div>
                 <p className="text-xs font-semibold uppercase text-muted">
-                  {task.campaign_name} · {task.kind}
+                  {task.campaign_name} · {furniture ? furnitureKinds[task.kind] : task.kind}
                 </p>
                 <h2 className="mt-1 text-xl font-semibold">{task.title}</h2>
                 <p className="mt-2 text-sm">
                   {labels[task.status]} · {task.priority} priority · {task.assignee_name}
                 </p>
                 <p className="mt-1 text-sm text-muted">
-                  Due {lagosDateTime(task.due_at)} (Lagos)
+                  Due {clock.display(task.due_at)} ({clock.name})
                   {task.status !== 'completed' && Date.parse(task.due_at) < Date.now()
                     ? ' · Overdue'
                     : ''}
@@ -399,15 +442,26 @@ export function OperationsWorkspace({
                   <div className="flex flex-wrap gap-3">
                     {task.evidence.map((path, index) =>
                       workspace.evidence_urls[path] ? (
-                        <a
-                          key={path}
-                          href={workspace.evidence_urls[path]}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline"
-                        >
-                          View photo {index + 1}
-                        </a>
+                        preview ? (
+                          /* Local photo data URLs are rendered inline. */
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={path}
+                            src={workspace.evidence_urls[path]}
+                            alt={`Completion photo ${index + 1}`}
+                            className="max-h-48 max-w-full rounded-lg object-contain"
+                          />
+                        ) : (
+                          <a
+                            key={path}
+                            href={workspace.evidence_urls[path]}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline"
+                          >
+                            View photo {index + 1}
+                          </a>
+                        )
                       ) : (
                         <span key={path}>Photo {index + 1}: refresh to view</span>
                       ),
@@ -422,6 +476,7 @@ export function OperationsWorkspace({
                 submit={submit}
                 pending={pending}
                 preview={preview}
+                clock={clock}
                 onPhoto={(path, url) =>
                   setWorkspace((current) => ({
                     ...current,
@@ -440,7 +495,7 @@ export function OperationsWorkspace({
                         {event.actor_name} · {event.action}
                       </p>
                       <p className="whitespace-pre-wrap">{event.note}</p>
-                      <p className="text-xs text-muted">{lagosDateTime(event.created_at)}</p>
+                      <p className="text-xs text-muted">{clock.display(event.created_at)}</p>
                     </li>
                   ))}
                 </ol>
@@ -463,8 +518,12 @@ function CreateTask({
   pending,
   submit,
   onClose,
+  furniture,
+  clock,
 }: {
   workspace: Workspace;
+  furniture: boolean;
+  clock: typeof lagosClock;
   pending: boolean;
   submit: Submit;
   onClose: () => void;
@@ -483,7 +542,7 @@ function CreateTask({
       instructions: String(form.get('instructions')),
       origin: String(form.get('origin')),
       destination: String(form.get('destination')),
-      due_at: lagosDateTimeToUtc(String(form.get('due'))),
+      due_at: clock.toUtc(String(form.get('due'))),
       priority: String(form.get('priority')) as Task['priority'],
       items,
     });
@@ -503,7 +562,7 @@ function CreateTask({
             >
               {kinds.map((value) => (
                 <option key={value} value={value}>
-                  {value[0]!.toUpperCase() + value.slice(1)}
+                  {furniture ? furnitureKinds[value] : value[0]!.toUpperCase() + value.slice(1)}
                 </option>
               ))}
             </Select>
@@ -537,7 +596,7 @@ function CreateTask({
             </Select>
           </div>
           <div>
-            <Label htmlFor="create-due">Due date and time (Lagos)</Label>
+            <Label htmlFor="create-due">Due date and time ({clock.name})</Label>
             <Input id="create-due" name="due" type="datetime-local" required />
           </div>
           <div>
@@ -607,6 +666,7 @@ function TaskActions({
   submit,
   pending,
   preview,
+  clock,
   onPhoto,
 }: {
   task: Task;
@@ -614,6 +674,7 @@ function TaskActions({
   submit: Submit;
   pending: boolean;
   preview: boolean;
+  clock: typeof lagosClock;
   onPhoto: (path: string, url: string) => void;
 }) {
   const [action, setAction] = useState<'in_progress' | 'blocked' | 'ready_for_review'>(
@@ -824,7 +885,7 @@ function TaskActions({
                 task_id: task.id,
                 expected_version: task.version,
                 assigned_to: String(form.get('worker')),
-                due_at: lagosDateTimeToUtc(String(form.get('due'))),
+                due_at: clock.toUtc(String(form.get('due'))),
               });
             }}
           >
@@ -837,13 +898,13 @@ function TaskActions({
                   </option>
                 ))}
               </Select>
-              <Label htmlFor="reassign-due">New deadline (Lagos)</Label>
+              <Label htmlFor="reassign-due">New deadline ({clock.name})</Label>
               <Input
                 id="reassign-due"
                 name="due"
                 type="datetime-local"
                 required
-                defaultValue={dateInput(task.due_at)}
+                defaultValue={clock.display(task.due_at).replace(' ', 'T')}
               />
               <Button type="submit" variant="outline">
                 Save assignment

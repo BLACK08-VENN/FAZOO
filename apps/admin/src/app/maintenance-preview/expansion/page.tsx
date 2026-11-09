@@ -17,6 +17,30 @@ export const metadata = {
 };
 const previews = [
   {
+    title: 'Mars Wrigley · Merchandising',
+    description:
+      'Assign outlet visits, check product availability and promotions, and review shelf photos and follow-ups.',
+    href: '/maintenance-preview/mars-wrigley',
+    icon: Store,
+    label: 'Field merchandising',
+  },
+  {
+    title: 'Furniture Rama · Deliveries & service',
+    description:
+      'Dispatch deliveries, coordinate installations, record completion evidence and handle after-sales issues.',
+    href: '/maintenance-preview/furniture-rama',
+    icon: Truck,
+    label: 'Delivery & installation',
+  },
+  {
+    title: 'Hanan · Retail operations',
+    description:
+      'Manage shelf availability, replenishment, competitor observations and equipment servicing.',
+    href: '/maintenance-preview/hanan',
+    icon: Store,
+    label: 'Retail workspace',
+  },
+  {
     title: 'Logistics & daily operations',
     description:
       'Allocate daily tasks, track deliveries and collections, report delays and review completion evidence.',
@@ -53,14 +77,6 @@ const previews = [
     href: '/maintenance-preview',
     icon: Wrench,
     label: 'Service operations',
-  },
-  {
-    title: 'Hanan · Retail operations',
-    description:
-      'Manage shelf availability, replenishment, competitor observations and equipment servicing.',
-    href: '/maintenance-preview/hanan',
-    icon: Store,
-    label: 'Retail workspace',
   },
   {
     title: 'Airtel · Network maintenance',
@@ -121,8 +137,7 @@ export default function ExpansionPreviewHome() {
         >
           <h2 className="sr-only">About these workspaces</h2>
           <p className="mt-3 text-xs leading-6 text-muted">
-            Sample workspaces. Not affiliated with Hanan or Airtel. Company activity and
-            competitor prices are illustrative; no live systems are connected.
+            Company activity and competitor prices shown here are sample data.
           </p>
           <p className="mt-3 text-xs leading-6 text-muted">
             Sign in with an approved account to access your organization’s campaigns, reports

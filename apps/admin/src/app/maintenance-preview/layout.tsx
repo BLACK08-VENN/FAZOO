@@ -42,6 +42,18 @@ export default function PreviewLayout({
           Maintenance
         </Link>
         <Link
+          href="/maintenance-preview/mars-wrigley"
+          className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          Mars Wrigley
+        </Link>
+        <Link
+          href="/maintenance-preview/furniture-rama"
+          className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          Furniture Rama
+        </Link>
+        <Link
           href="/maintenance-preview/hanan"
           className="inline-flex min-h-9 items-center hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
         >
