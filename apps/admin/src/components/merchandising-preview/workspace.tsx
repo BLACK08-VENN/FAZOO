@@ -133,7 +133,7 @@ export function MerchandisingWorkspace() {
       <div className="mx-auto max-w-7xl p-4 sm:p-7">
         <PageHeader
           title="Mars Wrigley · Merchandising"
-          description="Assign outlet visits, track product availability, verify displays and follow up on promotion issues."
+          description="Assign outlet visits and review stock, displays and promotions. Each visit report covers one product and pack size."
         >
           {supervisor && (
             <Button disabled={!ready || busy} onClick={() => setAllocating(!allocating)}>
@@ -315,7 +315,7 @@ export function MerchandisingWorkspace() {
                     )
                   }
                 >
-                  Record sample check-in
+                  Simulate arrival
                 </Button>
               ) : (
                 <form onSubmit={(event) => void submitReport(event, current)}>

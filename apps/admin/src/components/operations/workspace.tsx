@@ -217,7 +217,7 @@ export function OperationsWorkspace({
           title={title}
           description={
             furniture
-              ? 'Assign deliveries, installations and return visits. Track missing parts, damage and work awaiting approval.'
+              ? 'Assign deliveries and installations, track damage or missing parts, and schedule return visits from blocked jobs.'
               : 'Coordinate tasks, deliveries and collections across your campaign teams.'
           }
         >
@@ -476,6 +476,7 @@ export function OperationsWorkspace({
                 submit={submit}
                 pending={pending}
                 preview={preview}
+                furniture={furniture}
                 clock={clock}
                 onPhoto={(path, url) =>
                   setWorkspace((current) => ({
@@ -666,6 +667,7 @@ function TaskActions({
   submit,
   pending,
   preview,
+  furniture,
   clock,
   onPhoto,
 }: {
@@ -674,9 +676,11 @@ function TaskActions({
   submit: Submit;
   pending: boolean;
   preview: boolean;
+  furniture: boolean;
   clock: typeof lagosClock;
   onPhoto: (path: string, url: string) => void;
 }) {
+  const schedulingReturn = furniture && task.status === 'blocked';
   const [action, setAction] = useState<'in_progress' | 'blocked' | 'ready_for_review'>(
     task.status === 'in_progress' ? 'ready_for_review' : 'in_progress',
   );
@@ -873,7 +877,7 @@ function TaskActions({
       {workspace.viewer.can_manage && ['assigned', 'blocked'].includes(task.status) ? (
         <details>
           <summary className="cursor-pointer text-sm font-semibold">
-            Reassign task / adjust deadline
+            {schedulingReturn ? 'Schedule return visit' : 'Reassign task / adjust deadline'}
           </summary>
           <form
             className="mt-3"
@@ -907,7 +911,7 @@ function TaskActions({
                 defaultValue={clock.display(task.due_at).replace(' ', 'T')}
               />
               <Button type="submit" variant="outline">
-                Save assignment
+                {schedulingReturn ? 'Save return visit' : 'Save assignment'}
               </Button>
             </fieldset>
           </form>

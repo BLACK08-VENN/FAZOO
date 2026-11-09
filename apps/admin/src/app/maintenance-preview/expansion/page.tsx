@@ -19,7 +19,7 @@ const previews = [
   {
     title: 'Mars Wrigley · Merchandising',
     description:
-      'Assign outlet visits, check product availability and promotions, and review shelf photos and follow-ups.',
+      'Assign outlet visits and review stock, displays and promotions. Each report covers one product and pack size.',
     href: '/maintenance-preview/mars-wrigley',
     icon: Store,
     label: 'Field merchandising',
@@ -27,7 +27,7 @@ const previews = [
   {
     title: 'Furniture Rama · Deliveries & service',
     description:
-      'Dispatch deliveries, coordinate installations, record completion evidence and handle after-sales issues.',
+      'Assign deliveries and installations, review completion photos, and schedule return visits for after-sales issues.',
     href: '/maintenance-preview/furniture-rama',
     icon: Truck,
     label: 'Delivery & installation',
@@ -35,7 +35,7 @@ const previews = [
   {
     title: 'Hanan · Retail operations',
     description:
-      'Manage shelf availability, replenishment, competitor observations and equipment servicing.',
+      'Track stock gaps and internal replenishment requests, record competitor prices and promotions, and review equipment servicing.',
     href: '/maintenance-preview/hanan',
     icon: Store,
     label: 'Retail workspace',
@@ -101,8 +101,7 @@ export default function ExpansionPreviewHome() {
             Your work. One workspace.
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-[#cec8dd]">
-            Choose a workspace to manage field activity, retail execution and service
-            operations.
+            Open a sample workspace directly to try field reporting, retail checks or service jobs. No sign-in required.
           </p>
           <span className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/80">
             <Layers3 size={15} aria-hidden="true" />

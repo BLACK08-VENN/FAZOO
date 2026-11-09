@@ -1198,8 +1198,7 @@ export function HananDemo() {
           {tab === 'Competitor intel' ? (
             <div className="grid gap-4 lg:grid-cols-2">
               <p className="rounded-xl border border-warn/20 bg-warn/5 p-4 text-xs leading-6 text-muted lg:col-span-2">
-                Illustrative competitor prices for 10-roll tissue packs across
-                three sample outlets.
+                Enter prices and promotions observed at an outlet. The preloaded Toilex and Celine records are examples for 10-roll tissue packs.
               </p>
               {d.observations
                 .filter((o) => relevant(o.competitor + ' ' + o.outlet))
@@ -1210,7 +1209,9 @@ export function HananDemo() {
                         <h2 className="text-sm font-semibold">
                           {workspaceLabel(o.competitor)}
                         </h2>
-                        <Badge tone="warning">Sample data</Badge>
+                        {o.id.startsWith('sample-competitor-') ? (
+                          <Badge tone="warning">Sample data</Badge>
+                        ) : null}
                       </div>
                       <p className="mt-2 text-xs text-muted">
                         {workspaceLabel(o.outlet)} ·{' '}
@@ -1223,7 +1224,7 @@ export function HananDemo() {
                         {workspaceLabel(o.promotion)}
                       </p>
                       <p className="mt-3 text-xs text-muted">
-                        Updated {time(o.createdAt)} · Illustrative prices
+                        Recorded {time(o.createdAt)}
                       </p>
                     </CardBody>
                   </Card>
