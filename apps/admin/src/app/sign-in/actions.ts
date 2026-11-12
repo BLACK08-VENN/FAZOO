@@ -41,20 +41,40 @@ export async function signInAction(
     try {
       const limiter = serviceSupabase();
       const requestHeaders = await headers();
-      const ip = requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-      const { data: ipAllowed, error: ipError } = await limiter.rpc('check_rate_limit', {
-        p_key: `signin-ip:${createHash('sha256').update(ip).digest('hex')}`,
-        p_max: 100,
-        p_window_seconds: RATE_LIMIT_SIGNIN_WINDOW_S,
-      });
-      if (ipError || ipAllowed !== true)
-        return { error: 'Too many sign-in attempts. Please try again later.' };
+      const ip =
+        requestHeaders.get('cf-connecting-ip')?.trim() ||
+        requestHeaders.get('x-real-ip')?.trim() ||
+        requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        '';
+
+      // A limiter failure means the backend is unreachable or restricted, not that
+      // the caller exceeded a quota. Only a definitive `false` is a real limit;
+      // report infrastructure errors honestly instead of blaming the user.
+      if (ip) {
+        const { data: ipAllowed, error: ipError } = await limiter.rpc('check_rate_limit', {
+          p_key: `signin-ip:${createHash('sha256').update(ip).digest('hex')}`,
+          p_max: 100,
+          p_window_seconds: RATE_LIMIT_SIGNIN_WINDOW_S,
+        });
+        if (ipError) {
+          console.error('[sign-in] ip rate limiter failed');
+          return { error: 'Sign-in is temporarily unavailable. Please try again shortly.' };
+        }
+        if (ipAllowed !== true) {
+          return { error: 'Too many sign-in attempts. Please try again later.' };
+        }
+      }
+
       const { data: allowed, error: limitError } = await limiter.rpc('check_rate_limit', {
         p_key: `signin:${createHash('sha256').update(email.toLowerCase()).digest('hex')}`,
         p_max: RATE_LIMIT_SIGNIN_MAX,
         p_window_seconds: RATE_LIMIT_SIGNIN_WINDOW_S,
       });
-      if (limitError || allowed !== true) {
+      if (limitError) {
+        console.error('[sign-in] account rate limiter failed');
+        return { error: 'Sign-in is temporarily unavailable. Please try again shortly.' };
+      }
+      if (allowed !== true) {
         return {
           error: 'Too many sign-in attempts. Please wait a few minutes and try again.',
         };

@@ -106,6 +106,16 @@ describe('unified sign-in action', () => {
     expect((await signInAction({ error: null }, form())).error).toMatch(/Too many/);
     expect(mocks.signIn).not.toHaveBeenCalled();
   });
+  it('does not blame the user when the backend rate limiter errors', async () => {
+    mocks.limit.mockResolvedValue({
+      data: null,
+      error: { message: 'Service for this project is restricted' },
+    });
+    const result = await signInAction({ error: null }, form());
+    expect(result.error).toMatch(/temporarily unavailable/);
+    expect(result.error).not.toMatch(/Too many/);
+    expect(mocks.signIn).not.toHaveBeenCalled();
+  });
   it('fails closed if rate limiting is unavailable', async () => {
     mocks.service.mockImplementation(() => {
       throw new Error('missing config');
